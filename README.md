@@ -1,10 +1,12 @@
+**Simulus - A discrete-event simulator in Python**
+
 This directory contains the source code and related materials (e.g.,
 documents, tutorials, and examples) for simulus. Simulus is an
 open-source discrete-event simulator in Python.
 
 To use the simulus code in this directory, you need to simply add the
-directory containing this `README.md` file to `PYTHONPATH`. Suppose your
-current directory has this `README.md` file, and assume that you use bash;
+directory containing this README.md file to PYTHONPATH. Suppose your
+current directory has this README.md file, and assume that you use bash;
 you can run the following to set it up:
 
 <pre>
