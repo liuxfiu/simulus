@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-15 16:11:17 liux>
+# Last Update: Time-stamp: <2019-06-15 17:32:18 liux>
 ###############################################################
 
 """A simulator instance.
@@ -171,7 +171,7 @@ def simulator(name = None):
 
 
 def sync(sims, lookahead):
-    pass
+    raise Exception("simulus.sync() not implemented")
 
 
 ## ------------------------------------------------------------
