@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-17 07:55:34 liux>
+# Last Update: Time-stamp: <2019-06-17 10:53:20 liux>
 ###############################################################
 
 """A simulator instance.
@@ -38,7 +38,7 @@ class _Simulator:
     # direct event scheduling methods
     #
         
-    def sched(self, func, name=None, offset=None, until=None, params=None, repeat_intv=None, **kargs):
+    def sched(self, func, offset=None, name=None, until=None, params=None, repeat_intv=None, **kargs):
         """Schedule an event.
 
         An event in simulus is represented as a function invoked in
@@ -50,10 +50,10 @@ class _Simulator:
                 arguments, the simulator and the user parameters
                 passed in as a dictionary
 
-        name (string): an optional name for the event
-
         offset (float): relative time from now; if provided, must be a
                 non-negative value
+
+        name (string): an optional name for the event
 
         until (float): the absolute time of the event; if provided,
                 must not be earlier than the current time; note that
@@ -161,6 +161,7 @@ class _Simulator:
     def peek(self):
         """Return the time of the next scheduled event or infinity if no
                 future events are available."""
+        
         if len(self.event_list) > 0:
             return self.event_list.get_min()
         else:
@@ -182,7 +183,7 @@ class _Simulator:
     # process scheduling methods
     #
     
-    def process(self, proc, name=None, offset=None, until=None, params=None, **kargs):
+    def process(self, proc, offset=None, name=None, until=None, params=None, **kargs):
         """Create and schedule a process.
 
         A process in simulus is represented as a function invoked in
@@ -194,10 +195,10 @@ class _Simulator:
                 takes two arguments, the simulator and the user
                 parameters passed in as a dictionary
 
-        name (string): an optional name for the process
-
         offset (float): relative time from now the process will start
                 running; if provided, must be a non-negative value
+
+        name (string): an optional name for the process
 
         until (float): the absolute time of the process to start
                 running; if provided, must not be earlier than the
@@ -251,13 +252,31 @@ class _Simulator:
         return e
 
 
-    def sleep(self, offset):
-        if offset <= 0:
-            raise Exception("simulator.sleep(offset=%r) negative offset" % offset)
-        if self.cur_proc != None:
-            self.cur_proc.sleep(self.now+offset)
-        else:
+    def sleep(self, offset=None, until=None):
+        """A process sleeps for a certain duration.
+
+        """
+        
+        # must be called within process context
+        if self.cur_proc is None:
             raise Exception("simulator.sleep(offset=%r) invoked outside process" % offset)
+
+        # figure out the expected wakeup time
+        if until == None and offset == None:
+            raise Exception("simulator.sleep() missing time specification")
+        elif until != None and offset != None:
+            raise Exception("simulator.sleep(until=%r, offset=%r) duplicate specification" %
+                            (until, offset))
+        elif offset != None:
+            if offset < 0:
+                raise Exception("simulator.sleep(offset=%r) negative offset" % offset)
+            time = self.now + offset
+        elif until < self.now:
+            raise Exception("simulator.sleep(until=%r) earlier current time (%g)" %
+                            (until, self.now))
+        else: time = until
+
+        self.cur_proc.sleep(time)
 
 
     def semaphore(self, initval=0):
@@ -268,7 +287,7 @@ class _Simulator:
     # run simulation
     #
     
-    def run(self, until = None, offset = None):
+    def run(self, offset = None, until = None):
         """Process the scheduled events.
 
         The method processes the events in timestamp order and
