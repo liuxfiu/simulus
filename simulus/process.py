@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2015
-# Last Update: Time-stamp: <2019-06-15 16:16:24 liux>
+# Last Update: Time-stamp: <2019-06-17 08:00:56 liux>
 ###############################################################
 
 # greenlet must be installed as additional python package
@@ -19,8 +19,9 @@ _PSTATE_TERMINATED    = 3
 class _Process(object):
     """A process is an independent thread of execution."""
 
-    def __init__(self, sim, func, params):
+    def __init__(self, sim, name, func, params):
         self.sim = sim
+        self.name = name
         self.params = params
         self.state = _PSTATE_STARTED
         self.main = None
@@ -70,7 +71,7 @@ class _Process(object):
         assert self.sim.cur_proc == self
         assert self.sim.now <= until
 
-        e = _ProcessEvent(until, self)
+        e = _ProcessEvent(until, self, self.name)
         self.sim.event_list.insert(e)
         self.deactivate(_PSTATE_SUSPENDED)
         self.main.switch()

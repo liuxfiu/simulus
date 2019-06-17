@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-16 22:40:44 liux>
+# Last Update: Time-stamp: <2019-06-17 07:55:34 liux>
 ###############################################################
 
 """A simulator instance.
@@ -79,7 +79,7 @@ class _Simulator:
 
         """
 
-        # fingure out the event time
+        # figure out the event time
         if until == None and offset == None:
             # if both are missing, it's now!
             time = self.now
@@ -136,7 +136,7 @@ class _Simulator:
 
         """
 
-        # fingure out the event time
+        # figure out the event time
         if until == None and offset == None:
             # if both are missing, it's now!
             e.time = self.now
@@ -182,20 +182,58 @@ class _Simulator:
     # process scheduling methods
     #
     
-    def process(self, proc, offset=None, until=None, params=None, **kargs):
+    def process(self, proc, name=None, offset=None, until=None, params=None, **kargs):
+        """Create and schedule a process.
+
+        A process in simulus is represented as a function invoked in
+        the simulated future.
+        
+        Pamameters 
+        ----------
+        proc: the starting function of the process; the function that
+                takes two arguments, the simulator and the user
+                parameters passed in as a dictionary
+
+        name (string): an optional name for the process
+
+        offset (float): relative time from now the process will start
+                running; if provided, must be a non-negative value
+
+        until (float): the absolute time of the process to start
+                running; if provided, must not be earlier than the
+                current time; note that either offset or until can be
+                used, but not both; if both are ignored, it's current
+                time by default
+
+        params (dict): an optional dictionary containing the user
+                parameters to be passed to the process when it's
+                started
+
+        kargs: optional keyword arguments, which will be folded into
+                params and passed to the process' starting function
+
+        Returns
+        -------
+        The method returns the process creation event (it's an opaque
+        object to the user); the user can print the event, cancel the
+        event, or even reschedule the event if necessary
+
+        """
+        
+        # figure out the time to start running the process
         if until == None and offset == None:
+            # if both are missing, it's now!
             time = self.now
         elif until != None and offset != None:
-            raise Exception("simulator.process(proc=%s, until=%r, offset=%r) duplicate time specification" %
-                            (proc.__name__, until, offset))
+            raise Exception("simulator.process(until=%r, offset=%r) duplicate specification" %
+                            (until, offset))
         elif offset != None:
             if offset < 0:
-                raise Exception("simulator.process(proc=%s, until=%r, offset=%r) negative offset" %
-                                (proc.__name__, until, offset))
+                raise Exception("simulator.process(offset=%r) negative offset" % offset)
             time = self.now + offset
         elif until < self.now:
-            raise Exception("simulator.process(proc=%s, until=%r, offset=%r) earlier than current time (%g)" %
-                            (proc.__name__, until, offset, self.now))
+            raise Exception("simulator.process(until=%r) earlier than current time (%g)" %
+                            (until, self.now))
         else: time = until
 
         # consolidate arguments
@@ -207,8 +245,10 @@ class _Simulator:
             except AttributeError:
                 raise Exception("simulator.process(): params must be a dictionary");
 
-        p = _Process(self, proc, params)
-        self.event_list.insert(_ProcessEvent(time, p))
+        p = _Process(self, name, proc, params)
+        e = _ProcessEvent(time, p, name)
+        self.event_list.insert(e)
+        return e
 
 
     def sleep(self, offset):
