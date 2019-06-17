@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-17 10:53:20 liux>
+# Last Update: Time-stamp: <2019-06-17 15:07:20 liux>
 ###############################################################
 
 """A simulator instance.
@@ -259,7 +259,7 @@ class _Simulator:
         
         # must be called within process context
         if self.cur_proc is None:
-            raise Exception("simulator.sleep(offset=%r) invoked outside process" % offset)
+            raise Exception("simulator.sleep(offset=%r) outside process context" % offset)
 
         # figure out the expected wakeup time
         if until == None and offset == None:

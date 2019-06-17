@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-06-15 10:54:47 liux>
+# Last Update: Time-stamp: <2019-06-17 15:06:36 liux>
 ###############################################################
 
 from collections import deque
@@ -23,7 +23,7 @@ class _Semaphore(object):
                 self.blocked.append(self.sim.cur_proc)
                 self.sim.cur_proc.suspend()
         else:
-            raise Exception("semaphore.wait() invoked outside process")
+            raise Exception("semaphore.wait() outside process context")
 
     def signal(self):
         self.val += 1
