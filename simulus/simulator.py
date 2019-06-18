@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-17 15:07:20 liux>
+# Last Update: Time-stamp: <2019-06-17 21:04:51 liux>
 ###############################################################
 
 """A simulator instance.
@@ -158,27 +158,6 @@ class _Simulator:
             raise Exception("simulator.resched() schedule not found")
 
 
-    def peek(self):
-        """Return the time of the next scheduled event or infinity if no
-                future events are available."""
-        
-        if len(self.event_list) > 0:
-            return self.event_list.get_min()
-        else:
-            return infinite_time
-
-        
-    def show_calendar(self):
-        """Print the list of all future events on the event list. This is an
-                expensive operation and should be used rarely and
-                possibly just for debugging purposes."""
-
-        print("list of future events (n=%d) at time %g on simulator %s:" %
-              (len(self.event_list), self.now, self.name if self.name else ''))
-        for e in sorted(self.event_list.pqueue.values()):
-            print("  %s" % e)
-
-
     #
     # process scheduling methods
     #
@@ -186,8 +165,11 @@ class _Simulator:
     def process(self, proc, offset=None, name=None, until=None, params=None, **kargs):
         """Create and schedule a process.
 
-        A process in simulus is represented as a function invoked in
-        the simulated future.
+        A process is a separate thread of control. During its
+        execution, a process can sleep for some time, or be blocked
+        until certain conditions are true. This method creates a
+        process (with a starting function) and schedule for it to run
+        in the simulated future (including now).
         
         Pamameters 
         ----------
@@ -215,9 +197,11 @@ class _Simulator:
 
         Returns
         -------
-        The method returns the process creation event (it's an opaque
-        object to the user); the user can print the event, cancel the
-        event, or even reschedule the event if necessary
+        The method returns the process created (it's an opaque object
+        to the user); the user can use it to check the state of the
+        process (whether it has been terminated), to terminate the
+        process, or to join the process (i.e., to wait for its
+        termination)
 
         """
         
@@ -249,11 +233,25 @@ class _Simulator:
         p = _Process(self, name, proc, params)
         e = _ProcessEvent(time, p, name)
         self.event_list.insert(e)
-        return e
+        return p
 
 
     def sleep(self, offset=None, until=None):
         """A process sleeps for a certain duration.
+
+        This method must be called within a process. The process will
+        be put on hold for the given period of time. It will resume
+        execution after the time period has passed.
+
+        Pamameters 
+        ----------
+        offset (float): relative time from now the process will be put
+                on hold; if provided, must be a non-negative value
+
+        until (float): the absolute time of the process to resume
+                execution; if provided, must not be earlier than the
+                current time; either offset or until must be provided,
+                but not both
 
         """
         
@@ -279,8 +277,15 @@ class _Simulator:
         self.cur_proc.sleep(time)
 
 
+    def join(self, proclist, method=all):
+        pass
+            
+
     def semaphore(self, initval=0):
         return _Semaphore(self, initval)
+
+    def semwait(self): pass
+    def semsignal(self): pass
 
 
     #
@@ -391,6 +396,27 @@ class _Simulator:
                 self.cur_proc.run()
             self.cur_proc = None
     
+
+    def peek(self):
+        """Return the time of the next scheduled event or infinity if no
+                future events are available."""
+        
+        if len(self.event_list) > 0:
+            return self.event_list.get_min()
+        else:
+            return infinite_time
+
+        
+    def show_calendar(self):
+        """Print the list of all future events on the event list. This is an
+                expensive operation and should be used rarely and
+                possibly just for debugging purposes."""
+
+        print("list of future events (n=%d) at time %g on simulator %s:" %
+              (len(self.event_list), self.now, self.name if self.name else ''))
+        for e in sorted(self.event_list.pqueue.values()):
+            print("  %s" % e)
+
 
     def __init__(self, name, init_time):
         self.name = name
