@@ -2,7 +2,7 @@ import simulus
 
 def print_params(s, x):
     print("print_params() invoked at time "+str(s.now))
-    print("  with msg:", x.get('msg', "hey, how can you forget the message"))
+    print("  with msg:", x.get('msg', "hey, how can you forget the message?"))
     print("  all arguments:", x)
     
 sim = simulus.simulator()

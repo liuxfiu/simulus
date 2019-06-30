@@ -1,7 +1,7 @@
 import simulus
 
 def handle(sim, params):
-    print("simulator '%s' handles event at time %g" % (sim.name, sim.now))
+    print("'%s' handles event at time %g" % (sim.name, sim.now))
 
 sim1 = simulus.simulator(name="sim1", init_time=100)
 sim2 = simulus.simulator(name="sim2", init_time=-100)

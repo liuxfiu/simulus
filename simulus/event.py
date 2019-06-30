@@ -1,20 +1,26 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-16 21:21:23 liux>
+# Last Update: Time-stamp: <2019-06-29 12:48:07 liux>
 ###############################################################
 
-"""Simulation event and event list."""
+"""Simulation event types and event list."""
 
-#import heapq
+from collections.abc import MutableMapping
 
-__all__ = ["_EventList", "_DirectEvent", "_ProcessEvent", \
+# ... requires the following:
+#   Trap()
+
+from .trap import *
+
+__all__ = ["_Event", "_DirectEvent", "_ProcessEvent", "_EventList", \
            "infinite_time", "minus_infinite_time"]
 
 
 # two extremes of simulation time
 infinite_time = float('inf')
 minus_infinite_time = float('-inf')
+
 
 # PQDict is PRIORITY QUEUE DICTIONARY (PYTHON RECIPE)
 # Created by Nezar Abdennur
@@ -39,8 +45,6 @@ minus_infinite_time = float('-inf')
 #       O(log n) updating of an arbitrary element's priority key
 # PQDict is modified to be used for our event list
  
-from collections.abc import MutableMapping
-
 class _MinEntry(object):
     """
     Mutable entries for a Min-PQ dictionary.
@@ -233,12 +237,18 @@ class _Event(object):
     def __init__(self, time, name=None):
         self.time = time
         self.name = name
+        self.trap = None
 
     def __str__(self):
-        return "event[%s]:%g" % (self.name if self.name else id(self), self.time)
+        return "Event[%s]:%g" % (self.name if self.name else id(self), self.time)
 
     def __lt__(self, other):
         return self.time < other.time
+
+    def get_trap(self, sim):
+        if self.trap is None:
+            self.trap = Trap(sim)
+        return self.trap
 
     
 class _DirectEvent(_Event):
@@ -251,9 +261,15 @@ class _DirectEvent(_Event):
         self.repeat_intv = repeat_intv
 
     def __str__(self):
-        return "direct[%s]:%g%s" % \
+        return "DirectEvent[%s]:%g%s" % \
             (self.name if self.name else id(self), self.time,
              " (repeat_intv=%d)"%self.repeat_intv if self.repeat_intv else "")
+
+    def renew(self, time):
+        self.time = time
+        self.trap = None # trap cannot be reused
+        return self
+
 
 class _ProcessEvent(_Event):
     """The event type for process scheduling."""
@@ -263,7 +279,7 @@ class _ProcessEvent(_Event):
         self.proc = proc
 
     def __str__(self):
-        return "proc[%s]:%g" % (self.name, self.time)
+        return "ProcessEvent[%s]:%g" % (self.name, self.time)
 
 
 class _EventList(object):
@@ -289,7 +305,7 @@ class _EventList(object):
             #heapq.heappush(self.pqueue, (evt.time, id(evt), evt))
             self.pqueue[id(evt)] = evt
         else:
-            raise Exception("eventlist.insert(%s): past event (last=%g)" %
+            raise Exception("EventList.insert(%s): past event (last=%g)" %
                             (evt, self.last))
 
     def get_min(self):
@@ -298,7 +314,7 @@ class _EventList(object):
             x, e = self.pqueue.peek()
             return e.time  # just return the time
         else:
-            raise Exception("eventlist.get_min() from empty list")
+            raise Exception("EventList.get_min() from empty list")
 
     def delete_min(self):
         if len(self.pqueue) > 0:
@@ -310,87 +326,22 @@ class _EventList(object):
             self.last = e.time
             return e
         else:
-            raise Exception("eventlist.delete_min() from empty list")
+            raise Exception("EventList.delete_min() from empty list")
 
     def cancel(self, evt):
         if id(evt) not in self.pqueue:
-            raise Exception("eventlist.cancel(%s): event not found" % evt)
+            raise Exception("EventList.cancel(%s): event not found" % evt)
         del self.pqueue[id(evt)]
 
     def update(self, evt):
         if id(evt) not in self.pqueue:
-            raise Exception("eventlist.update(%s): event not found" % evt)
+            raise Exception("EventList.update(%s): event not found" % evt)
         if self.last <= evt.time:
             self.pqueue[id(evt)] = evt
         else:
-            raise Exception("eventlist.update(%s): past event (last=%g)" %
+            raise Exception("EventList.update(%s): past event (last=%g)" %
                             (evt, self.last))
 
-
-## ------------------------------------------------------------
-
-from random import randrange
-
-def _test():
-    el = _EventList()
-    
-    es = [_Event(randrange(100)) for _ in range(5)]
-    for e in es:
-        el.insert(e)
-        print("insert(e): %s" % e)
-
-    el.cancel(es[0])
-    print("cancel(e): %s" % es[0])
-
-    es[1].time = 80
-    el.update(es[1])
-    print("update(e): %s" % es[1])
-    
-    while len(el)>0:
-        t = el.get_min()
-        print("get_min(): %g" % t)
-        e = el.delete_min()
-        print("delete_min(): %s" % e)
-
-    try:
-        el.cancel(es[0])
-        print("cancel(e): %s" % es[0])
-    except Exception as ex:
-        print("ERROR:", ex)
-
-    try:
-        es[1].time = 80
-        el.update(es[1])
-        print("update(e): %s" % es[1])
-    except Exception as ex:
-        print("ERROR:", ex)
-    
-    try:
-        e = _Event(10, "x")
-        el.insert(e)
-        print("insert(e): %s" % e)
-    except Exception as ex:
-        print("ERROR:", ex)
-
-    e = _Event(5000, "y")
-    el.insert(e)
-    print("insert(e): %s" % e)
-
-    e = el.delete_min()
-    print("delete_min(): %s" % e)
-        
-    try:
-        t = el.get_min()
-        print("get_min(): %g" % t)
-    except Exception as ex:
-        print("ERROR:", ex)
-
-    try:
-        e = el.delete_min()
-        print("delete_min(): %s" % e)
-    except Exception as ex:
-        print("ERROR:", ex)
-    
-if __name__ == '__main__':
-    _test()
-
+    def current_event(self, evt):
+        # check whether the event is current
+        return id(evt) in self.pqueue
