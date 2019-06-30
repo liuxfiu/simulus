@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-29 21:19:30 liux>
+# Last Update: Time-stamp: <2019-06-30 12:12:28 liux>
 ###############################################################
 
 from collections import deque
@@ -298,6 +298,15 @@ class Simulator:
         return p
 
 
+    def cur_process(self):
+        """Return the current running process or None if we are not in a
+        process context."""
+        
+        assert self._theproc is None or \
+            self._theproc.state == _Process.STATE_RUNNING
+        return self._theproc
+
+    
     def terminated(self, p=None):
         """Check whether a process has terminated. 
 
@@ -313,7 +322,7 @@ class Simulator:
             if not isinstance(p, _Process):
                 raise Exception("Simulator.terminated(p=%r) not a process" % p)
         else:
-            p = self._proc_context()
+            p = self.cur_process()
             if p is None:
                 raise Exception("Simulator.terminated() outside process context")
         return p.state == _Process.STATE_TERMINATED
@@ -342,7 +351,7 @@ class Simulator:
             # otherwise, it's already killed; we do nothing
         else:
             # kill oneself
-            p = self._proc_context()
+            p = self.cur_process()
             if p is None:
                 raise Exception("Simulator.kill() outside process context")
             p.terminate()
@@ -435,7 +444,7 @@ class Simulator:
         """
         
         # must be called within process context
-        p = self._proc_context()
+        p = self.cur_process()
         if p is None:
             raise Exception("Simulator.sleep() outside process context")
 
@@ -463,7 +472,7 @@ class Simulator:
     def wait(self, traps, offset=None, until=None, method=all):
 
         # must be called within process context
-        p = self._proc_context()
+        p = self.cur_process()
         if p is None:
             raise Exception("Simulator.wait() outside process context")
 
@@ -526,7 +535,7 @@ class Simulator:
         
     def join(self, procs, method=all):
         # must be called within process context
-        p = self._proc_context()
+        p = self.cur_process()
         if p is None:
             raise Exception("Simulator.join() outside process context")
 
@@ -659,15 +668,6 @@ class Simulator:
         self._ready = deque()
 
 
-    def _proc_context(self):
-        """Return the current running process or None if we are not in a
-        process context."""
-        
-        assert self._theproc is None or \
-            self._theproc.state == _Process.STATE_RUNNING
-        return self._theproc
-
-    
     def _one_event(self):
         """Process one event on the event list, assuming there is a least one
         event on the event list."""

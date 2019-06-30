@@ -1,11 +1,11 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-06-29 21:18:41 liux>
+# Last Update: Time-stamp: <2019-06-30 12:13:01 liux>
 ###############################################################
 
 # ... requires the following:
-#   Simulator._proc_context()
+#   Simulator.cur_process()
 #   _Process.acting_trappables
 #   _Process.get_actcnt()
 #   _Process.inc_actcnt()
@@ -70,7 +70,7 @@ class Trap(_Trappable):
         """A process waits on the trap."""
 
         # we must be in the process context
-        p = self.sim._proc_context()
+        p = self.sim.cur_process()
         if p is None:
             raise Exception("Trap.wait() outside process context")
 
@@ -102,7 +102,7 @@ class Trap(_Trappable):
         """
 
         # we must be in the process context
-        p = self.sim._proc_context()
+        p = self.sim.cur_process()
         if p is None:
             raise Exception("Trap._try_wait() outside process context")
 

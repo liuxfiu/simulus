@@ -3,7 +3,7 @@ import simulus
 from random import seed, expovariate, gauss
 seed(12345)
 
-def work(sim, params):
+def student(sim, params):
     student_id = params.get("student_id")
     print("student %d starts to work at %g" % 
           (student_id, sim.now))
@@ -19,7 +19,7 @@ def homework(sim, params):
     # time (exponentially distributed with mean of 10)
     students = []
     for i in range(5):
-        s = sim.process(work, expovariate(1/10.), student_id=i)
+        s = sim.process(student, expovariate(1/10.), student_id=i)
         students.append(s)
     # wait for all student processes to complete
     sim.join(students)

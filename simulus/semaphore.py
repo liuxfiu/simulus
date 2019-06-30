@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-06-29 20:10:04 liux>
+# Last Update: Time-stamp: <2019-06-30 12:18:48 liux>
 ###############################################################
 
 from collections import deque
@@ -9,7 +9,7 @@ import heapq, random
 
 # ... requires the following:
 #   _Trappable
-#   Simulator._proc_context()
+#   Simulator.cur_process()
 #   _Process.acting_trappables
 #   _Process.get_actcnt()
 #   _Process.inc_actcnt()
@@ -99,7 +99,7 @@ class Semaphore(_Trappable):
         negative, the process needs to be blocked."""
         
         # we must be in the process context
-        p = self.sim._proc_context()
+        p = self.sim.cur_process()
         if p is None:
             raise Exception("Semaphore.wait() outside process context")
 
@@ -147,7 +147,7 @@ class Semaphore(_Trappable):
         """
         
         # we must be in the process context
-        p = self.sim._proc_context()
+        p = self.sim.cur_process()
         if p is None:
             raise Exception("Semaphore._try_wait() outside process context")
 
@@ -190,12 +190,12 @@ class Semaphore(_Trappable):
             if self.qdis == Semaphore.QDIS_FIFO:
                 p, cnt = self.blocked.popleft()
             elif self.qdis == Semaphore.QDIS_LIFO:
-                p, cnt = self.blocked.popright()
+                p, cnt = self.blocked.pop()
             elif self.qdis == Semaphore.QDIS_RANDOM:
                 p, cnt = self.blocked.pop()
             else:
                 # Semaphore.QDIS_PRIORITY
-                p, cnt = heapq.heappop(self.blocked)[-2]
+                p, cnt = heapq.heappop(self.blocked)[-2:]
                 
             # we resume the process only when it has not been
             # activated previously (since a process may simultaneously
