@@ -2,3 +2,5 @@
 *.pyc
 */.ipynb_checkpoints
 */__pycache__
+build
+simulus.egg-info

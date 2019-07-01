@@ -1,0 +1,10 @@
+# include the markdown files
+include *.md
+
+# include the license file
+include LICENSE
+
+# include examples and documents
+recursive-include examples *.py
+recursive-include doc *.ipynb
+prune doc/.ipynb_checkpoints
