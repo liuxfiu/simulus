@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-29 12:48:07 liux>
+# Last Update: Time-stamp: <2019-07-01 12:12:23 liux>
 ###############################################################
 
 """Simulation event types and event list."""
@@ -250,7 +250,7 @@ class _Event(object):
             self.trap = Trap(sim)
         return self.trap
 
-    
+
 class _DirectEvent(_Event):
     """The event type for direct event scheduling."""
 

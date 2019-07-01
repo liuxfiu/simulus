@@ -1,21 +1,11 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-29 21:17:53 liux>
+# Last Update: Time-stamp: <2019-07-01 13:44:56 liux>
 ###############################################################
 
 # greenlet must be installed as additional python package
 from greenlet import greenlet
-
-# ... requires the following:
-#   sim._ready
-#   sim._theproc
-#   sim.now
-#   sim.event_list
-#   _ProcessEvent()
-#   _EventList.insert()
-#   Trap()
-#   Trap.trigger()
 
 from .event import *
 from .trap import *
@@ -46,7 +36,6 @@ class _Process(object):
         self.main = None
         self.vert = greenlet(self.invoke)
         self.priority = None
-        self.actcnt = None
         self.trap = None
         self.acting_trappables = []
 
@@ -164,25 +153,21 @@ class _Process(object):
    
 
     def get_priority(self):
+        """Set the priority of the process."""
         if self.priority is None:
             self.priority = 0
         return self.priority
 
+
     def set_priority(self, v):
+        """Set the priority of the process."""
         self.priority = v
 
-    def get_actcnt(self):
-        if self.actcnt is None:
-            self.actcnt = 0
-        return self.actcnt
-
-    def inc_actcnt(self):
-        if self.actcnt is None:
-            self.actcnt = 1
-        else:
-            self.actcnt += 1
 
     def get_trap(self):
+        """Return the trap for the process' termination. Create one if it
+        hasn't been accessed before."""
+        
         if self.trap is None:
             self.trap = Trap(self.sim)
         return self.trap

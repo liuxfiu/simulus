@@ -1,42 +1,10 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-06-30 12:12:28 liux>
+# Last Update: Time-stamp: <2019-07-01 14:36:28 liux>
 ###############################################################
 
 from collections import deque
-
-# ... requires the following:
-#   _Event
-#   _Event.trap
-#   _Event.get_trap()
-#   _DirectEvent()
-#   _DirectEvent.repeat_intv
-#   _DirectEvent.func
-#   _DirectEvent.params
-#   _DirectEvent.renew()
-#   _ProcessEvent()
-#   _ProcessEvent.proc
-#   _EventList.last
-#   _EventList.insert()
-#   _EventList.cancel()
-#   _EventList.update()
-#   _EventList.current_event()
-#   _EventList.get_min()
-#   _EventList.delete_min()
-#   _Process
-#   _Process.STATE_*
-#   _Process.state
-#   _Process()
-#   _Process.activate()
-#   _Process.deactivate()
-#   _Process.get_trap()
-#   _Process.terminate()
-#   _Trappable
-#   Trap()
-#   Trap.trigger()
-#   Semaphore()
-#   Semaphore.QDIS_*
 
 from .trap import *
 from .semaphore import *
@@ -78,7 +46,7 @@ class Simulator:
         An event in simulus is represented as a function invoked in
         the simulated future.
         
-        Pamameters 
+        Parameters 
         ----------
         func: the event handler, which is a function that takes two
                 arguments: a simulator instance and the user
@@ -233,7 +201,7 @@ class Simulator:
         run (from a starting function) in the simulated future
         (including now).
         
-        Pamameters 
+        Parameters 
         ----------
         proc: the starting function of the process; the function that
                 takes two arguments: a simulator instance and the user
@@ -299,7 +267,7 @@ class Simulator:
 
 
     def cur_process(self):
-        """Return the current running process or None if we are not in a
+        """Return the current running process, or None if we are not in a
         process context."""
         
         assert self._theproc is None or \
@@ -391,14 +359,15 @@ class Simulator:
        If no argument is provided, a new trap will be created and
        returned. 
 
-       If the argument is a process (returned from the process()
-       method), the trap associated with the termination of the
-       process will be returned.
+       If the argument is a process (returned from the process() or
+       cur_Process() method), the trap associated with the termination
+       of the process will be returned.
 
-       If the argument is an event (returned from the sched() or the
+       If the argument is an event (returned from the sched() or
        resched() method), a trap associated with the event's
        activation will be returned. The event must be a currently
-       scheduled event (not one from the past).
+       scheduled event (not one from the past), or an exception will
+       be raised.
 
        """
 
@@ -424,10 +393,10 @@ class Simulator:
         execution after the time period has passed.
 
         Note that sleep cannot be interrupted, although the process
-        can be killed by another process. For interruptable sleep, use
-        the wait() method.
+        can be killed by another process when it's asleep. For
+        interruptable sleep, use the wait() method.
 
-        Pamameters 
+        Parameters 
         ----------
         offset (float): relative time from now until which the process
                 will be put on hold; if provided, it must be a
@@ -470,16 +439,70 @@ class Simulator:
 
 
     def wait(self, traps, offset=None, until=None, method=all):
+        """A process blocks on trappables for certain time.
+
+        This method must be called within a process context (not in an
+        event handler or in the main function). The process will be
+        put on hold for one or a list of trappables and for a given
+        amount of time (if specified). The process will resume
+        execution after conditions are met.
+
+        Parameters
+        ----------
+        traps: either a trappable (a trap, semaphore, or other
+                facilities) or a list/tuple of trappables
+
+        offset (float): relative time from now until which the process
+                will be put on hold at the latest; if provided, it
+                must be a non-negative value
+
+        until (float): the absolute time at which the process is
+                expected to resume execution at the latest; if
+                provided, it must not be earlier than the current
+                time; either 'offset' or 'until' must be provided, but
+                not both; if both 'offset' and 'until' are ignored,
+                there will be no time limit on the wait
+
+        method: can be either 'all' (the default) or 'any'; if 'all',
+                all trappables must be triggered before this process
+                can resume execution (or timed out); if 'any', one of
+                the trappables must be triggered before this process
+                can resume execution (or timed out); this parameter
+                has no effect if only one trappable (not the list) is
+                provided as the first argument
+
+        Returns
+        -------
+        The return value of this method is a tuple with two elements:
+        the first element of the tuple is to indicate whether the
+        trappables have been triggered or not; the second element of
+        tuple is to indicate whether timeout happens.
+
+        If the first argument when calling this method is only one
+        trappable (not in a list or tuple), the first element of the
+        returned tuple will be simply True or False depending on the
+        trappable has been triggered or not.
+
+        If the first argument when calling this method is a list or a
+        tuple of trappables, the first element of the returned tuple
+        will be a list of booleans where each element of the list
+        indicates whether the corresponding trappable has been
+        triggered or not.
+
+        """
 
         # must be called within process context
         p = self.cur_process()
         if p is None:
             raise Exception("Simulator.wait() outside process context")
 
-        # sanity check the list of trappables
+        # sanity check of the first argument: a trappable or a
+        # list/tuple of trappables
         if isinstance(traps, _Trappable):
+            single_trappable = True
             traps = [traps]
         elif isinstance(traps, (list, tuple)):
+            single_trappable = False
             if len(traps) == 0:
                 raise Exception("Simulator.wait() empty trappables")
             for t in traps:
@@ -503,37 +526,86 @@ class Simulator:
                             (until, self.now))
         else: time = until
 
+        # only two methods are allowed
         if method != all and method != any:
             raise Exception("Simulator.wait() unknown method")
 
         # a mask indicating whether the corresponding trap has been
         # triggered (i.e., no need to wait) or not
-        p.acting_trappables.clear()
         trigged = [not t._try_wait() for t in traps]
+        
+        timedout = False
+        e = None # this is the timeout event
+
+        p.acting_trappables.clear()
         while not method(trigged):
-            # the wait hasn't been satisfied; the process is suspended
+            # the wait hasn't been satisfied; the process shall be
+            # suspended
+            
+            # make sure we schedule the timeout event, only once
+            if e is not None and time < infinite_time:
+                e = _ProcessEvent(time, p, p.name)
+                self.event_list.insert(e)
+            
             p.suspend()
 
             # update the mask (this is a circuitous way to find out
             # which trap in the list of traps is responsible for
             # unblocking the process this time)
             for t in p.acting_trappables:
-                # if the acting trappable is not in expected list
-                # of traps, something is wrong
+                # if the acting trappables are not in expected list of
+                # traps, something is wrong (in which case an
+                # exception will be raised)
                 i = traps.index(t)
                 trigged[i] = True
             p.acting_trappables.clear()
 
-        # this is a safety feature: so that no other traps in the list
-        # can activate this process again
-        p.inc_actcnt()
+            # check if we are timed out
+            if e is not None and not self.event_list.current_event(e):
+                timedout = True
+                break
+            
+        # cancel the future timeout event
+        if e is not None and not timedout:
+            self.event_list.cancel(e)
 
-        # the wait has been satisfied, return untrigged trappables
-        r = [t for i, t in enumerate(traps) if not trigged[i]]
-        return r
+        # cancel the try-wait for those untriggered trappables
+        [t._cancel_try_wait() for i, t in enumerate(traps) if not trigged[i]]
+         
+        # the wait has been satisfied, return accordingly
+        if single_trappable:
+            return trigged[0], timedout
+        else:
+            return trigged, timedout
+        #r = [t for i, t in enumerate(traps) if not trigged[i]]
         
         
     def join(self, procs, method=all):
+        """Wait until the process(es) are finished. This 
+
+        This method must be called within a process context (not in an
+        event handler or in the main function). The process will be
+        put on hold until the processes specified in the first
+        argument have finished.
+
+        Parameters 
+        ----------
+        procs: either a process (returned from process() or
+                cur_process()) or a list/tuple of processes
+
+        method: can be either 'all' (the default) or 'any'; if 'all',
+                all processes must be finished before this process can
+                resume execution; if 'any', one of the processes must
+                be finished before this process can resume execution
+
+        This method does not return a value. When it returns, the
+        process has already resumed execution. That is, one process
+        (in case of 'any') or all (in case of 'all') processes have
+        funished execution. If using 'any', one may use the
+        terminated() method to find out which process(es) are done.
+
+        """
+        
         # must be called within process context
         p = self.cur_process()
         if p is None:
@@ -556,7 +628,7 @@ class Simulator:
             raise Exception("Simulator.join() unknown method")
 
         self.wait(traps, method=method)
-        
+
 
     ######################
     # running simulation #
@@ -568,7 +640,7 @@ class Simulator:
         This method processes the events in timestamp order and
         advances the simulation time accordingly.
 
-        Pamameters 
+        Parameters 
         ----------
         offset (float): relative time from now until which the
                 simulator should advance its simulation time; if

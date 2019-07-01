@@ -1,21 +1,11 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-06-30 12:18:48 liux>
+# Last Update: Time-stamp: <2019-07-01 13:42:45 liux>
 ###############################################################
 
 from collections import deque
 import heapq, random
-
-# ... requires the following:
-#   _Trappable
-#   Simulator.cur_process()
-#   _Process.acting_trappables
-#   _Process.get_actcnt()
-#   _Process.inc_actcnt()
-#   _Process.get_priority()
-#   _Process.suspend()
-#   _Process.activate()
 
 from .trap import _Trappable
 
@@ -108,9 +98,9 @@ class Semaphore(_Trappable):
             # enqueue the process and suspend it
             if self.qdis == Semaphore.QDIS_FIFO or \
                self.qdis == Semaphore.QDIS_LIFO:
-                self.blocked.append((p, p.get_actcnt()))
+                self.blocked.append(p)
             elif self.qdis == Semaphore.QDIS_RANDOM:
-                self.blocked.append((p, p.get_actcnt()))
+                self.blocked.append(p)
                 # when we add a new process, we shuffle it with an
                 # existing one in the blocked list
                 l = len(self.blocked)
@@ -123,11 +113,9 @@ class Semaphore(_Trappable):
                             self.blocked[-1], self.blocked[i] 
             else:
                 # Semaphore.QDIS_PRIORITY
-                heapq.heappush(self.blocked, (p.get_priority(), id(p), p, p.get_actcnt()))
+                heapq.heappush(self.blocked, (p.get_priority(), id(p), p))
             assert len(self.blocked) == -self.val
             p.suspend()
-            # so that no other waits can activate the process
-            p.inc_actcnt()
         else:
             # nothing to be done; there are no waiting processes
             assert len(self.blocked) == 0
@@ -156,9 +144,9 @@ class Semaphore(_Trappable):
             # enqueue the process and suspend it
             if self.qdis == Semaphore.QDIS_FIFO or \
                self.qdis == Semaphore.QDIS_LIFO:
-                self.blocked.append((p, p.get_actcnt()))
+                self.blocked.append(p)
             elif self.qdis == Semaphore.QDIS_RANDOM:
-                self.blocked.append((p, p.get_actcnt()))
+                self.blocked.append(p)
                 # when we add a new process, we shuffle it with an
                 # existing one in the blocked list
                 l = len(self.blocked)
@@ -171,13 +159,50 @@ class Semaphore(_Trappable):
                             self.blocked[-1], self.blocked[i] 
             else:
                 # Semaphore.QDIS_PRIORITY
-                heapq.heappush(self.blocked, (p.get_priority(), id(p), p, p.get_actcnt()))
+                heapq.heappush(self.blocked, (p.get_priority(), id(p), p))
             assert len(self.blocked) == -self.val
             return True
         else:
             # nothing to be done; there are no waiting processes
             assert len(self.blocked) == 0
             return False
+        
+
+    def _cancel_try_wait(self):
+        """Cancel the previous try-wait.
+        
+        This function is supposed to be called by the simulator's
+        wait() function, and should not be called by users directly.
+        This function is called when somehow the try-wait didn't
+        happen (because of timeout or because the some other wait
+        condition has been fulfilled (e.g., the process may wait on a
+        set of trappables and one of them, other than this one, has
+        been triggered).
+
+        """
+        
+        # we must be in the process context
+        p = self.sim.cur_process()
+        if p is None:
+            raise Exception("Semaphore._cancel_try_wait() outside process context")
+
+        # at least this process is currently waiting, so the semaphore
+        # value must be negative
+        assert self.val < 0
+
+        # we are going to remove this process from the waiting queue,
+        # so the semaphore value needs to be bumped back up
+        self.val += 1
+        if self.qdis != Semaphore.QDIS_PRIORITY:
+            self.blocked.remove(p)
+        else:
+            for i in len(self.blocked):
+                if p == self.blocked[i][2]:
+                    self.blocked[i] = self.blocked[-1]
+                    self.blocked.pop()
+                    if i < len(self.blocked):
+                        heapq._siftup(self.blocked, i)
+                        heapq._siftdown(self.blocked, 0, i)
         
 
     def signal(self):
@@ -188,24 +213,18 @@ class Semaphore(_Trappable):
         if len(self.blocked) > 0:
             # there're waiting processes, we unblock one
             if self.qdis == Semaphore.QDIS_FIFO:
-                p, cnt = self.blocked.popleft()
+                p = self.blocked.popleft()
             elif self.qdis == Semaphore.QDIS_LIFO:
-                p, cnt = self.blocked.pop()
+                p = self.blocked.pop()
             elif self.qdis == Semaphore.QDIS_RANDOM:
-                p, cnt = self.blocked.pop()
+                p = self.blocked.pop()
             else:
                 # Semaphore.QDIS_PRIORITY
-                p, cnt = heapq.heappop(self.blocked)[-2:]
+                p = heapq.heappop(self.blocked)[-1]
                 
-            # we resume the process only when it has not been
-            # activated previously (since a process may simultaneously
-            # wait on multiple traps and semaphores)
-            if p.get_actcnt() == cnt:
-                p.acting_trappables.append(self)
-                p.activate()
+            p.acting_trappables.append(self)
+            p.activate()
 
-
+            
     # create an alias method
     trigger = signal
-
-

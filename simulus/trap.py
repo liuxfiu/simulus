@@ -1,16 +1,8 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-06-30 12:13:01 liux>
+# Last Update: Time-stamp: <2019-07-01 13:42:28 liux>
 ###############################################################
-
-# ... requires the following:
-#   Simulator.cur_process()
-#   _Process.acting_trappables
-#   _Process.get_actcnt()
-#   _Process.inc_actcnt()
-#   _Process.suspend()
-#   _Process.activate()
 
 __all__ = ["_Trappable", "Trap"]
 
@@ -78,10 +70,8 @@ class Trap(_Trappable):
            self.state == Trap.TRAP_SET:
             # when the trap is unset or set, suspend the process
             self.state = Trap.TRAP_SET
-            self.blocked.append((p, p.get_actcnt()))
+            self.blocked.append(p)
             p.suspend()
-            # so that no other waits can activate the process
-            p.inc_actcnt()
         else:
             # nothing to be done when the trap is sprung; there are no
             # blocked processes
@@ -110,7 +100,7 @@ class Trap(_Trappable):
            self.state == Trap.TRAP_SET:
             # when the trap is unset or set, suspend the process
             self.state = Trap.TRAP_SET
-            self.blocked.append((p, p.get_actcnt()))
+            self.blocked.append(p)
             return True
         else:
             # nothing to be done when the trap is sprung; there are no
@@ -119,6 +109,32 @@ class Trap(_Trappable):
             return False
 
 
+    def _cancel_try_wait(self):
+        """Cancel the previous try-wait.
+        
+        This function is supposed to be called by the simulator's
+        wait() function, and should not by the users directly. This
+        function is called when somehow the try-wait didn't happen
+        (because of timeout or because the some other wait condition
+        has been fulfilled (e.g., the process may wait on a set of
+        trappables and one of them, other than this one, has been
+        triggered).
+
+        """
+
+        # we must be in the process context
+        p = self.sim.cur_process()
+        if p is None:
+            raise Exception("Trap._cancel_try_wait() outside process context")
+        
+        # the trap must have been set previously
+        assert self.state == Trap.TRAP_SET
+
+        # after cancel, there's no need to unset it (given the one
+        # direction of the state flow of a trap)
+        self.blocked.remove(p)
+
+                
     def trigger(self):
         """Triggering a trap would unblock all waiting processes."""
         
@@ -134,12 +150,7 @@ class Trap(_Trappable):
             # blocked by the trap
             self.state = Trap.TRAP_SPRUNG
             assert len(self.blocked) > 0
-            for p, cnt in self.blocked:
-                # we resume the process only when it has not been
-                # activated previously (since a process may
-                # simultaneously wait on multiple traps and
-                # semaphores)
-                if p.get_actcnt() == cnt:
-                    p.acting_trappables.append(self)
-                    p.activate()
+            for p in self.blocked:
+                p.acting_trappables.append(self)
+                p.activate()
             self.blocked.clear()

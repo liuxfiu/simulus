@@ -6,5 +6,5 @@ include LICENSE
 
 # include examples and documents
 recursive-include examples *.py
-recursive-include doc *.ipynb
-prune doc/.ipynb_checkpoints
+recursive-include docs *.ipynb
+prune docs/.ipynb_checkpoints
