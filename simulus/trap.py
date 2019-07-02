@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-01 13:42:28 liux>
+# Last Update: Time-stamp: <2019-07-02 05:28:01 liux>
 ###############################################################
 
 __all__ = ["_Trappable", "Trap"]
@@ -130,9 +130,9 @@ class Trap(_Trappable):
         # the trap must have been set previously
         assert self.state == Trap.TRAP_SET
 
-        # after cancel, there's no need to unset it (given the one
-        # direction of the state flow of a trap)
         self.blocked.remove(p)
+        if len(self.blocked) == 0:
+            self.state = Trap.TRAP_UNSET
 
                 
     def trigger(self):

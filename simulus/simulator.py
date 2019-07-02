@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-01 22:43:51 liux>
+# Last Update: Time-stamp: <2019-07-02 05:29:47 liux>
 ###############################################################
 
 from collections import deque
@@ -654,13 +654,13 @@ class Simulator:
         if both 'offset' and 'until' are ignored, the simulator will
         run as long as there are events on the event list. Be careful,
         in this case, the simulator may run forever for some models as
-        there are always events scheduled in the future.
+        there could always be events scheduled in the future.
 
         The simulator will process all events in timestamp order. When
         the method returns, the simulation time will advance to the
-        designated time, if either 'offset' or 'until' is
-        specified. Otherwise, the simulator will advance to the time
-        of the last event.
+        designated time, if either 'offset' or 'until' is specified.
+        Otherwise, the simulator will advance to the time of the last
+        event.
 
         """
 

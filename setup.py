@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="simulus",
-    version="1.0.3",
+    version="1.0.4",
     author="Jason Liu",
     author_email="jasonxliu2010@gmail.com",
     description="A discrete-event simulator in Python",
