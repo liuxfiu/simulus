@@ -1,6 +1,0 @@
-The following tools are used for testing simulus during development:
-* tox
-* pytest
-* cookiecutter (not yet)
-* virtualenv
-

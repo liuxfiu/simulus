@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-01 14:36:28 liux>
+# Last Update: Time-stamp: <2019-07-01 22:43:51 liux>
 ###############################################################
 
 from collections import deque
@@ -459,7 +459,7 @@ class Simulator:
         until (float): the absolute time at which the process is
                 expected to resume execution at the latest; if
                 provided, it must not be earlier than the current
-                time; either 'offset' or 'until' must be provided, but
+                time; either 'offset' or 'until' can be provided, but
                 not both; if both 'offset' and 'until' are ignored,
                 there will be no time limit on the wait
 
@@ -543,7 +543,7 @@ class Simulator:
             # suspended
             
             # make sure we schedule the timeout event, only once
-            if e is not None and time < infinite_time:
+            if e is None and time < infinite_time:
                 e = _ProcessEvent(time, p, p.name)
                 self.event_list.insert(e)
             

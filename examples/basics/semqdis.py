@@ -17,7 +17,7 @@ def p(sim, params):
     print("p[id=%d,prio=%.1f] resumes at %f" % 
           (idx, sim.cur_process().get_priority(), sim.now))
 
-def test(sim, params):
+def trywaits(sim, params):
     sem = params['sem']
 
     # create ten processes which will all block on the semaphore
@@ -35,8 +35,8 @@ s1 = sim.semaphore()
 s2 = sim.semaphore(qdis=simulus.Semaphore.QDIS_LIFO)
 s3 = sim.semaphore(qdis=simulus.Semaphore.QDIS_RANDOM)
 s4 = sim.semaphore(qdis=simulus.Semaphore.QDIS_PRIORITY)
-sim.process(test, 0, sem=s1)
-sim.process(test, 100, sem=s2)
-sim.process(test, 200, sem=s3)
-sim.process(test, 300, sem=s4)
+sim.process(trywaits, 0, sem=s1)
+sim.process(trywaits, 100, sem=s2)
+sim.process(trywaits, 200, sem=s3)
+sim.process(trywaits, 300, sem=s4)
 sim.run()
