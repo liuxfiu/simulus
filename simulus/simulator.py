@@ -1,22 +1,23 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-02 05:29:47 liux>
+# Last Update: Time-stamp: <2019-07-02 14:41:59 liux>
 ###############################################################
 
 from collections import deque
 
+from .utils import *
 from .trap import *
 from .semaphore import *
+from .resource import *
 from .event import *
 from .process import *
 
-__all__ = ["simulator", "sync", "infinite_time", "minus_infinite_time"]
+__all__ = ["simulator", "sync", "infinite_time", "minus_infinite_time", "QDIS"]
 
 
 # a map from names to simulator instances
 _named_simulators = {}
-
 
 class Simulator:
     """A simulator instance.
@@ -325,7 +326,7 @@ class Simulator:
             p.terminate()
 
             
-    def semaphore(self, initval=0, qdis=Semaphore.QDIS_FIFO):
+    def semaphore(self, initval=0, qdis=QDIS.FIFO):
         """Create a semaphore for inter-process communication.
 
         Parameters
@@ -334,10 +335,10 @@ class Simulator:
                 the default is zero
 
         qdis : the queuing discipline for the waiting processes, which
-                can be selected from Semaphore.QDIS_FIFO (first in
-                first out), Semaphore.QDIS_LIFO (last in first out),
-                Semaphore.QDIS_RANDOM (random ordering), or
-                Semaphore.QDIS_PRIORITY (based on process priority)
+                can be selected from QDIS.FIFO (first in
+                first out), QDIS.LIFO (last in first out),
+                QDIS.RANDOM (random ordering), or
+                QDIS.PRIORITY (based on process priority)
 
         Returns
         -------
@@ -347,8 +348,8 @@ class Simulator:
 
         if initval < 0:
             raise Exception("Simulator.semaphore(initval=%r) negative init value" % initval)
-        if qdis < Semaphore.QDIS_FIFO or \
-           qdis > Semaphore.QDIS_PRIORITY:
+        if qdis < QDIS.FIFO or \
+           qdis > QDIS.PRIORITY:
             raise Exception("Simulator.semaphore(qdis=%r) unknown queuing discipline" % qdis)
         return Semaphore(self, initval, qdis)
 
@@ -382,6 +383,38 @@ class Simulator:
                raise Exception("Simulator.trap(o=%r) stale event" % o)
        else:
            raise Exception("Simulator.trap(o=%r) unknown object" % o)
+
+
+    def resource(self, name=None, capacity=1, qdis=QDIS.FIFO, qstats=None):
+        """Create a resource.
+
+        Parameters
+        ----------
+        name (string): the name of the resource (useful for printout)
+
+        capacity (int): the capacity of the resource; the value must
+                be positive; the default is one
+
+        qdis : the queuing discipline for the waiting processes, which
+                can be selected from QDIS.FIFO (first in first out),
+                QDIS.LIFO (last in first out), QDIS.RANDOM (random
+                ordering), or QDIS.PRIORITY (based on process
+                priority)
+
+        qstats: for statistics collection 
+
+        Returns
+        -------
+        This method returns the newly created resource.
+
+        """
+
+        if capacity <= 0:
+            raise Exception("Simulator.resource(capacity=%r) non-positive capacity" % capacity)
+        if qdis < QDIS.FIFO or \
+           qdis > QDIS.PRIORITY:
+            raise Exception("Simulator.resource(qdis=%r) unknown queuing discipline" % qdis)
+        return Resource(self, name, capacity, qdis, qstats)
 
 
     def sleep(self, offset=None, until=None):
@@ -533,6 +566,9 @@ class Simulator:
         # a mask indicating whether the corresponding trap has been
         # triggered (i.e., no need to wait) or not
         trigged = [not t._try_wait() for t in traps]
+        for i, t in enumerate(traps):
+            if trigged[i]: 
+                t._commit_wait()
         
         timedout = False
         e = None # this is the timeout event
@@ -557,6 +593,7 @@ class Simulator:
                 # traps, something is wrong (in which case an
                 # exception will be raised)
                 i = traps.index(t)
+                traps[i]._commit_wait()
                 trigged[i] = True
             p.acting_trappables.clear()
 
@@ -570,7 +607,7 @@ class Simulator:
             self.event_list.cancel(e)
 
         # cancel the try-wait for those untriggered trappables
-        [t._cancel_try_wait() for i, t in enumerate(traps) if not trigged[i]]
+        [t._cancel_wait() for i, t in enumerate(traps) if not trigged[i]]
          
         # the wait has been satisfied, return accordingly
         if single_trappable:

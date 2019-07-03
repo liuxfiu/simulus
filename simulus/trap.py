@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <liux@cis.fiu.edu>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-02 05:28:01 liux>
+# Last Update: Time-stamp: <2019-07-02 13:34:16 liux>
 ###############################################################
 
 __all__ = ["_Trappable", "Trap"]
@@ -9,6 +9,9 @@ __all__ = ["_Trappable", "Trap"]
 
 class _Trappable(object):
     """The base class for traps and semaphores."""
+    def _try_wait(self): pass
+    def _commit_wait(self): pass
+    def _cancel_wait(self): pass
     pass
 
 
@@ -109,7 +112,7 @@ class Trap(_Trappable):
             return False
 
 
-    def _cancel_try_wait(self):
+    def _cancel_wait(self):
         """Cancel the previous try-wait.
         
         This function is supposed to be called by the simulator's
@@ -125,7 +128,7 @@ class Trap(_Trappable):
         # we must be in the process context
         p = self.sim.cur_process()
         if p is None:
-            raise Exception("Trap._cancel_try_wait() outside process context")
+            raise Exception("Trap._cancel_wait() outside process context")
         
         # the trap must have been set previously
         assert self.state == Trap.TRAP_SET
