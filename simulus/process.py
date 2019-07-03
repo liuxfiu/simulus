@@ -1,19 +1,19 @@
 # FILE INFO ###################################################
-# Author: Jason Liu <liux@cis.fiu.edu>
+# Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-02 05:30:03 liux>
+# Last Update: Time-stamp: <2019-07-03 17:39:06 liux>
 ###############################################################
 
 # greenlet must be installed as additional python package
 from greenlet import greenlet
 
-from .event import *
+from .trappable import _Trappable
 from .trap import *
+from .event import *
 
 __all__ = ["_Process"]
 
-
-class _Process(object):
+class _Process(_Trappable):
     """A process is an independent thread of execution."""
 
     # process runtime state
@@ -21,24 +21,22 @@ class _Process(object):
     STATE_RUNNING       = 1
     STATE_SUSPENDED     = 2
     STATE_TERMINATED    = 3
-
     
     def __init__(self, sim, name, func, params):
         """A process can only be created using simulator's process() function;
         a process can be created by an other process or within the
         main function."""
 
-        self.sim = sim
+        super(_Process, self).__init__(sim)
         self.name = name
         self.func = func
         self.params = params
         self.state = _Process.STATE_STARTED
         self.main = None
         self.vert = greenlet(self.invoke)
-        self.priority = None
-        self.trap = None
+        self.priority = 0
+        self.trap = Trap(self._sim)
         self.acting_trappables = []
-
 
     def activate(self):
         """Move the process into the ready queue."""
@@ -46,18 +44,16 @@ class _Process(object):
         if self.state != _Process.STATE_TERMINATED:
             if self.state != _Process.STATE_RUNNING:
                 self.state = _Process.STATE_RUNNING
-                self.sim._ready.append(self)
+                self._sim._readyq.append(self)
             # otherwise, it already entered the running queue
 
         # otherwise, the unblocked process (from trap or semaphore or
         # sleep) has been terminated somehow, in which case we simply
         # ignore its activation
 
-
     def deactivate(self, newstate):
         """Change the state of the process from running to another state."""
         self.state = newstate
-
 
     def invoke(self):
         """Invoke the start function of the process.
@@ -72,9 +68,8 @@ class _Process(object):
 
         """
 
-        self.func(self.sim, self.params)
+        self.func(self._sim, self.params)
         self.terminate()
-
 
     def run(self):
         """Run this process when it's activated. This has to be called within
@@ -91,36 +86,33 @@ class _Process(object):
         #    #assert self.state == _Process.STATE_RUNNING
         #    self.deactivate(_Process.STATE_TERMINATED)
 
-
     def sleep(self, until):
         """Schedule a future wakeup event and switch control to the
         simulator's main loop."""
         
         assert self.state == _Process.STATE_RUNNING
-        assert self.sim._theproc == self
-        assert self.sim.now <= until
+        assert self._sim._theproc == self
+        assert self._sim.now <= until
 
         assert self.vert
         assert not self.vert.dead
 
-        e = _ProcessEvent(until, self, self.name)
-        self.sim.event_list.insert(e)
+        e = _ProcessEvent(self._sim, until, self, self.name)
+        self._sim.event_list.insert(e)
         self.deactivate(_Process.STATE_SUSPENDED)
         self.main.switch()
-
 
     def suspend(self):
         """Switch control to the simulator's main loop."""
         
         assert self.state == _Process.STATE_RUNNING
-        assert self.sim._theproc == self
+        assert self._sim._theproc == self
 
         assert self.vert
         assert not self.vert.dead
         
         self.deactivate(_Process.STATE_SUSPENDED)
         self.main.switch()
-
 
     def terminate(self):
         """Self-terminate this process. 
@@ -140,34 +132,19 @@ class _Process(object):
         # the invoke() method (... this is probably not true!)
         if self.state != _Process.STATE_TERMINATED:
             assert self.state == _Process.STATE_RUNNING
-            assert self.sim._theproc == self
+            assert self._sim._theproc == self
 
             assert self.vert
             assert not self.vert.dead
         
             self.deactivate(_Process.STATE_TERMINATED)
-            self.get_trap().trigger()
+            self.trap.trigger()
 
         #raise greenlet.GreenletExit
         self.main.switch()
    
+    def _try_wait(self):
+        return self.trap._try_wait()
 
-    def get_priority(self):
-        """Set the priority of the process."""
-        if self.priority is None:
-            self.priority = 0
-        return self.priority
-
-
-    def set_priority(self, v):
-        """Set the priority of the process."""
-        self.priority = v
-
-
-    def get_trap(self):
-        """Return the trap for the process' termination. Create one if it
-        hasn't been accessed before."""
-        
-        if self.trap is None:
-            self.trap = Trap(self.sim)
-        return self.trap
+    def _cancel_wait(self):
+        return self.trap._cancel_wait()

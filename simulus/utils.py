@@ -1,14 +1,13 @@
 # FILE INFO ###################################################
-# Author: Jason Liu <liux@cis.fiu.edu>
+# Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-02 17:54:07 liux>
+# Last Update: Time-stamp: <2019-07-03 17:51:12 liux>
 ###############################################################
 
 # runstats must be installed as additional python package
 from runstats import Statistics
 
-__all__ = ["QDIS", "QStats"]
-
+__all__ = ["QDIS", "DataCollector"]
 
 class QDIS:
     """Queuing disciplines used by semaphores and resources."""
@@ -17,16 +16,8 @@ class QDIS:
     RANDOM      = 2
     PRIORITY    = 3
 
-    def str(qdis):
-        """Convert into a string for printing."""
-        if qdis == FIFO: return "FIFO"
-        elif qdis == LIFO: return "LIFO"
-        elif qdis == RANDOM: return "RAND"
-        else: return "PRIO"
-
-
-class QStats:
-    """Collect statistics for simulus resources and facilities."""
+class DataCollector:
+    """Collect data and statistics for resources and facilities."""
 
     def __init__(self, params=None, **kargs):
         # consolidate arguments
@@ -36,7 +27,7 @@ class QStats:
             try:
                 params.update(kargs)
             except AttributeError:
-                raise Exception("QStats() params not a dictionary");
+                raise Exception("DataCollector() params not a dictionary");
         self.params = params
 
         for k, v in self.params.items():
@@ -55,8 +46,7 @@ class QStats:
                 setattr(self, k+'_acc_t', 0)
                 setattr(self, k+'_acc_v', 0)
             else:
-                raise Exception("QStats() unknown value type (%s)" % v)
-
+                raise Exception("DataCollector() unknown value type (%s)" % v)
 
     def sample(self, k, v):
         if k in self.params:
@@ -75,7 +65,7 @@ class QStats:
                 setattr(self, n2,  v[0])
                 setattr(self, n3,  v[1])
 
-    def final(self, time):
+    def finalize(self, time):
         for k, v in self.params.items():
             if 'all' == v:
                 pass

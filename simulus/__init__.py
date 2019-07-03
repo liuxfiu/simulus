@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
-# Author: Jason Liu <liux@cis.fiu.edu>
+# Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-02 13:39:45 liux>
+# Last Update: Time-stamp: <2019-07-03 18:06:34 liux>
 ###############################################################
 
 """Simulus is a discrete-event simulator in Python."""
@@ -15,6 +15,7 @@ if sys.version_info[:2] < (3, 7):
 del sys
 
 from .utils import *
+from .trappable import *
 from .trap import *
 from .semaphore import *
 from .resource import *

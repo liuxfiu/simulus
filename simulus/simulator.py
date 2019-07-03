@@ -1,23 +1,23 @@
 # FILE INFO ###################################################
-# Author: Jason Liu <liux@cis.fiu.edu>
+# Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-02 14:41:59 liux>
+# Last Update: Time-stamp: <2019-07-03 18:10:25 liux>
 ###############################################################
 
 from collections import deque
 
 from .utils import *
+from .trappable import *
 from .trap import *
 from .semaphore import *
 from .resource import *
 from .event import *
 from .process import *
+from .sync import *
+from .resource import *
+#from .store import *
 
-__all__ = ["simulator", "sync", "infinite_time", "minus_infinite_time", "QDIS"]
-
-
-# a map from names to simulator instances
-_named_simulators = {}
+__all__ = ["simulator", "sync", "infinite_time", "minus_infinite_time"]
 
 class Simulator:
     """A simulator instance.
@@ -112,7 +112,7 @@ class Simulator:
         if repeat_intv is not None and repeat_intv <= 0:
             raise Exception("Simulator.sched(repeat_intv=%r) non-postive repeat interval" % repeat_intv)
             
-        e = _DirectEvent(time, func, params, name, repeat_intv)
+        e = _DirectEvent(self, time, func, params, name, repeat_intv)
         self.event_list.insert(e)
         return e
 
@@ -262,7 +262,7 @@ class Simulator:
                 raise Exception("Simulator.process() params not a dictionary");
 
         p = _Process(self, name, proc, params)
-        e = _ProcessEvent(time, p, name)
+        e = _ProcessEvent(self.time, p, name)
         self.event_list.insert(e)
         return p
 
@@ -580,7 +580,7 @@ class Simulator:
             
             # make sure we schedule the timeout event, only once
             if e is None and time < infinite_time:
-                e = _ProcessEvent(time, p, p.name)
+                e = _ProcessEvent(self.time, p, p.name)
                 self.event_list.insert(e)
             
             p.suspend()
@@ -772,9 +772,9 @@ class Simulator:
 
         self.name = name
         self.now = init_time
-        self.event_list = _EventList()
+        self.event_list = __EventList()
         self._theproc = None
-        self._ready = deque()
+        self._readyq = deque()
 
 
     def _one_event(self):
@@ -803,8 +803,8 @@ class Simulator:
             raise Exception("unknown event type: " + str(e))
 
         # processes are run only from the main loop!!
-        while len(self._ready) > 0:
-            p = self._ready.popleft()
+        while len(self._readyq) > 0:
+            p = self._readyq.popleft()
             if p.state == _Process.STATE_RUNNING:
                 self._theproc = p
                 p.run()
@@ -838,23 +838,12 @@ def simulator(name = None, init_time = 0):
     
     sim = Simulator(name, init_time)
     if name != None:
-        # may possibly replace an earlier simulator of the same name
-        _named_simulators[name] = sim
+        __Sync.register_simulator(name, sim)
     return sim
-
-
-def get_simulator(name):
-    """Return the simulator with the given name, or None if no such
-    simulation can be found."""
-    return _named_simulators[name]
-
 
 ## ------------------------------------------------------------
 
-def sync(sims, lookahead):
-    raise Exception("simulus.sync() not implemented")
-
-def _test():
+def test_simulator():
     sim = simulator()
     sim1 = simulator("sim1")
     sim2 = simulator("sim2")
@@ -881,7 +870,3 @@ def _test():
         sim.run(offset=10, until=100)
     except Exception as ex:
         print(ex)
-    
-if __name__ == '__main__':
-    _test()
-

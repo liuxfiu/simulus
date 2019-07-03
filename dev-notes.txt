@@ -1,0 +1,170 @@
+Name Convention of Classes and Methods
+======================================
+
+Completely Hidden Classes
+-------------------------
+
+These classes should be completely hidden from the user. The user
+should not even making a reference to the class objects.
+
+The name of these classes starts with two underscores (__). All
+methods and variables in the class can be named without the need to
+begin with an underscore, since the class is completely hidden from
+the user after all. However, there is an exception: The subclasses
+from the hidden classes can be public. In that case, to avoid
+confusion, the methods and variables in the hidden base classes shall
+start with an underscore, unless they are to be made available to the
+user.
+
+Partially Hidden Classes
+------------------------
+
+The content of these classes should be hidden from the user. The user,
+however, can get a reference to the class object (and should know what
+it is). Since the content of the classes, including all variables and
+methods therein, is supposed to be hidden from the user, the user
+shall treat the class objects as opaque objects.
+
+The name of these classes starts with an underscore (_). All methods
+and variables in the class can be named without the need to begin with
+an underscore, since the class is partially hidden from the user after
+all.  However, there is an exception: The subclasses from the hidden
+classes can be public. In that case, to avoid confusion, the methods
+and variables in the hidden base classes shall start with an
+underscore, unless they are to be made available to the user.
+
+Public Classes
+--------------
+
+These classes are supposed to be a part of the user interface. All
+public variables and methods therefore shall start without an
+underscore. The hidden variables and methods, on the other hand,
+should start with an underscore, to indicate that the user shall not
+access them directly.
+
+
+List of Files, Classes and Methods
+==================================
+
+__init__.py:
+
+utils.py:
+
+* QDIS  # public interface
+    * FIFO, LIFO, RANDOM, PRIORITY
+
+* DataCollector  # public interface
+    * __init__()
+    * sample()
+    * finalize()
+    * report()
+
+trappable.py:
+
+* _Trappable  # partially hidden, opaque reference
+    * _sim
+    * _try_wait()
+    * _commit_wait()
+    * _cancel_wait()
+
+trap.py
+
+* Trap  # public interface
+    * __init__()  # supposedly hidden
+    * state: TRAP_UNSET, TRAP_SET, TRAP_SPRUNG
+    * blocked
+    * wait()
+    * trigger()
+    * _try_wait()
+    * _cancel_wait()
+
+semaphore.py:
+
+* Semaphore  # public interface
+    * __init__()  # supposedly hidden
+    * val
+    * qdis: QDIS.*
+    * blocked
+    * wait()
+    * signal()
+    * trigger() == signal()
+    * _next_unblock()
+    * _try_wait()
+    * _cancel_wait()
+
+event.py:
+
+* __MinEntry  # completely hidden
+* __MaxEntry  # completely hidden
+* __PQDict  # completely hidden
+
+* _Event  # partially hidden, opaque reference
+    * __init__()
+    * time
+    * name
+    * trap
+    * __str__()
+    * __lt__()
+    * _try_wait()
+    * _cancel_wait()
+
+* _DirectEvent  # partially hidden, opaque reference
+    * __init__()
+    * func
+    * params
+    * repeat_intv
+    * __str__()
+    * renew()
+
+* _ProcessEvent  # partially hidden, opaque reference
+    * __init__()
+    * proc
+    * __str__()
+
+* __EventList  # completely hidden
+    * __init__()
+    * pqueue
+    * last
+    * __len__()
+    * insert()
+    * get_min()
+    * delete_min()
+    * cancel()
+    * update()
+    * current_event()
+
+process.py:
+
+* _Process  # partially hidden, opaque reference
+    * __init__()
+    * name
+    * func
+    * params
+    * state: STATE_*
+    * main
+    * vert
+    * priority
+    * trap
+    * acting_trappables
+    * activate()
+    * deactivate()
+    * invoke()
+    * run()
+    * sleep()
+    * suspend()
+    * terminate()
+    * _try_wait()
+    * _cancel_wait()
+
+sync.py:
+
+* __Sync:  # completely hidden
+* sync()  # public interface
+
+simulator.py:
+
+* Simulator  # public interface
+
+
+
+* simulator()  # public interface

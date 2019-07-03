@@ -1,26 +1,22 @@
 # FILE INFO ###################################################
-# Author: Jason Liu <liux@cis.fiu.edu>
+# Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-01 12:12:23 liux>
+# Last Update: Time-stamp: <2019-07-03 17:24:08 liux>
 ###############################################################
 
 """Simulation event types and event list."""
 
 from collections.abc import MutableMapping
 
-# ... requires the following:
-#   Trap()
+from .trappable import _Trappable
+from .trap import Trap
 
-from .trap import *
-
-__all__ = ["_Event", "_DirectEvent", "_ProcessEvent", "_EventList", \
+__all__ = ["_Event", "_DirectEvent", "_ProcessEvent", "__EventList", \
            "infinite_time", "minus_infinite_time"]
-
 
 # two extremes of simulation time
 infinite_time = float('inf')
 minus_infinite_time = float('-inf')
-
 
 # PQDict is PRIORITY QUEUE DICTIONARY (PYTHON RECIPE)
 # Created by Nezar Abdennur
@@ -45,7 +41,7 @@ minus_infinite_time = float('-inf')
 #       O(log n) updating of an arbitrary element's priority key
 # PQDict is modified to be used for our event list
  
-class _MinEntry(object):
+class __MinEntry(object):
     """
     Mutable entries for a Min-PQ dictionary.
 
@@ -57,32 +53,32 @@ class _MinEntry(object):
     def __lt__(self, other):
         return self.pkey < other.pkey
 
-#class _MaxEntry(object):
-#    """
-#    Mutable entries for a Max-PQ dictionary.
-#
-#    """
-#    def __init__(self, dkey, pkey):
-#        self.dkey = dkey
-#        self.pkey = pkey
-#
-#    def __lt__(self, other):
-#        return self.pkey > other.pkey
+class __MaxEntry(object):
+    """
+    Mutable entries for a Max-PQ dictionary.
 
-class _PQDict(MutableMapping):
+    """
+    def __init__(self, dkey, pkey):
+        self.dkey = dkey
+        self.pkey = pkey
+
+    def __lt__(self, other):
+        return self.pkey > other.pkey
+
+class __PQDict(MutableMapping):
     def __init__(self, *args, **kwargs):
         self._heap = []
         self._position = {}
         self.update(*args, **kwargs)
 
-    create_entry = _MinEntry     #defaults to a min-pq
+    create_entry = __MinEntry     #defaults to a min-pq
 
-#    @classmethod
-#    def maxpq(cls, *args, **kwargs):
-#        pq = cls()
-#        pq.create_entry = _MaxEntry
-#        pq.__init__(*args, **kwargs)
-#        return pq
+    @classmethod
+    def maxpq(cls, *args, **kwargs):
+        pq = cls()
+        pq.create_entry = __MaxEntry
+        pq.__init__(*args, **kwargs)
+        return pq
 
     def __len__(self):
         return len(self._heap)
@@ -106,7 +102,7 @@ class _PQDict(MutableMapping):
             pos = len(self._heap)
             heap.append(self.create_entry(dkey, pkey))
             position[dkey] = pos
-            self._swim(pos)
+            self.swim(pos)
         else:
             # Update an existing entry:
             # bubble up or down depending on pkeys of parent and children
@@ -114,7 +110,7 @@ class _PQDict(MutableMapping):
             parent_pos = (pos - 1) >> 1
             child_pos = 2*pos + 1
             if parent_pos > -1 and heap[pos] < heap[parent_pos]:
-                self._swim(pos)
+                self.swim(pos)
             elif child_pos < len(heap):
                 other_pos = child_pos + 1
                 if other_pos < len(heap) and not heap[child_pos] < heap[other_pos]:
@@ -138,7 +134,7 @@ class _PQDict(MutableMapping):
             parent_pos = (pos - 1) >> 1
             child_pos = 2*pos + 1
             if parent_pos > -1 and heap[pos] < heap[parent_pos]:
-                self._swim(pos)
+                self.swim(pos)
             elif child_pos < len(heap):
                 other_pos = child_pos + 1
                 if other_pos < len(heap) and not heap[child_pos] < heap[other_pos]:
@@ -167,7 +163,7 @@ class _PQDict(MutableMapping):
             entry = heap[0]
             heap[0] = end
             position[end.dkey] = 0
-            self._sink(0)
+            self.sink(0)
         else:
             entry = end
         del position[entry.dkey]
@@ -181,7 +177,7 @@ class _PQDict(MutableMapping):
         except KeyError:
             return
 
-    def _sink(self, top=0):
+    def sink(self, top=0):
         # "Sink-to-the-bottom-then-swim" algorithm (Floyd, 1964)
         # Tends to reduce the number of comparisons when inserting "heavy" items
         # at the top, e.g. during a heap pop
@@ -209,9 +205,9 @@ class _PQDict(MutableMapping):
         # until it reaches its new resting place.
         heap[pos] = entry
         position[entry.dkey] = pos
-        self._swim(pos, top)
+        self.swim(pos, top)
 
-    def _swim(self, pos, top=0):
+    def swim(self, pos, top=0):
         heap = self._heap
         position = self._position
 
@@ -230,59 +226,67 @@ class _PQDict(MutableMapping):
         heap[pos] = entry
         position[entry.dkey] = pos
 
-
-class _Event(object):
+class _Event(_Trappable):
     """The base class for all simulation events."""
 
-    def __init__(self, time, name=None):
+    def __init__(self, sim, time, name=None):
+        super(_Event, self).__init__(sim)
         self.time = time
         self.name = name
         self.trap = None
 
     def __str__(self):
-        return "Event[%s]:%g" % (self.name if self.name else id(self), self.time)
+        return "E[%s]:%g" % (self.name if self.name else id(self), self.time)
 
     def __lt__(self, other):
         return self.time < other.time
 
-    def get_trap(self, sim):
-        if self.trap is None:
-            self.trap = Trap(sim)
-        return self.trap
-
-
+    def _try_wait(self):
+        # if the current event is on the event list, pass onto the
+        # trap created for this event; otherwise, we consider the
+        # trappable already triggered
+        if self._sim.event_list.current_event(self):
+            if self.trap is None:
+                self.trap = Trap(self._sim)
+            return self.trap._try_wait()
+        else:
+            return False
+        
+    def _cancel_wait(self):
+        assert self.trap is not None
+        self.trap._cancel_wait()
+        
 class _DirectEvent(_Event):
     """The event type for direct event scheduling."""
 
-    def __init__(self, time, func, params, name, repeat_intv):
-        super(_DirectEvent, self).__init__(time, name)
+    def __init__(self, sim, time, func, params, name, repeat_intv):
+        super(_DirectEvent, self).__init__(sim, time, name)
         self.func = func
         self.params = params
         self.repeat_intv = repeat_intv
 
     def __str__(self):
-        return "DirectEvent[%s]:%g%s" % \
+        return "DE[%s]:%g%s" % \
             (self.name if self.name else id(self), self.time,
-             " (repeat_intv=%d)"%self.repeat_intv if self.repeat_intv else "")
+             " (repeat=%g)"%self.repeat_intv if self.repeat_intv else "")
 
     def renew(self, time):
         self.time = time
         self.trap = None # trap cannot be reused
         return self
 
-
 class _ProcessEvent(_Event):
     """The event type for process scheduling."""
 
-    def __init__(self, time, proc, name):
-        super(_ProcessEvent, self).__init__(time, name)
+    def __init__(self, sim, time, proc, name):
+        super(_ProcessEvent, self).__init__(sim, time, name)
         self.proc = proc
 
     def __str__(self):
-        return "ProcessEvent[%s]:%g" % (self.name, self.time)
+        return "PE[%s]:%g" % (self.name, self.time)
 
 
-class _EventList(object):
+class __EventList(object):
     """An event list sorts events in timestamp order.
 
     An event list is a priority queue that stores and sorts simulation
@@ -294,7 +298,7 @@ class _EventList(object):
 
     def __init__(self):
         #self.pqueue = []
-        self.pqueue = _PQDict()
+        self.pqueue = __PQDict()
         self.last = minus_infinite_time
 
     def __len__(self):

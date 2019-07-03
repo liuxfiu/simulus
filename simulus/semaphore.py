@@ -1,21 +1,21 @@
 # FILE INFO ###################################################
-# Author: Jason Liu <liux@cis.fiu.edu>
+# Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-02 22:28:30 liux>
+# Last Update: Time-stamp: <2019-07-03 16:54:17 liux>
 ###############################################################
 
 from collections import deque
 import heapq, random
 
-from .trap import _Trappable
+from .trappable import _Trappable
 from .utils import QDIS
 
 __all__ = ["Semaphore"]
 
-
 class Semaphore(_Trappable):
-    """A semaphore a multi-use signaling mechanism for inter-process
-    communication. It is one of the two primitive methods in simulus
+    """A multi-use signaling mechanism for inter-process communication.
+
+    A semaphore is one of the two primitive methods in simulus
     designed for simulation processes to synchronize and communicate
     with one another. (The other primitive method is using traps.)
 
@@ -61,7 +61,7 @@ class Semaphore(_Trappable):
         as well as one of the four queuing disciplines of the
         semaphore."""
 
-        self.sim = sim
+        super(Semaphore, self).__init__(sim)
         assert initval >= 0
         self.val = initval
         self.qdis = qdis
@@ -74,13 +74,12 @@ class Semaphore(_Trappable):
             # RANDOM and PRIORITY use a list for the blocked processes
             self.blocked = []
 
-
     def wait(self):
         """Waiting on a semphore will decrement its value; and if it becomes
         negative, the process needs to be blocked."""
         
         # we must be in the process context
-        p = self.sim.cur_process()
+        p = self._sim.cur_process()
         if p is None:
             raise Exception("Semaphore.wait() outside process context")
 
@@ -111,9 +110,45 @@ class Semaphore(_Trappable):
             # nothing to be done; there are no waiting processes
             assert len(self.blocked) == 0
 
+    def signal(self):
+        """Signaling a semphore increments its value; and if there are waiting
+        processes, one of them will be unblocked."""
+
+        self.val += 1
+        if len(self.blocked) > 0:
+            # there're waiting processes, we unblock one
+            if self.qdis == QDIS.FIFO:
+                p = self.blocked.popleft()
+            elif self.qdis == QDIS.LIFO:
+                p = self.blocked.pop()
+            elif self.qdis == QDIS.RANDOM:
+                p = self.blocked.pop()
+            else:
+                # QDIS.PRIORITY
+                p = heapq.heappop(self.blocked)[-1]
+                
+            p.acting_trappables.append(self)
+            p.activate()
+
+    # create an alias method
+    trigger = signal
+
+    def _next_unblock(self):
+        """Return the process to be unblocked next."""
+        if len(self.blocked) > 0:
+            if self.qdis == QDIS.FIFO or \
+               self.qdis == QDIS.PRIORITY:
+                return self.blocked[0]
+            elif self.qdis == QDIS.LIFO or \
+                 self.qdis == QDIS.RANDOM:
+                return self.blocked.pop[-1]
+            else:
+                return None
+        else:
+            return None
             
     def _try_wait(self):
-        """A process tries to wait on the semaphore.
+        """Conditional wait on the semaphore.
         
         This function is supposed to be called by the simulator's
         wait() function, and should not be called by users
@@ -126,9 +161,8 @@ class Semaphore(_Trappable):
         """
         
         # we must be in the process context
-        p = self.sim.cur_process()
-        if p is None:
-            raise Exception("Semaphore._try_wait() outside process context")
+        p = self._sim.cur_process()
+        assert p is not None
 
         self.val -= 1
         if self.val < 0:
@@ -157,7 +191,6 @@ class Semaphore(_Trappable):
             # nothing to be done; there are no waiting processes
             assert len(self.blocked) == 0
             return False
-        
 
     def _cancel_wait(self):
         """Cancel the previous try-wait.
@@ -173,9 +206,8 @@ class Semaphore(_Trappable):
         """
         
         # we must be in the process context
-        p = self.sim.cur_process()
-        if p is None:
-            raise Exception("Semaphore._cancel_wait() outside process context")
+        p = self._sim.cur_process()
+        assert p is not None
 
         # at least this process is currently waiting, so the semaphore
         # value must be negative
@@ -196,26 +228,3 @@ class Semaphore(_Trappable):
                         heapq._siftdown(self.blocked, 0, i)
         
 
-    def signal(self):
-        """Signaling a semphore increments its value; and if there are waiting
-        processes, one of them will be unblocked."""
-
-        self.val += 1
-        if len(self.blocked) > 0:
-            # there're waiting processes, we unblock one
-            if self.qdis == QDIS.FIFO:
-                p = self.blocked.popleft()
-            elif self.qdis == QDIS.LIFO:
-                p = self.blocked.pop()
-            elif self.qdis == QDIS.RANDOM:
-                p = self.blocked.pop()
-            else:
-                # QDIS.PRIORITY
-                p = heapq.heappop(self.blocked)[-1]
-                
-            p.acting_trappables.append(self)
-            p.activate()
-
-            
-    # create an alias method
-    trigger = signal
