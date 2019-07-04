@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0e27d806607a9f498b881d118a799abb11cb071fa001fe8fc2633ca744a5c290"
+            "sha256": "bc4bd8a0cc53f95238b37d22375388328cbc65bc095e70c175b0ea401829ea47"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -65,6 +65,14 @@
                 "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"
             ],
             "version": "==3.0.12"
+        },
+        "gitchangelog": {
+            "hashes": [
+                "sha256:3d8d6a730450fbd5b0a9bc58d0dd3e269c967d7eb4fece0c5cff4372a3f77421",
+                "sha256:45f8b8e64cece0d9bb03a35ecd8ee62c1c7157f8dac0ef3cb68381bfcc1bde29"
+            ],
+            "index": "pypi",
+            "version": "==3.0.4"
         },
         "greenlet": {
             "hashes": [
@@ -154,6 +162,13 @@
             ],
             "version": "==2.4.0"
         },
+        "pystache": {
+            "hashes": [
+                "sha256:f7bbc265fb957b4d6c7c042b336563179444ab313fb93a719759111eabd3b85a"
+            ],
+            "index": "pypi",
+            "version": "==0.5.4"
+        },
         "pytest": {
             "hashes": [
                 "sha256:2878de8ae1c79a62c012da6186b88ff0562ea96ce29c4208d2a9b11d9f607df1",
@@ -182,6 +197,13 @@
                 "sha256:968089d4584ad4ad7c171454f0a5c6dac23971e9472521ea3b6d49d610aa6fc0"
             ],
             "version": "==0.9.1"
+        },
+        "runstats": {
+            "hashes": [
+                "sha256:51b51a5957ef58f117efa4ee4b673f7878329563624bf3cc2d336f59691be3e6"
+            ],
+            "index": "pypi",
+            "version": "==1.8.0"
         },
         "six": {
             "hashes": [
@@ -247,14 +269,6 @@
                 "sha256:b36a1c245f2d304965eb4e0a82848379241dc04b865afcc4aab16748587e1923"
             ],
             "version": "==0.5.1"
-        },
-        "wheel": {
-            "hashes": [
-                "sha256:5e79117472686ac0c4aef5bad5172ea73a1c2d1646b808c35926bd26bdfb0c08",
-                "sha256:62fcfa03d45b5b722539ccbc07b190e4bfff4bb9e3a4d470dd9f6a0981002565"
-            ],
-            "index": "pypi",
-            "version": "==0.33.4"
         },
         "zipp": {
             "hashes": [

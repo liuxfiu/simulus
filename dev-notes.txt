@@ -227,6 +227,6 @@ resource.py:
     * _last_arrival
     * _arrivals
     * _services
-    * reserve()
+    * acquire()
     * release()
 

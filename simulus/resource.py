@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-04 08:14:37 liux>
+# Last Update: Time-stamp: <2019-07-04 08:33:45 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector
@@ -15,7 +15,7 @@ class Resource(_Trappable):
 
     A resource basically models a single-server or multi-server queue.
     A resource can allow only a limited number of processes to be
-    serviced at any given time. A process arrives and reserves a
+    serviced at any given time. A process arrives and acquires a
     server at the resource. If there is an available server, the
     process will gain access to the resource for as long as the
     service is required. If there isn't an available server, the
@@ -25,7 +25,7 @@ class Resource(_Trappable):
     resource.
 
     A process is expected to following the expected sequence of
-    actions to use the resource. The process first calls the reserve()
+    actions to use the resource. The process first calls the acquire()
     method to gain access to a server; this is potentially a blocking
     call: the process may be blocked until a server can be assigned to
     it. Once the call returns, the process has acquired the resource.
@@ -58,7 +58,7 @@ class Resource(_Trappable):
         self._arrivals = {} # map from process to its arrival time
         self._services = {} # map from process to its entering service time
 
-    def reserve(self):
+    def acquire(self):
         """Acquire a server from the resource.
 
         This method will atomically decrementing a semaphore value
@@ -70,7 +70,7 @@ class Resource(_Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise Exception("Resource.reserve() outside process context")
+            raise Exception("Resource.acquire() outside process context")
 
         self._sample_arrival(p)
         self._sem.wait()
@@ -79,7 +79,7 @@ class Resource(_Trappable):
     def release(self):
         """Relinquish the resource acquired previously.
 
-        Note that reserve() and release() are expected in pairs, and
+        Note that acquire() and release() are expected in pairs, and
         they should be called by the same process.
 
         """
@@ -87,7 +87,7 @@ class Resource(_Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise Exception("Resource.reserve() outside process context")
+            raise Exception("Resource.acquire() outside process context")
 
         self._sample_departure(p)
         self._sem.signal()

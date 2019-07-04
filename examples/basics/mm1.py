@@ -5,7 +5,7 @@ seed(123)
 
 def job(sim, params):
     idx = params['idx']
-    r.reserve()
+    r.acquire()
     print("%g: job(%d) gains access " % (sim.now,idx))
     sim.sleep(expovariate(1))
     print("%g: job(%d) releases" % (sim.now,idx))
