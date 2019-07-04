@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 3, 2019
-# Last Update: Time-stamp: <2019-07-03 16:56:17 liux>
+# Last Update: Time-stamp: <2019-07-03 23:54:12 liux>
 ###############################################################
 
 __all__ = ["_Trappable"]
@@ -21,4 +21,4 @@ class _Trappable(object):
     def _try_wait(self): pass
     def _commit_wait(self): pass
     def _cancel_wait(self): pass
-
+    def _true_trappable(self): return self

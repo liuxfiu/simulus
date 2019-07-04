@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-03 18:10:25 liux>
+# Last Update: Time-stamp: <2019-07-04 06:15:38 liux>
 ###############################################################
 
 from collections import deque
@@ -36,6 +36,16 @@ class Simulator:
     maintains an event list and a simulation clock.
 
     """
+
+    def __init__(self, name, init_time):
+        """A simulator can only be created using the simulator() function."""
+
+        self.name = name
+        self.now = init_time
+        self._eventlist = _EventList_()
+        self._theproc = None
+        self._readyq = deque()
+  
 
     ###################################
     # direct event scheduling methods #
@@ -113,9 +123,8 @@ class Simulator:
             raise Exception("Simulator.sched(repeat_intv=%r) non-postive repeat interval" % repeat_intv)
             
         e = _DirectEvent(self, time, func, params, name, repeat_intv)
-        self.event_list.insert(e)
+        self._eventlist.insert(e)
         return e
-
 
     def cancel(self, e):
         """Cancel a scheduled event.
@@ -131,12 +140,10 @@ class Simulator:
         if not isinstance(e, _Event):
             raise Exception("Simulator.cancel(e=%r) not an event" % e)
         try:
-            self.event_list.cancel(e)
+            self._eventlist.cancel(e)
         except Exception:
-            # the event is not in the event list
-            # raise Exception("Simulator.cancel() schedule not found")
+            # the event is not in the event list; that's OK
             pass
-
 
     def resched(self, e, offset=None, until=None):
         """Reschedule an event.
@@ -178,10 +185,10 @@ class Simulator:
         else: e.time = until     
 
         try:
-            self.event_list.update(e)
+            self._eventlist.update(e)
             return e
         except Exception:
-            #raise Exception("Simulator.resched() event already happened")
+            # the event already happened as it's not in the event list
             return None
 
 
@@ -262,10 +269,9 @@ class Simulator:
                 raise Exception("Simulator.process() params not a dictionary");
 
         p = _Process(self, name, proc, params)
-        e = _ProcessEvent(self.time, p, name)
-        self.event_list.insert(e)
+        e = _ProcessEvent(self, time, p, name)
+        self._eventlist.insert(e)
         return p
-
 
     def cur_process(self):
         """Return the current running process, or None if we are not in a
@@ -274,28 +280,13 @@ class Simulator:
         assert self._theproc is None or \
             self._theproc.state == _Process.STATE_RUNNING
         return self._theproc
-
     
-    def terminated(self, p=None):
-        """Check whether a process has terminated. 
+    def terminated(self, p):
+        """Check whether the given process has terminated.""" 
 
-        The process to be checked for termination should be provided
-        as the only argument. If it's ignored, it's assumed to be the
-        current process. In the latter case, this method must be
-        called within a process context (not in an event handler or in
-        the main function).
-
-        """
-
-        if p is not None:
-            if not isinstance(p, _Process):
-                raise Exception("Simulator.terminated(p=%r) not a process" % p)
-        else:
-            p = self.cur_process()
-            if p is None:
-                raise Exception("Simulator.terminated() outside process context")
+        if not isinstance(p, _Process):
+            raise Exception("Simulator.terminated(p=%r) not a process" % p)
         return p.state == _Process.STATE_TERMINATED
-
 
     def kill(self, p=None):
         """Kill a process.
@@ -316,7 +307,7 @@ class Simulator:
             if p.state != _Process.STATE_TERMINATED:
                 # if the process has not been terminated already
                 p.deactivate(_Process.STATE_TERMINATED)
-                p.get_trap().trigger()
+                p.trap.trigger()
             # otherwise, it's already killed; we do nothing
         else:
             # kill oneself
@@ -325,97 +316,44 @@ class Simulator:
                 raise Exception("Simulator.kill() outside process context")
             p.terminate()
 
-            
-    def semaphore(self, initval=0, qdis=QDIS.FIFO):
-        """Create a semaphore for inter-process communication.
+    def get_priority(self, p=None):
+        """Get the priority of a process.
 
-        Parameters
-        ----------
-        initval (int): the initial value of the semaphore; the value must be non-negative; 
-                the default is zero
-
-        qdis : the queuing discipline for the waiting processes, which
-                can be selected from QDIS.FIFO (first in
-                first out), QDIS.LIFO (last in first out),
-                QDIS.RANDOM (random ordering), or
-                QDIS.PRIORITY (based on process priority)
-
-        Returns
-        -------
-        This method returns the newly created semaphore.
+        A process should be provided as the only argument. If it's
+        ignored, it's assumed to be the current process.
 
         """
 
-        if initval < 0:
-            raise Exception("Simulator.semaphore(initval=%r) negative init value" % initval)
-        if qdis < QDIS.FIFO or \
-           qdis > QDIS.PRIORITY:
-            raise Exception("Simulator.semaphore(qdis=%r) unknown queuing discipline" % qdis)
-        return Semaphore(self, initval, qdis)
+        if p is not None:
+            # get priority of another process
+            if not isinstance(p, _Process):
+                raise Exception("Simulator.get_priority(p=%r) not a process" % p)
+        else:
+            # get the priority of the current process
+            p = self.cur_process()
+            if p is None:
+                raise Exception("Simulator.get_priority() outside process context")
+        return p.priority
 
+    def set_priority(self, prio, p=None):
+        """Set the priority of a process.
 
-    def trap(self, o=None):
-       """Create a trap or return the trap assocated with the given object.
-
-       If no argument is provided, a new trap will be created and
-       returned. 
-
-       If the argument is a process (returned from the process() or
-       cur_Process() method), the trap associated with the termination
-       of the process will be returned.
-
-       If the argument is an event (returned from the sched() or
-       resched() method), a trap associated with the event's
-       activation will be returned. The event must be a currently
-       scheduled event (not one from the past), or an exception will
-       be raised.
-
-       """
-
-       if o is None:
-           return Trap(self)
-       elif isinstance(o, _Process):
-           return o.get_trap() # it's for process termination
-       elif isinstance(o, _Event):
-           if self.event_list.current_event(o):
-               return o.get_trap(self)
-           else:
-               raise Exception("Simulator.trap(o=%r) stale event" % o)
-       else:
-           raise Exception("Simulator.trap(o=%r) unknown object" % o)
-
-
-    def resource(self, name=None, capacity=1, qdis=QDIS.FIFO, qstats=None):
-        """Create a resource.
-
-        Parameters
-        ----------
-        name (string): the name of the resource (useful for printout)
-
-        capacity (int): the capacity of the resource; the value must
-                be positive; the default is one
-
-        qdis : the queuing discipline for the waiting processes, which
-                can be selected from QDIS.FIFO (first in first out),
-                QDIS.LIFO (last in first out), QDIS.RANDOM (random
-                ordering), or QDIS.PRIORITY (based on process
-                priority)
-
-        qstats: for statistics collection 
-
-        Returns
-        -------
-        This method returns the newly created resource.
+        A new priority and the process for the new priority should be
+        provided. If the process is ignored, it's assumed to be the
+        current process.
 
         """
 
-        if capacity <= 0:
-            raise Exception("Simulator.resource(capacity=%r) non-positive capacity" % capacity)
-        if qdis < QDIS.FIFO or \
-           qdis > QDIS.PRIORITY:
-            raise Exception("Simulator.resource(qdis=%r) unknown queuing discipline" % qdis)
-        return Resource(self, name, capacity, qdis, qstats)
-
+        if p is not None:
+            # set priority of another process
+            if not isinstance(p, _Process):
+                raise Exception("Simulator.set_priority(p=%r) not a process" % p)
+        else:
+            # set the priority of the current process
+            p = self.cur_process()
+            if p is None:
+                raise Exception("Simulator.set_priority() outside process context")
+        p.priority = prio
 
     def sleep(self, offset=None, until=None):
         """A process blocks for a certain time duration.
@@ -471,23 +409,90 @@ class Simulator:
         # the control comes back now; the process resumes execution...
 
 
-    def wait(self, traps, offset=None, until=None, method=all):
-        """A process blocks on trappables for certain time.
+    ##############################
+    # trappable handling methods #
+    ##############################
+    
+    def trap(self):
+       """Create and return a trap for inter-process communication."""
+       return Trap(self)
 
-        This method must be called within a process context (not in an
-        event handler or in the main function). The process will be
-        put on hold for one or a list of trappables and for a given
-        amount of time (if specified). The process will resume
-        execution after conditions are met.
+    def semaphore(self, initval=0, qdis=QDIS.FIFO):
+        """Create a semaphore for inter-process communication.
 
         Parameters
         ----------
-        traps: either a trappable (a trap, semaphore, or other
-                facilities) or a list/tuple of trappables
+        initval (int): the initial value of the semaphore; the value must be non-negative; 
+                the default is zero
+
+        qdis : the queuing discipline for the waiting processes, which
+                can be selected from QDIS.FIFO (first in first out),
+                QDIS.LIFO (last in first out), QDIS.RANDOM (random
+                ordering), or QDIS.PRIORITY (based on process
+                priority); if ignored, the default is QDIS.FIFO
+
+        Returns
+        -------
+        This method returns a newly created semaphore.
+
+        """
+
+        if initval < 0:
+            raise Exception("Simulator.semaphore(initval=%r) negative init value" % initval)
+        if qdis < QDIS.FIFO or qdis > QDIS.PRIORITY:
+            raise Exception("Simulator.semaphore(qdis=%r) unknown queuing discipline" % qdis)
+        return Semaphore(self, initval, qdis)
+
+    def resource(self, name=None, capacity=1, qdis=QDIS.FIFO, collect=None):
+        """Create and return a resource.
+
+        Parameters
+        ----------
+        name (string): the optional name of the resource
+
+        capacity (int): the capacity of the resource; the value must
+                be a positive integer; the default is one
+
+        qdis : the queuing discipline for the waiting processes, which
+                can be selected from QDIS.FIFO (first in first out),
+                QDIS.LIFO (last in first out), QDIS.RANDOM (random
+                ordering), or QDIS.PRIORITY (based on process
+                priority); if ignored, the default is QDIS.FIFO
+
+        collect: the optional collector for statistics
+
+        Returns
+        -------
+        This method returns the newly created resource.
+
+        """
+
+        if not isinstance(capacity, int):
+            raise Exception("Simulator.resource(capacity=%r) capacity not an integer" % capacity)
+        if capacity <= 0:
+            raise Exception("Simulator.resource(capacity=%r) non-positive capacity" % capacity)
+        if qdis < QDIS.FIFO or qdis > QDIS.PRIORITY:
+            raise Exception("Simulator.resource(qdis=%r) unknown queuing discipline" % qdis)
+        return Resource(self, name, capacity, qdis, collect)
+
+    def wait(self, traps, offset=None, until=None, method=all):
+        """Conditional wait on one or more trappables for some time.
+
+        This method must be called within a process context (not in an
+        event handler or in the main function). The process will be
+        put on hold waiting for one or a list of trappables and for a
+        given amount of time if specified. The process will resume
+        execution after the given condition is met.
+
+        Parameters
+        ----------
+        traps: either a trappable (an event, a process, a trap, a
+                semaphore, or one of the resources and facilities), or
+                a list/tuple of trappables
 
         offset (float): relative time from now until which the process
-                will be put on hold at the latest; if provided, it
-                must be a non-negative value
+                will wait at the latest; if provided, it must be a
+                non-negative value
 
         until (float): the absolute time at which the process is
                 expected to resume execution at the latest; if
@@ -501,26 +506,27 @@ class Simulator:
                 can resume execution (or timed out); if 'any', one of
                 the trappables must be triggered before this process
                 can resume execution (or timed out); this parameter
-                has no effect if only one trappable (not the list) is
-                provided as the first argument
+                would have no effect if only one trappable (whether
+                it's standalone or as part of the list) is provided as
+                the first argument
 
         Returns
         -------
-        The return value of this method is a tuple with two elements:
-        the first element of the tuple is to indicate whether the
+        The return value of this method is a tuple that consists of
+        two elements: the first element is to indicate which of the
         trappables have been triggered or not; the second element of
         tuple is to indicate whether timeout happens.
 
         If the first argument when calling this method is only one
         trappable (not in a list or tuple), the first element of the
-        returned tuple will be simply True or False depending on the
-        trappable has been triggered or not.
+        returned tuple will be simply a scalar value, True or False,
+        depending on whether the trappable has been triggered or not.
 
         If the first argument when calling this method is a list or a
-        tuple of trappables, the first element of the returned tuple
-        will be a list of booleans where each element of the list
-        indicates whether the corresponding trappable has been
-        triggered or not.
+        tuple of trappables (even if the list or the tuple has only
+        one element), the first element of the returned tuple will be
+        a list of booleans, each of which indicates whether the
+        corresponding trappable has been triggered or not.
 
         """
 
@@ -529,7 +535,7 @@ class Simulator:
         if p is None:
             raise Exception("Simulator.wait() outside process context")
 
-        # sanity check of the first argument: a trappable or a
+        # sanity check of the first argument: one trappable or a
         # list/tuple of trappables
         if isinstance(traps, _Trappable):
             single_trappable = True
@@ -537,12 +543,12 @@ class Simulator:
         elif isinstance(traps, (list, tuple)):
             single_trappable = False
             if len(traps) == 0:
-                raise Exception("Simulator.wait() empty trappables")
+                raise Exception("Simulator.wait() empty list of trappables")
             for t in traps:
                 if not isinstance(t, _Trappable):
-                    raise Exception("Simulator.wait() not a trappable list") 
+                    raise Exception("Simulator.wait() not a trappable in list") 
         else:
-            raise Exception("Simulator.wait() trappable or list of trappables expected") 
+            raise Exception("Simulator.wait() one trappable or a list of trappables expected") 
         
         # figure out the expected wakeup time
         if until == None and offset == None:
@@ -564,108 +570,65 @@ class Simulator:
             raise Exception("Simulator.wait() unknown method")
 
         # a mask indicating whether the corresponding trap has been
-        # triggered (i.e., no need to wait) or not
+        # triggered or not; if it is, there's no need to wait
         trigged = [not t._try_wait() for t in traps]
         for i, t in enumerate(traps):
             if trigged[i]: 
                 t._commit_wait()
         
+        # true_traps are the list of trappables that will be really
+        # triggered (processes and events don't get triggered, but
+        # their attached traps are); note this has to be called after
+        # _try_wait() has been called on events
+        true_traps = [t._true_trappable() for t in traps]
+
         timedout = False
-        e = None # this is the timeout event
+        e = None # this will be the timeout event
 
         p.acting_trappables.clear()
         while not method(trigged):
-            # the wait hasn't been satisfied; the process shall be
-            # suspended
+            # the wait condition hasn't been satisfied; the process
+            # will be suspended
             
             # make sure we schedule the timeout event, only once
             if e is None and time < infinite_time:
-                e = _ProcessEvent(self.time, p, p.name)
-                self.event_list.insert(e)
+                e = _ProcessEvent(self, time, p, p.name)
+                self._eventlist.insert(e)
             
             p.suspend()
 
             # update the mask (this is a circuitous way to find out
             # which trap in the list of traps is responsible for
-            # unblocking the process this time)
+            # unblocking the process at this time)
             for t in p.acting_trappables:
                 # if the acting trappables are not in expected list of
                 # traps, something is wrong (in which case an
                 # exception will be raised)
-                i = traps.index(t)
+                i = true_traps.index(t)
                 traps[i]._commit_wait()
                 trigged[i] = True
             p.acting_trappables.clear()
 
             # check if we are timed out
-            if e is not None and not self.event_list.current_event(e):
+            if e is not None and not self._eventlist.current_event(e):
                 timedout = True
                 break
             
         # cancel the future timeout event
         if e is not None and not timedout:
-            self.event_list.cancel(e)
+            self._eventlist.cancel(e)
 
         # cancel the try-wait for those untriggered trappables
         [t._cancel_wait() for i, t in enumerate(traps) if not trigged[i]]
          
-        # the wait has been satisfied, return accordingly
+        # the wait condition has been satisfied, return accordingly
         if single_trappable:
             return trigged[0], timedout
         else:
             return trigged, timedout
-        #r = [t for i, t in enumerate(traps) if not trigged[i]]
+        # note this is how to find the remaining untriggered traps
+        # r = [t for i, t in enumerate(traps) if not trigged[i]]
         
-        
-    def join(self, procs, method=all):
-        """Wait until the process(es) are finished. This 
-
-        This method must be called within a process context (not in an
-        event handler or in the main function). The process will be
-        put on hold until the processes specified in the first
-        argument have finished.
-
-        Parameters 
-        ----------
-        procs: either a process (returned from process() or
-                cur_process()) or a list/tuple of processes
-
-        method: can be either 'all' (the default) or 'any'; if 'all',
-                all processes must be finished before this process can
-                resume execution; if 'any', one of the processes must
-                be finished before this process can resume execution
-
-        This method does not return a value. When it returns, the
-        process has already resumed execution. That is, one process
-        (in case of 'any') or all (in case of 'all') processes have
-        funished execution. If using 'any', one may use the
-        terminated() method to find out which process(es) are done.
-
-        """
-        
-        # must be called within process context
-        p = self.cur_process()
-        if p is None:
-            raise Exception("Simulator.join() outside process context")
-
-        if isinstance(procs, _Process):
-            traps = [procs.get_trap()]
-        elif isinstance(procs, (list, tuple)):
-            if len(procs) == 0:
-                raise Exception("Simulator.join() empty process list")
-            traps = []
-            for p in procs:
-                if not isinstance(p, _Process):
-                    raise Exception("Simulator.join() not a process list")
-                traps.append(p.get_trap())
-        else:
-            raise Exception("Simulator.join() a process or a list of processes expected")
-        
-        if method != all and method != any:
-            raise Exception("Simulator.join() unknown method")
-
-        self.wait(traps, method=method)
-
 
     ######################
     # running simulation #
@@ -695,9 +658,11 @@ class Simulator:
 
         The simulator will process all events in timestamp order. When
         the method returns, the simulation time will advance to the
-        designated time, if either 'offset' or 'until' is specified.
-        Otherwise, the simulator will advance to the time of the last
-        event.
+        designated time, if either 'offset' or 'until' is
+        specified. All events with timestamps smaller than and equal
+        to the designated time will be processed. If neither 'offset'
+        nor 'until' is provided, the simulator will advance to the
+        time of the last processed event.
 
         """
 
@@ -719,18 +684,17 @@ class Simulator:
         else: upper = until
 
         # this is the main event loop of the simulator!
-        while len(self.event_list) > 0:
-            t = self.event_list.get_min()
+        while len(self._eventlist) > 0:
+            t = self._eventlist.get_min()
             if t > upper: break
-            self._one_event()
+            self._process_one_event()
 
         # after all the events, make sure we don't wind back the clock
         # if upper (set by either 'until' or 'offset') has been
         # explicitly specified by the user
         if upper_specified:
-            self.event_list.last = upper
+            self._eventlist.last = upper
             self.now = upper
-
 
     def step(self):
         """Process only one event.
@@ -742,60 +706,47 @@ class Simulator:
         """
 
         # this is the main event loop
-        if len(self.event_list) > 0:
-            self._one_event();
+        if len(self._eventlist) > 0:
+            self._process_one_event();
             
-
     def peek(self):
         """Return the time of the next scheduled event, or infinity if no
         future events are available."""
         
-        if len(self.event_list) > 0:
-            return self.event_list.get_min()
+        if len(self._eventlist) > 0:
+            return self._eventlist.get_min()
         else:
             return infinite_time
 
-        
     def show_calendar(self):
         """Print the list of all future events currently on the event
         list. This is an expensive operation and should be used
         responsively, possibly just for debugging purposes."""
 
-        print("list of future events (num=%d) at time %g on simulator %s:" %
-              (len(self.event_list), self.now, self.name if self.name else ''))
-        for e in sorted(self.event_list.pqueue.values()):
+        print("list of all future events (num=%d) at time %g on simulator %s:" %
+              (len(self._eventlist), self.now, self.name if self.name else ''))
+        for e in sorted(self._eventlist.pqueue.values()):
             print("  %s" % e)
 
-
-    def __init__(self, name, init_time):
-        """A simulator can only be created using the simulator() function."""
-
-        self.name = name
-        self.now = init_time
-        self.event_list = __EventList()
-        self._theproc = None
-        self._readyq = deque()
-
-
-    def _one_event(self):
+    def _process_one_event(self):
         """Process one event on the event list, assuming there is a least one
         event on the event list."""
         
-        e = self.event_list.delete_min()
+        e = self._eventlist.delete_min()
         self.now = e.time
         #print("%g: process %s" % (self.now, e))
 
-        # trigger the trap if the event already has a trap; this
-        # is a memory-saving mechanism: only those events that the
-        # user is explicitly interested in (using the simulator's
-        # trap() method) are attached with a trap
+        # trigger the trap if the event already has a trap; this is a
+        # memory-saving mechanism: only those events that the user is
+        # explicitly interested in (used in the simulator's wait()
+        # method) are attached with a trap
         if e.trap is not None:
             e.trap.trigger()
             
         if isinstance(e, _DirectEvent):
             if e.repeat_intv is not None:
                 # note that a renewed event is not trappable
-                self.event_list.insert(e.renew(e.time+e.repeat_intv))
+                self._eventlist.insert(e.renew(e.time+e.repeat_intv))
             e.func(self, e.params)
         elif isinstance(e, _ProcessEvent):
             e.proc.activate()
@@ -809,11 +760,10 @@ class Simulator:
                 self._theproc = p
                 p.run()
             else:
-                # processes can be killed while in the ready queue
+                # process is killed while in the ready queue
                 assert p.state == _Process.STATE_TERMINATED
         self._theproc = None
 
-        
 def simulator(name = None, init_time = 0):
     """Create a simulator.
 
@@ -838,7 +788,7 @@ def simulator(name = None, init_time = 0):
     
     sim = Simulator(name, init_time)
     if name != None:
-        __Sync.register_simulator(name, sim)
+        _Sync_.register_simulator(name, sim)
     return sim
 
 ## ------------------------------------------------------------

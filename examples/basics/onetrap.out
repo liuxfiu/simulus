@@ -1,0 +1,20 @@
+p0 starts at 10
+p1 starts at 11 and waits on trap
+p2 starts at 12 and waits on trap
+p3 starts at 13 and waits on trap
+p4 starts at 14 and waits on trap
+p5 starts at 15 and waits on trap
+p0 triggers the trap at 15
+p1 resumes at 15
+p2 resumes at 15
+p3 resumes at 15
+p4 resumes at 15
+p5 resumes at 15
+p6 starts at 16 and waits on trap
+p6 resumes at 16
+p7 starts at 17 and waits on trap
+p7 resumes at 17
+p8 starts at 18 and waits on trap
+p8 resumes at 18
+p9 starts at 19 and waits on trap
+p9 resumes at 19

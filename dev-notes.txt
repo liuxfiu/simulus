@@ -7,14 +7,14 @@ Completely Hidden Classes
 These classes should be completely hidden from the user. The user
 should not even making a reference to the class objects.
 
-The name of these classes starts with two underscores (__). All
-methods and variables in the class can be named without the need to
-begin with an underscore, since the class is completely hidden from
-the user after all. However, there is an exception: The subclasses
-from the hidden classes can be public. In that case, to avoid
-confusion, the methods and variables in the hidden base classes shall
-start with an underscore, unless they are to be made available to the
-user.
+The name of these classes starts and ends underscores (e.g.,
+_EventList_). All methods and variables in the class can be named
+without the need to begin with an underscore, since the class is
+completely hidden from the user after all. However, there is an
+exception: The subclasses from the hidden classes can be public. In
+that case, to avoid confusion, the methods and variables in the hidden
+base classes shall start with an underscore, unless they are to be
+made available to the user.
 
 Partially Hidden Classes
 ------------------------
@@ -46,9 +46,13 @@ access them directly.
 List of Files, Classes and Methods
 ==================================
 
+************
 __init__.py:
+************
 
+*********
 utils.py:
+*********
 
 * QDIS  # public interface
     * FIFO, LIFO, RANDOM, PRIORITY
@@ -59,15 +63,20 @@ utils.py:
     * finalize()
     * report()
 
+*************
 trappable.py:
+*************
 
 * _Trappable  # partially hidden, opaque reference
     * _sim
     * _try_wait()
     * _commit_wait()
     * _cancel_wait()
+    * _true_trappable()
 
+*******
 trap.py
+*******
 
 * Trap  # public interface
     * __init__()  # supposedly hidden
@@ -78,7 +87,9 @@ trap.py
     * _try_wait()
     * _cancel_wait()
 
+*************
 semaphore.py:
+*************
 
 * Semaphore  # public interface
     * __init__()  # supposedly hidden
@@ -92,11 +103,13 @@ semaphore.py:
     * _try_wait()
     * _cancel_wait()
 
+*********
 event.py:
+*********
 
-* __MinEntry  # completely hidden
-* __MaxEntry  # completely hidden
-* __PQDict  # completely hidden
+* _MinEntry_  # completely hidden
+* _MaxEntry_  # completely hidden
+* _PQDict_  # completely hidden
 
 * _Event  # partially hidden, opaque reference
     * __init__()
@@ -107,6 +120,7 @@ event.py:
     * __lt__()
     * _try_wait()
     * _cancel_wait()
+    * _true_trappable()
 
 * _DirectEvent  # partially hidden, opaque reference
     * __init__()
@@ -121,7 +135,7 @@ event.py:
     * proc
     * __str__()
 
-* __EventList  # completely hidden
+* _EventList_  # completely hidden
     * __init__()
     * pqueue
     * last
@@ -133,7 +147,9 @@ event.py:
     * update()
     * current_event()
 
+***********
 process.py:
+***********
 
 * _Process  # partially hidden, opaque reference
     * __init__()
@@ -155,16 +171,62 @@ process.py:
     * terminate()
     * _try_wait()
     * _cancel_wait()
+    * _true_trappable()
 
+********
 sync.py:
+********
 
-* __Sync:  # completely hidden
+* _Sync_:  # completely hidden
 * sync()  # public interface
 
+*************
 simulator.py:
+*************
 
 * Simulator  # public interface
-
-
+    * __init__()
+    * name
+    * now
+    * _eventlist
+    * _theproc
+    * _readq
+    * sched()
+    * cancel()
+    * resched()
+    * process()
+    * cur_process()
+    * terminated()
+    * get_priority()
+    * set_priority()
+    * kill()
+    * sleep()
+    * trap()
+    * semaphore()
+    * resource()
+    * wait()
+    * run()
+    * step()
+    * peek()
+    * show_calendar()
+    * _process_one_event()
 
 * simulator()  # public interface
+    
+************
+resource.py:
+************
+
+* Resource  # public interface
+    * __init__()  # supposedly hidden
+    * name
+    * capacity
+    * qdis
+    * stats
+    * _sem
+    * _last_arrival
+    * _arrivals
+    * _services
+    * reserve()
+    * release()
+

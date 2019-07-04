@@ -6,7 +6,7 @@ def p(sim, params):
 
     # set the priority of the current process (this is only useful 
     # if we use PRIORITY qdis)
-    sim.cur_process().set_priority(abs(idx-3.2))
+    sim.set_priority(abs(idx-3.2))
 
     # make sure the process wait on the semaphore in order
     sim.sleep(idx)
@@ -15,7 +15,7 @@ def p(sim, params):
     # a message when it is unblocked
     sem.wait()
     print("p[id=%d,prio=%.1f] resumes at %f" % 
-          (idx, sim.cur_process().get_priority(), sim.now))
+          (idx, sim.get_priority(), sim.now))
 
 def trywaits(sim, params):
     sem = params['sem']

@@ -1,0 +1,6 @@
+print_params() invoked at time 10
+  with msg: hello
+  all arguments: {'msg': 'hello', 'var': False}
+print_params() invoked at time 20
+  with msg: hey, how can you forget the message?
+  all arguments: {'arg1': 'here', 'arg2': 'be good'}

@@ -4,20 +4,22 @@ from random import seed, expovariate
 seed(123)
 
 def job(sim, params):
-    rsc.reserve()
+    idx = params['idx']
+    r.reserve()
+    print("%g: job(%d) gains access " % (sim.now,idx))
     sim.sleep(expovariate(1))
-    rsc.release()
+    print("%g: job(%d) releases" % (sim.now,idx))
+    r.release()
     
-def arrival_process(sim, params):
+def arrival(sim, params):
+    i = 0
     while True:
-        sim.sleep(expovariate(1.8))
-        sim.process(job)
+        i += 1
+        sim.sleep(expovariate(0.95))
+        print("%g: job(%d) arrives" % (sim.now,i))
+        sim.process(job, idx=i)
         
 sim = simulus.simulator()
-qs = simulus.Resource.default_qstats()
-rsc = sim.resource(capacity=2, qstats=qs)
-sim.process(arrival_process)
-sim.run(1000)
-
-qs.final(sim.now)
-qs.report()
+r = sim.resource()
+sim.process(arrival)
+sim.run(10)

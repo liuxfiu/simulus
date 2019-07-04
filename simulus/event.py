@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-03 17:24:08 liux>
+# Last Update: Time-stamp: <2019-07-04 06:04:32 liux>
 ###############################################################
 
 """Simulation event types and event list."""
@@ -11,7 +11,7 @@ from collections.abc import MutableMapping
 from .trappable import _Trappable
 from .trap import Trap
 
-__all__ = ["_Event", "_DirectEvent", "_ProcessEvent", "__EventList", \
+__all__ = ["_Event", "_DirectEvent", "_ProcessEvent", "_EventList_", \
            "infinite_time", "minus_infinite_time"]
 
 # two extremes of simulation time
@@ -41,7 +41,7 @@ minus_infinite_time = float('-inf')
 #       O(log n) updating of an arbitrary element's priority key
 # PQDict is modified to be used for our event list
  
-class __MinEntry(object):
+class _MinEntry_(object):
     """
     Mutable entries for a Min-PQ dictionary.
 
@@ -53,7 +53,7 @@ class __MinEntry(object):
     def __lt__(self, other):
         return self.pkey < other.pkey
 
-class __MaxEntry(object):
+class _MaxEntry_(object):
     """
     Mutable entries for a Max-PQ dictionary.
 
@@ -65,18 +65,18 @@ class __MaxEntry(object):
     def __lt__(self, other):
         return self.pkey > other.pkey
 
-class __PQDict(MutableMapping):
+class _PQDict_(MutableMapping):
     def __init__(self, *args, **kwargs):
         self._heap = []
         self._position = {}
         self.update(*args, **kwargs)
 
-    create_entry = __MinEntry     #defaults to a min-pq
+    create_entry = _MinEntry_  #defaults to a min-pq
 
     @classmethod
     def maxpq(cls, *args, **kwargs):
         pq = cls()
-        pq.create_entry = __MaxEntry
+        pq.create_entry = _MaxEntry_
         pq.__init__(*args, **kwargs)
         return pq
 
@@ -116,7 +116,7 @@ class __PQDict(MutableMapping):
                 if other_pos < len(heap) and not heap[child_pos] < heap[other_pos]:
                     child_pos = other_pos
                 if heap[child_pos] < heap[pos]:
-                    self._sink(pos)
+                    self.sink(pos)
 
     def __delitem__(self, dkey):
         heap = self._heap
@@ -140,7 +140,7 @@ class __PQDict(MutableMapping):
                 if other_pos < len(heap) and not heap[child_pos] < heap[other_pos]:
                     child_pos = other_pos
                 if heap[child_pos] < heap[pos]:
-                    self._sink(pos)
+                    self.sink(pos)
         del entry_to_delete
 
     def peek(self):
@@ -245,7 +245,7 @@ class _Event(_Trappable):
         # if the current event is on the event list, pass onto the
         # trap created for this event; otherwise, we consider the
         # trappable already triggered
-        if self._sim.event_list.current_event(self):
+        if self._sim._eventlist.current_event(self):
             if self.trap is None:
                 self.trap = Trap(self._sim)
             return self.trap._try_wait()
@@ -255,6 +255,14 @@ class _Event(_Trappable):
     def _cancel_wait(self):
         assert self.trap is not None
         self.trap._cancel_wait()
+
+    def _true_trappable(self):
+        # it's possible the event is no longer in the event list, in
+        # which case the trap is None (meaning it's sprung)
+        if self.trap is not None:
+            return self.trap
+        else:
+            return self
         
 class _DirectEvent(_Event):
     """The event type for direct event scheduling."""
@@ -286,7 +294,7 @@ class _ProcessEvent(_Event):
         return "PE[%s]:%g" % (self.name, self.time)
 
 
-class __EventList(object):
+class _EventList_(object):
     """An event list sorts events in timestamp order.
 
     An event list is a priority queue that stores and sorts simulation
@@ -298,7 +306,7 @@ class __EventList(object):
 
     def __init__(self):
         #self.pqueue = []
-        self.pqueue = __PQDict()
+        self.pqueue = _PQDict_()
         self.last = minus_infinite_time
 
     def __len__(self):

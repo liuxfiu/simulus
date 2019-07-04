@@ -1,0 +1,36 @@
+0.0566152: job(1) arrives
+0.0566152: job(1) gains access 
+0.15264: job(2) arrives
+0.272591: job(3) arrives
+0.579584: job(1) releases
+0.579584: job(2) gains access 
+0.618484: job(2) releases
+0.618484: job(3) gains access 
+1.38679: job(3) releases
+2.70906: job(4) arrives
+2.70906: job(4) gains access 
+3.13407: job(5) arrives
+3.31718: job(6) arrives
+3.75014: job(7) arrives
+4.17767: job(8) arrives
+4.47373: job(9) arrives
+4.47549: job(10) arrives
+4.62019: job(4) releases
+4.62019: job(5) gains access 
+4.71188: job(5) releases
+4.71188: job(6) gains access 
+5.07885: job(11) arrives
+5.1551: job(12) arrives
+5.55405: job(13) arrives
+5.62219: job(6) releases
+5.62219: job(7) gains access 
+6.18015: job(14) arrives
+6.28263: job(15) arrives
+6.44405: job(16) arrives
+7.98027: job(7) releases
+7.98027: job(8) gains access 
+8.00174: job(8) releases
+8.00174: job(9) gains access 
+8.0872: job(17) arrives
+8.98396: job(18) arrives
+9.30851: job(19) arrives

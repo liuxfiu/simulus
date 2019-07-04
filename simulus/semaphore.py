@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-03 16:54:17 liux>
+# Last Update: Time-stamp: <2019-07-03 22:38:12 liux>
 ###############################################################
 
 from collections import deque
@@ -103,7 +103,7 @@ class Semaphore(_Trappable):
                             self.blocked[-1], self.blocked[i] 
             else:
                 # QDIS.PRIORITY
-                heapq.heappush(self.blocked, (p.get_priority(), id(p), p))
+                heapq.heappush(self.blocked, (p.priority, id(p), p))
             assert len(self.blocked) == -self.val
             p.suspend()
         else:
@@ -184,7 +184,7 @@ class Semaphore(_Trappable):
                             self.blocked[-1], self.blocked[i] 
             else:
                 # QDIS.PRIORITY
-                heapq.heappush(self.blocked, (p.get_priority(), id(p), p))
+                heapq.heappush(self.blocked, (p.priority, id(p), p))
             assert len(self.blocked) == -self.val
             return True
         else:

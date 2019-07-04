@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-03 16:53:43 liux>
+# Last Update: Time-stamp: <2019-07-03 21:02:43 liux>
 ###############################################################
 
 from .trappable import _Trappable
@@ -134,7 +134,7 @@ class Trap(_Trappable):
 
         # we must be in the process context
         p = self._sim.cur_process()
-        assert p not is None
+        assert p is not None
         
         # the trap must have been set previously
         assert self.state == Trap.TRAP_SET

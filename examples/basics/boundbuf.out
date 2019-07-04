@@ -1,0 +1,59 @@
+0.010221: p[1] produces item [0]
+0.010221: p[1] stores item [0] in buffer
+0.010221: c[0] retrieves item [0] from buffer
+0.538916: p[0] produces item [1]
+0.538916: p[0] stores item [1] in buffer
+0.538916: c[2] retrieves item [1] from buffer
+0.752533: c[0] consumes item[0]
+0.754168: p[0] produces item [2]
+0.754168: p[0] stores item [2] in buffer
+0.754168: c[1] retrieves item [2] from buffer
+1.521765: c[2] consumes item[1]
+1.588897: p[0] produces item [3]
+1.588897: p[0] stores item [3] in buffer
+1.588897: c[0] retrieves item [3] from buffer
+1.608449: c[1] consumes item[2]
+1.754371: p[1] produces item [4]
+1.754371: p[1] stores item [4] in buffer
+1.754371: c[2] retrieves item [4] from buffer
+2.156181: p[0] produces item [5]
+2.156181: p[0] stores item [5] in buffer
+2.156181: c[1] retrieves item [5] from buffer
+2.476470: c[0] consumes item[3]
+2.580087: p[1] produces item [6]
+2.580087: p[1] stores item [6] in buffer
+2.580087: c[0] retrieves item [6] from buffer
+2.594533: p[0] produces item [7]
+2.594533: p[0] stores item [7] in buffer
+2.670563: c[2] consumes item[4]
+2.670563: c[2] retrieves item [7] from buffer
+3.125764: p[0] produces item [8]
+3.125764: p[0] stores item [8] in buffer
+3.181913: c[1] consumes item[5]
+3.181913: c[1] retrieves item [8] from buffer
+3.771587: c[2] consumes item[7]
+3.826813: p[0] produces item [9]
+3.826813: p[0] stores item [9] in buffer
+3.826813: c[2] retrieves item [9] from buffer
+3.846008: c[0] consumes item[6]
+4.037499: p[0] produces item [10]
+4.037499: p[0] stores item [10] in buffer
+4.037499: c[0] retrieves item [10] from buffer
+4.172205: c[1] consumes item[8]
+4.455382: p[0] produces item [11]
+4.455382: p[0] stores item [11] in buffer
+4.455382: c[1] retrieves item [11] from buffer
+4.882414: c[2] consumes item[9]
+5.017675: c[0] consumes item[10]
+5.282205: c[1] consumes item[11]
+5.751716: p[1] produces item [12]
+5.751716: p[1] stores item [12] in buffer
+5.751716: c[2] retrieves item [12] from buffer
+6.551144: c[2] consumes item[12]
+7.881357: p[0] produces item [13]
+7.881357: p[0] stores item [13] in buffer
+7.881357: c[0] retrieves item [13] from buffer
+8.664728: c[0] consumes item[13]
+9.605397: p[1] produces item [14]
+9.605397: p[1] stores item [14] in buffer
+9.605397: c[1] retrieves item [14] from buffer

@@ -22,7 +22,7 @@ def homework(sim, params):
         s = sim.process(student, expovariate(1/10.), student_id=i)
         students.append(s)
     # wait for all student processes to complete
-    sim.join(students)
+    sim.wait(students)
     print("last student finishes homework at "+str(sim.now))
         
 sim = simulus.simulator()

@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-03 17:39:06 liux>
+# Last Update: Time-stamp: <2019-07-04 06:12:04 liux>
 ###############################################################
 
 # greenlet must be installed as additional python package
@@ -98,7 +98,7 @@ class _Process(_Trappable):
         assert not self.vert.dead
 
         e = _ProcessEvent(self._sim, until, self, self.name)
-        self._sim.event_list.insert(e)
+        self._sim._eventlist.insert(e)
         self.deactivate(_Process.STATE_SUSPENDED)
         self.main.switch()
 
@@ -147,4 +147,7 @@ class _Process(_Trappable):
         return self.trap._try_wait()
 
     def _cancel_wait(self):
-        return self.trap._cancel_wait()
+        self.trap._cancel_wait()
+
+    def _true_trappable(self):
+        return self.trap

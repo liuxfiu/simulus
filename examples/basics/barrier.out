@@ -1,0 +1,74 @@
+p0 runs at 0 and sleeps for 0.538916
+p2 runs at 0 and sleeps for 0.0102212
+p6 runs at 0 and sleeps for 1.74415
+p9 runs at 0 and sleeps for 0.354734
+p5 runs at 0 and sleeps for 0.459518
+p1 runs at 0 and sleeps for 0.215251
+p4 runs at 0 and sleeps for 0.83473
+p3 runs at 0 and sleeps for 0.176365
+p8 runs at 0 and sleeps for 0.132694
+p7 runs at 0 and sleeps for 0.567284
+p2 reaches barrier at 0.0102212
+p8 reaches barrier at 0.132694
+p3 reaches barrier at 0.176365
+p1 reaches barrier at 0.215251
+p9 reaches barrier at 0.354734
+p5 reaches barrier at 0.459518
+p0 reaches barrier at 0.538916
+p7 reaches barrier at 0.567284
+p4 reaches barrier at 0.83473
+p6 reaches barrier at 1.74415
+p6 runs at 1.74415 and sleeps for 0.825716
+p2 runs at 1.74415 and sleeps for 0.191577
+p8 runs at 1.74415 and sleeps for 0.805691
+p3 runs at 1.74415 and sleeps for 0.438352
+p1 runs at 1.74415 and sleeps for 3.17163
+p9 runs at 1.74415 and sleeps for 0.0957338
+p5 runs at 1.74415 and sleeps for 3.84624
+p0 runs at 1.74415 and sleeps for 0.531231
+p7 runs at 1.74415 and sleeps for 0.701049
+p4 runs at 1.74415 and sleeps for 0.16034
+p9 reaches barrier at 1.83988
+p4 reaches barrier at 1.90449
+p2 reaches barrier at 1.93573
+p3 reaches barrier at 2.1825
+p0 reaches barrier at 2.27538
+p7 reaches barrier at 2.4452
+p8 reaches barrier at 2.54984
+p6 reaches barrier at 2.56987
+p1 reaches barrier at 4.91578
+p5 reaches barrier at 5.59039
+p5 runs at 5.59039 and sleeps for 1.26928
+p9 runs at 5.59039 and sleeps for 0.210686
+p4 runs at 5.59039 and sleeps for 0.417883
+p2 runs at 5.59039 and sleeps for 0.0238023
+p3 runs at 5.59039 and sleeps for 0.414785
+p0 runs at 5.59039 and sleeps for 3.42598
+p7 runs at 5.59039 and sleeps for 3.85368
+p8 runs at 5.59039 and sleeps for 1.36465
+p6 runs at 5.59039 and sleeps for 0.00346059
+p1 runs at 5.59039 and sleeps for 2.81739
+p6 reaches barrier at 5.59385
+p2 reaches barrier at 5.61419
+p9 reaches barrier at 5.80107
+p3 reaches barrier at 6.00517
+p4 reaches barrier at 6.00827
+p5 reaches barrier at 6.85967
+p8 reaches barrier at 6.95504
+p1 reaches barrier at 8.40778
+p0 reaches barrier at 9.01636
+p7 reaches barrier at 9.44407
+p7 runs at 9.44407 and sleeps for 2.04614
+p6 runs at 9.44407 and sleeps for 1.47331
+p2 runs at 9.44407 and sleeps for 0.197078
+p9 runs at 9.44407 and sleeps for 0.104805
+p3 runs at 9.44407 and sleeps for 0.535345
+p4 runs at 9.44407 and sleeps for 2.1675
+p5 runs at 9.44407 and sleeps for 0.862954
+p8 runs at 9.44407 and sleeps for 1.33401
+p1 runs at 9.44407 and sleeps for 0.264775
+p0 runs at 9.44407 and sleeps for 0.741492
+p9 reaches barrier at 9.54887
+p2 reaches barrier at 9.64114
+p1 reaches barrier at 9.70884
+p3 reaches barrier at 9.97941

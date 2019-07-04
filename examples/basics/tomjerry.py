@@ -15,13 +15,10 @@ def compete(sim, params):
         print("competition starts at %g -->" % sim.now)
 
         p = sim.process(tom) # run, tom, run!
-        t1 = sim.trap(p)
-    
         e = sim.sched(jerry, uniform(50, 150)) # run, jerry, run!
-        t2 = sim.trap(e)
     
         # let the race begin...
-        (r1, r2), timedout = sim.wait((t1, t2), 100, method=any)
+        (r1, r2), timedout = sim.wait((p, e), 100, method=any)
         if timedout:
             print("%g: both disqualified" % sim.now)
             sim.kill(p)
