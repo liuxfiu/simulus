@@ -1,30 +1,30 @@
 list of all future events (num=5) at time 100 on simulator sim1:
-  DE[4481626008]:105
-  DE[4481530176]:125
-  DE[4481955152]:145
-  DE[4481955208]:165
-  DE[4481955320]:185
+  105: dir_evt=handle() 
+  125: dir_evt=handle() 
+  145: dir_evt=handle() 
+  165: dir_evt=handle() 
+  185: dir_evt=handle() 
 list of all future events (num=20) at time -100 on simulator sim2:
-  DE[4481955432]:-95
-  DE[4481955544]:-85
-  DE[4481955656]:-75
-  DE[4481955768]:-65
-  DE[4481955880]:-55
-  DE[4481955992]:-45
-  DE[4481956104]:-35
-  DE[4481956216]:-25
-  DE[4481956328]:-15
-  DE[4481956440]:-5
-  DE[4481956552]:5
-  DE[4481956664]:15
-  DE[4481956776]:25
-  DE[4481956888]:35
-  DE[4481957000]:45
-  DE[4481957112]:55
-  DE[4481957224]:65
-  DE[4481957336]:75
-  DE[4481957448]:85
-  DE[4481957560]:95
+  -95: dir_evt=handle() 
+  -85: dir_evt=handle() 
+  -75: dir_evt=handle() 
+  -65: dir_evt=handle() 
+  -55: dir_evt=handle() 
+  -45: dir_evt=handle() 
+  -35: dir_evt=handle() 
+  -25: dir_evt=handle() 
+  -15: dir_evt=handle() 
+  -5: dir_evt=handle() 
+  5: dir_evt=handle() 
+  15: dir_evt=handle() 
+  25: dir_evt=handle() 
+  35: dir_evt=handle() 
+  45: dir_evt=handle() 
+  55: dir_evt=handle() 
+  65: dir_evt=handle() 
+  75: dir_evt=handle() 
+  85: dir_evt=handle() 
+  95: dir_evt=handle() 
 'sim1' handles event at time 105
 'sim2' handles event at time -95
 'sim1' handles event at time 125

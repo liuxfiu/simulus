@@ -8,7 +8,7 @@ with open("CHANGELOG.md", "r") as fh:
 
 setuptools.setup(
     name="simulus",
-    version="1.0.5",
+    version="1.0.6",
     author="Jason Liu",
     author_email="jasonxliu2010@gmail.com",
     description="A Discrete-Event Simulator in Python",
@@ -24,5 +24,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=['greenlet', 'runstats'],
-    python_requires='>=3',
+    python_requires='>=2.8',
 )

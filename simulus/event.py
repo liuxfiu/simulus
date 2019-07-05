@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-04 06:04:32 liux>
+# Last Update: Time-stamp: <2019-07-04 18:59:02 liux>
 ###############################################################
 
 """Simulation event types and event list."""
@@ -236,7 +236,8 @@ class _Event(_Trappable):
         self.trap = None
 
     def __str__(self):
-        return "E[%s]:%g" % (self.name if self.name else id(self), self.time)
+        return "%g: evt=%s" % \
+            (self.time, self.name if self.name else id(self))
 
     def __lt__(self, other):
         return self.time < other.time
@@ -274,9 +275,9 @@ class _DirectEvent(_Event):
         self.repeat_intv = repeat_intv
 
     def __str__(self):
-        return "DE[%s]:%g%s" % \
-            (self.name if self.name else id(self), self.time,
-             " (repeat=%g)"%self.repeat_intv if self.repeat_intv else "")
+        return "%g: dir_evt=%s %s" % \
+            (self.time, self.name if self.name else self.func.__name__+'()',
+             "(repeat=%g)"%self.repeat_intv if self.repeat_intv else "")
 
     def renew(self, time):
         self.time = time
@@ -291,8 +292,8 @@ class _ProcessEvent(_Event):
         self.proc = proc
 
     def __str__(self):
-        return "PE[%s]:%g" % (self.name, self.time)
-
+        return "%g: prc_evt=%s" % \
+            (self.time, self.name if self.name else self.proc.__proc__+'()')
 
 class _EventList_(object):
     """An event list sorts events in timestamp order.

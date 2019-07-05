@@ -1,5 +1,9 @@
 import simulus
 
+# so that we get same result from random priority
+from random import seed
+seed(12345)
+
 def p(sim, params):
     idx = params['idx']
     sem = params['sem']
