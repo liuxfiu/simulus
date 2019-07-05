@@ -1,7 +1,6 @@
-import simulus
+"""This example is modified from the simpy's bank renege example; we
+use the same settings as simpy so that we can get the same results."""
 
-# this example is modified from the simpy's bank renege example; we
-# use the same settings so that we can get the same results
 RANDOM_SEED = 42        # random seed for repeatability
 NUM_CUSTOMERS = 5       # total number of customers
 INTV_CUSTOMERS = 10.0   # mean time between new customers
@@ -9,6 +8,7 @@ MEAN_BANK_TIME = 12.0   # mean time in bank for each customer
 MIN_PATIENCE = 1        # min customer patience
 MAX_PATIENCE = 3        # max customer patience
 
+import simulus
 from random import seed, expovariate, uniform
 
 def source():

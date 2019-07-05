@@ -5,6 +5,17 @@
 
 ### New
 
+* Changed sched() and process() to allow arbitrary functions; examples and documents have been updated accordingly. [Jason Liu]
+
+* Added regression pytest and tox support. [Jason Liu]
+
+
+## 1.0.5 (2019-07-04)
+
+### New
+
+* New trappables and conditional waits (1.0.5). new: dev: added support for changelogs generated from git logs. chg: dev: changed resource reserve to acquire. [Jason Liu]
+
 * Redesigned trappables; the processes, events, semaphores, traps, and resources now work with a more intuitive interface design. [Jason Liu]
 
 * Added initial implementation of resource and qstats. [Jason Liu]

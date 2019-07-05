@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-05 06:54:21 liux>
+# Last Update: Time-stamp: <2019-07-05 11:38:50 liux>
 ###############################################################
 
 from collections import deque
@@ -447,13 +447,11 @@ class Simulator:
             raise Exception("Simulator.semaphore(qdis=%r) unknown queuing discipline" % qdis)
         return Semaphore(self, initval, qdis)
 
-    def resource(self, name=None, capacity=1, qdis=QDIS.FIFO, collect=None):
+    def resource(self, capacity=1, qdis=QDIS.FIFO, name=None, collect=None):
         """Create and return a resource.
 
         Parameters
         ----------
-        name (string): the optional name of the resource
-
         capacity (int): the capacity of the resource; the value must
                 be a positive integer; the default is one
 
@@ -462,6 +460,8 @@ class Simulator:
                 QDIS.LIFO (last in first out), QDIS.RANDOM (random
                 ordering), or QDIS.PRIORITY (based on process
                 priority); if ignored, the default is QDIS.FIFO
+
+        name (string): the optional name of the resource
 
         collect: the optional collector for statistics
 
