@@ -1,6 +1,3 @@
-print_params() invoked at time 10
-  with msg: hello
-  all arguments: {'msg': 'hello', 'var': False}
-print_params() invoked at time 20
-  with msg: hey, how can you forget the message?
-  all arguments: {'arg1': 'here', 'arg2': 'be good'}
+print_params_1(a='hello', b=100, c='named') invoked at time 10
+print_params_2(a='hello', b=100, args=('yes', 'no'), c=1, kwargs={'arg1': True, 'arg2': 2}) invoked at time 20
+print_params_3(a=10, b=11, c=12) invoked at 30

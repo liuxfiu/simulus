@@ -25,8 +25,7 @@ class Barrier(object):
             self.trap = self.sim.trap()
             self.num = 0
 
-def p(sim, params):
-    idx = params['idx']
+def p(idx):
     while True:
         t = expovariate(1)
         print("p%d runs at %g and sleeps for %g" % (idx, sim.now, t))
@@ -37,5 +36,5 @@ def p(sim, params):
 sim = simulus.simulator()
 bar = Barrier(sim, 10)
 for i in range(10):
-    sim.process(p, idx=i)
+    sim.process(p, i)
 sim.run(10)

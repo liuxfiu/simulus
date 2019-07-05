@@ -11,13 +11,12 @@ MAX_PATIENCE = 3        # max customer patience
 
 from random import seed, expovariate, uniform
 
-def source(sim, params):
+def source():
     for i in range(NUM_CUSTOMERS):
-        sim.process(customer, idx=i)
+        sim.process(customer, i)
         sim.sleep(expovariate(1.0/INTV_CUSTOMERS))
 
-def customer(sim, params):
-    idx = params['idx']
+def customer(idx):
     arrive = sim.now
     print('%7.4f Customer%02d: Here I am' % (arrive, idx))
 

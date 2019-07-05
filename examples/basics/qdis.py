@@ -4,10 +4,7 @@ import simulus
 from random import seed
 seed(12345)
 
-def p(sim, params):
-    idx = params['idx']
-    sem = params['sem']
-
+def p(idx, sem):
     # set the priority of the current process (this is only useful 
     # if we use PRIORITY qdis)
     sim.set_priority(abs(idx-3.2))
@@ -21,9 +18,7 @@ def p(sim, params):
     print("p[id=%d,prio=%.1f] resumes at %f" % 
           (idx, sim.get_priority(), sim.now))
 
-def trywaits(sim, params):
-    sem = params['sem']
-
+def trywaits(sem):
     # create ten processes which will all block on the semaphore
     for i in range(10):
         sim.process(p, idx=i, sem=sem)
@@ -39,8 +34,8 @@ s1 = sim.semaphore()
 s2 = sim.semaphore(qdis=simulus.QDIS.LIFO)
 s3 = sim.semaphore(qdis=simulus.QDIS.RANDOM)
 s4 = sim.semaphore(qdis=simulus.QDIS.PRIORITY)
-sim.process(trywaits, 0, sem=s1)
-sim.process(trywaits, 100, sem=s2)
-sim.process(trywaits, 200, sem=s3)
-sim.process(trywaits, 300, sem=s4)
+sim.process(trywaits, s1, offset=0)
+sim.process(trywaits, s2, offset=100)
+sim.process(trywaits, s3, offset=200)
+sim.process(trywaits, s4, offset=300)
 sim.run()

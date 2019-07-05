@@ -41,20 +41,13 @@ class Node:
             print("%g: n%d[%d] ships job to n%d[%d]" %
                   (sim.now, self.id, self.num_jobs, n, nodes[n].num_jobs))
             if n != self.id and nodes[n].num_jobs <= 1:
-                sim.process(create_service, node=nodes[n])
+                sim.process(Node.service, nodes[n])
 
-# a wrapper for service process
-def create_service(sim, params):
-    n = params['node']
-    n.service()
-
-sim = simulus.simulator()
 seed(simcfg['seed'])
-
+sim = simulus.simulator()
 nodes = [Node(i) for i in range(simcfg['num_nodes'])]
 for n in nodes:
-    sim.process(create_service, node=n)
-
+    sim.process(Node.service, n)
 sim.run(until=100)
 
 total_wait = sum([n.sum_wait for n in nodes])

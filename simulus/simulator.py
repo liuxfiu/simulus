@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-04 06:15:38 liux>
+# Last Update: Time-stamp: <2019-07-05 06:54:21 liux>
 ###############################################################
 
 from collections import deque
@@ -51,23 +51,24 @@ class Simulator:
     # direct event scheduling methods #
     ###################################
         
-    def sched(self, func, offset=None, name=None, until=None, params=None, repeat_intv=None, **kargs):
+    #def sched(self, func, offset=None, name=None, until=None, params=None, repeat_intv=None, **kargs):
+    def sched(self, func, *args, offset=None, until=None, name=None, repeat_intv=None, **kwargs):
         """Schedule an event.
 
         An event in simulus is represented as a function invoked in
-        the simulated future.
+        the simulated future. 
         
         Parameters 
         ----------
-        func: the event handler, which is a function that takes two
-                arguments: a simulator instance and the user
-                parameters passed in as a dictionary
+        func: the event handler, which is a user-defined function
+
+        args: the positional arguments as a list to be passed to the
+                scheduled function (the event handler) once the
+                function is invoked at the scheduled time
 
         offset (float): relative time from now at which the event is
                 scheduled to happen; if provided, must be a
                 non-negative value
-
-        name (string): an optional name for the event
 
         until (float): the absolute time at which the event is
                 scheduled to happen; if provided, it must not be
@@ -75,22 +76,22 @@ class Simulator:
                 'offset' or 'until' can be used, but not both; if both
                 are ignored, it's assumed to be the current time
 
-        params (dict): an optional dictionary containing the user
-                parameters to be passed to the event handler when the
-                function is invoked
+        name (string): an optional name for the event
 
         repeat_intv (float): if provided, the event will be repeated
                 with the given time interval; the interval must be a
                 strictly postive value
 
-        kargs: arbitrary keyword arguments, which will be folded into
-                'params' and passed to the event handler
+        kwargs: the keyworded arguments as a dictionary to be passed
+                to the scheduled function (the event handler), once
+                the function is invoked at the scheduled time
 
         Returns
         -------
-        This method returns a direct scheduling event (it's an opaque
-        object to the user), with which the user can cancel the event, 
-        or reschedule the event, or trap the event if needed
+        This method returns a direct scheduling event (which is an
+        opaque object to the user), with which the user can cancel the
+        event, or reschedule the event, or apply conditional wait on
+        the event if needed
 
         """
 
@@ -110,19 +111,20 @@ class Simulator:
                             (until, self.now))
         else: time = until
 
-        # consolidate arguments
-        if params is None:
-            params = kargs
-        else:
-            try:
-                params.update(kargs)
-            except AttributeError:
-                raise Exception("Simulator.sched() params not a dictionary");
+        ## consolidate arguments
+        #if params is None:
+        #    params = kargs
+        #else:
+        #    try:
+        #        params.update(kargs)
+        #    except AttributeError:
+        #        raise Exception("Simulator.sched() params not a dictionary");
 
         if repeat_intv is not None and repeat_intv <= 0:
             raise Exception("Simulator.sched(repeat_intv=%r) non-postive repeat interval" % repeat_intv)
             
-        e = _DirectEvent(self, time, func, params, name, repeat_intv)
+        #e = _DirectEvent(self, time, func, params, name, repeat_intv)
+        e = _DirectEvent(self, time, func, name, repeat_intv, args, kwargs)
         self._eventlist.insert(e)
         return e
 
@@ -196,13 +198,14 @@ class Simulator:
     # process scheduling methods #
     ##############################
     
-    def process(self, proc, offset=None, name=None, until=None, params=None, **kargs):
+    #def process(self, proc, offset=None, name=None, until=None, params=None, **kargs):
+    def process(self, proc, *args, offset=None, until=None, name=None, **kwargs):
         """Create a process and schedule its execution.
 
         A process is a separate thread of control. During its
         execution, a process can sleep for some time, or wait for
-        certain conditions to become true (on a trap or semaphore), or
-        both. In either case, the process can be suspended and the
+        certain conditions to become true (on a trap or semaphore or
+        others). In any case, the process can be suspended and the
         simulation time may advance until it resumes execution.
 
         This method creates a process and schedule for the process to
@@ -211,15 +214,16 @@ class Simulator:
         
         Parameters 
         ----------
-        proc: the starting function of the process; the function that
-                takes two arguments: a simulator instance and the user
-                parameters passed in as a dictionary
+        proc: the starting function of the process, which can be an
+                arbitrary user-defined function.
+
+        args: the positional arguments as a list to be passed to the
+                starting function when the process begins at the
+                scheduled time
 
         offset (float): relative time from now at which the process is
                 expected to start running; if provided, it must be a
                 non-negative value (zero is OK)
-
-        name (string): an optional name for the process
 
         until (float): the absolute time at which the process is
                 expected to start running; if provided, it must not be
@@ -227,19 +231,18 @@ class Simulator:
                 'offset' or 'until' can be used, but not both; if both
                 are ignored, it is assumed to be the current time
 
-        params (dict): an optional dictionary containing the user
-                parameters to be passed to the process' starting
-                function when it begins execution
+        name (string): an optional name for the process
 
-        kargs: optional keyword arguments, which will be folded into
-                'params' and passed to the process' starting function
+        kwargs: the keyworded arguments as a dictionary to be passed
+                to the starting function when the process begins at
+                the scheduled time
 
         Returns
         -------
         This method returns the process being created (it's an opaque
         object to the user); the user can use it to check whether the
         process is terminated, to join the process (i.e., to wait for
-        its termination), or to explicitly kill the process.
+        its termination), or even to explicitly kill the process.
 
         """
         
@@ -259,16 +262,17 @@ class Simulator:
                             (until, self.now))
         else: time = until
 
-        # consolidate arguments
-        if params is None:
-            params = kargs
-        else:
-            try:
-                params.update(kargs)
-            except AttributeError:
-                raise Exception("Simulator.process() params not a dictionary");
+        ## consolidate arguments
+        #if params is None:
+        #    params = kargs
+        #else:
+        #    try:
+        #        params.update(kargs)
+        #    except AttributeError:
+        #        raise Exception("Simulator.process() params not a dictionary");
 
-        p = _Process(self, name, proc, params)
+        #p = _Process(self, name, proc, params)
+        p = _Process(self, name, proc, args, kwargs)
         e = _ProcessEvent(self, time, p, name)
         self._eventlist.insert(e)
         return p
@@ -747,7 +751,8 @@ class Simulator:
             if e.repeat_intv is not None:
                 # note that a renewed event is not trappable
                 self._eventlist.insert(e.renew(e.time+e.repeat_intv))
-            e.func(self, e.params)
+            #e.func(self, e.params)
+            e.func(*e.args, **e.kwargs)
         elif isinstance(e, _ProcessEvent):
             e.proc.activate()
         else:

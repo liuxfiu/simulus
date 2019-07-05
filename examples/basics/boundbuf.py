@@ -9,9 +9,8 @@ items_consumed = 0 # ... and consumed
 num_producers = 2 # number of producers
 num_consumers = 3 # number of consumers
 
-def producer(sim, params):
+def producer(idx):
     global items_produced
-    idx = params['idx']
     while True:
         sim.sleep(expovariate(1)) # take time to produce an item
         num = items_produced
@@ -22,9 +21,8 @@ def producer(sim, params):
         print("%f: p[%d] stores item [%d] in buffer" % 
               (sim.now, idx, num))
         
-def consumer(sim, params):
+def consumer(idx):
     global items_consumed
-    idx = params['idx']
     while True:
         sem_occupy.wait() # require an item from buffer
         sem_avail.signal() # retrieve the item and bump the free slots
@@ -39,7 +37,7 @@ sim = simulus.simulator()
 sem_avail = sim.semaphore(bufsiz) # available slots
 sem_occupy = sim.semaphore(0) # no items yet
 for i in range(num_producers): 
-    sim.process(producer, idx=i)
+    sim.process(producer, i)
 for i in range(num_consumers):
-    sim.process(consumer, idx=i)
+    sim.process(consumer, i)
 sim.run(10)

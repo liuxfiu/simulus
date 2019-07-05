@@ -1,7 +1,7 @@
 import simulus
 
-def print_message(sim, params):
-    print("Hello world at time "+str(sim.now))
+def print_message():
+    print("Hello world at time", sim.now)
     
 sim = simulus.simulator()
 sim.sched(print_message, until=10)

@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-04 06:12:04 liux>
+# Last Update: Time-stamp: <2019-07-05 06:56:47 liux>
 ###############################################################
 
 # greenlet must be installed as additional python package
@@ -22,7 +22,7 @@ class _Process(_Trappable):
     STATE_SUSPENDED     = 2
     STATE_TERMINATED    = 3
     
-    def __init__(self, sim, name, func, params):
+    def __init__(self, sim, name, func, usr_args, usr_kwargs):
         """A process can only be created using simulator's process() function;
         a process can be created by an other process or within the
         main function."""
@@ -30,7 +30,9 @@ class _Process(_Trappable):
         super(_Process, self).__init__(sim)
         self.name = name
         self.func = func
-        self.params = params
+        #self.params = params
+        self.args = usr_args
+        self.kwargs = usr_kwargs
         self.state = _Process.STATE_STARTED
         self.main = None
         self.vert = greenlet(self.invoke)
@@ -68,7 +70,8 @@ class _Process(_Trappable):
 
         """
 
-        self.func(self._sim, self.params)
+        #self.func(self._sim, self.params)
+        self.func(*self.args, **self.kwargs)
         self.terminate()
 
     def run(self):

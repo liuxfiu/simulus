@@ -1,7 +1,6 @@
 import simulus
 
-def p(sim, params):
-    idx = params['idx']
+def p(idx):
     if idx > 0:
         print("p%d starts at %g and waits on trap" % (idx, sim.now))
         t.wait()
@@ -15,5 +14,5 @@ def p(sim, params):
 sim = simulus.simulator()
 t = sim.trap()
 for i in range(10):
-    sim.process(p, 10+i, idx=i)
+    sim.process(p, i, offset=10+i)
 sim.run()

@@ -4,49 +4,23 @@ list of all future events (num=5) at time 100 on simulator sim1:
   145: dir_evt=handle() 
   165: dir_evt=handle() 
   185: dir_evt=handle() 
-list of all future events (num=20) at time -100 on simulator sim2:
+list of all future events (num=7) at time -100 on simulator sim2:
   -95: dir_evt=handle() 
-  -85: dir_evt=handle() 
-  -75: dir_evt=handle() 
   -65: dir_evt=handle() 
-  -55: dir_evt=handle() 
-  -45: dir_evt=handle() 
   -35: dir_evt=handle() 
-  -25: dir_evt=handle() 
-  -15: dir_evt=handle() 
   -5: dir_evt=handle() 
-  5: dir_evt=handle() 
-  15: dir_evt=handle() 
   25: dir_evt=handle() 
-  35: dir_evt=handle() 
-  45: dir_evt=handle() 
   55: dir_evt=handle() 
-  65: dir_evt=handle() 
-  75: dir_evt=handle() 
   85: dir_evt=handle() 
-  95: dir_evt=handle() 
 'sim1' handles event at time 105
 'sim2' handles event at time -95
 'sim1' handles event at time 125
-'sim2' handles event at time -85
-'sim1' handles event at time 145
-'sim2' handles event at time -75
-'sim1' handles event at time 165
 'sim2' handles event at time -65
-'sim1' handles event at time 185
-'sim2' handles event at time -55
-'sim2' handles event at time -45
+'sim1' handles event at time 145
 'sim2' handles event at time -35
-'sim2' handles event at time -25
-'sim2' handles event at time -15
+'sim1' handles event at time 165
 'sim2' handles event at time -5
-'sim2' handles event at time 5
-'sim2' handles event at time 15
+'sim1' handles event at time 185
 'sim2' handles event at time 25
-'sim2' handles event at time 35
-'sim2' handles event at time 45
 'sim2' handles event at time 55
-'sim2' handles event at time 65
-'sim2' handles event at time 75
 'sim2' handles event at time 85
-'sim2' handles event at time 95

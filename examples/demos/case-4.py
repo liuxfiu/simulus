@@ -15,47 +15,50 @@ arrivals = []
 starts = []
 finishes = []
 
-# the producer process waits for some random time from an 
-# exponential distribution, and increments the semaphore 
-# to represent a new item being produced, and then repeats 
-def producer(sim, params):
-    mean_iat = params.get("mean_iat")
-    sem = params.get("sem")
+# we keep the account of the number of jobs in the system (those who
+# have arrived but not yet departed); this is used to indicate whether
+# there's a consumer process currently running; the value is more than
+# 1, we don't need to create a new consumer process
+jobs_in_system = 0
+
+# the producer process waits for some random time from an exponential
+# distribution to represent a new item being produced, creates a
+# consumer process when necessary to represent the item being
+# consumed, and then repeats
+def producer(sim, mean_iat, mean_svc):
+    global jobs_in_system
     while True:
         iat = expovariate(1.0/mean_iat)
         sim.sleep(iat)
-        print("%g: job arrives (iat=%g)" % (sim.now, iat))
+        #print("%g: job arrives (iat=%g)" % (sim.now, iat))
         arrivals.append(sim.now)
-        sem.signal()
+        jobs_in_system += 1
+        if jobs_in_system <= 1:
+            sim.process(consumer, sim, mean_svc)
         
 # the consumer process waits for the semaphore (it decrements
 # the value and blocks if the value is non-positive), waits for
 # some random time from another exponential distribution, and
 # then repeats
-def consumer(sim, params):
-    mean_svc = params.get("mean_svc")
-    sem = params.get("sem")
-    while True:
-        sem.wait()
-        print("%g: job starts service" % sim.now)
+def consumer(sim, mean_svc):
+    global jobs_in_system
+    while jobs_in_system > 0:
+        #print("%g: job starts service" % sim.now)
         starts.append(sim.now)
         svc = expovariate(1.0/mean_svc)
         sim.sleep(svc)
-        print("%g: job departs (svc=%g)" % (sim.now, svc))
+        #print("%g: job departs (svc=%g)" % (sim.now, svc))
         finishes.append(sim.now)
+        jobs_in_system -= 1
 
 # create an anonymous simulator
 sim3 = simulus.simulator()
 
-# create a semaphore with initial value of zero
-sem = sim3.semaphore(0)
-
-# start the producer and consumer processes
-sim3.process(producer, params=cfg, sem=sem)
-sim3.process(consumer, params=cfg, sem=sem)
+# start the producer process only
+sim3.process(producer, sim3, cfg['mean_iat'], cfg['mean_svc'])
 
 # advance simulation until 100 seconds
-sim3.run(until=100)
+sim3.run(until=1000)
 print("simulator.run() ends at " + str(sim3.now))
 
 # calculate and output statistics

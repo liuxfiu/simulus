@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-04 18:59:02 liux>
+# Last Update: Time-stamp: <2019-07-05 06:14:03 liux>
 ###############################################################
 
 """Simulation event types and event list."""
@@ -268,11 +268,14 @@ class _Event(_Trappable):
 class _DirectEvent(_Event):
     """The event type for direct event scheduling."""
 
-    def __init__(self, sim, time, func, params, name, repeat_intv):
+    #def __init__(self, sim, time, func, params, name, repeat_intv):
+    def __init__(self, sim, time, func, name, repeat_intv, usr_args, usr_kwargs):
         super(_DirectEvent, self).__init__(sim, time, name)
         self.func = func
-        self.params = params
+        #self.params = params
         self.repeat_intv = repeat_intv
+        self.args = usr_args
+        self.kwargs = usr_kwargs
 
     def __str__(self):
         return "%g: dir_evt=%s %s" % \

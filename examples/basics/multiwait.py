@@ -1,6 +1,6 @@
 import simulus
 
-def p1(sim, params):
+def p1():
     sim.sleep(10)
     print("p1 triggers t1 at %g" % sim.now)
     t1.trigger()
@@ -17,7 +17,7 @@ def p1(sim, params):
     print("p1 triggers s2 at %g" % sim.now)
     s2.signal()
 
-def p2(sim, params):
+def p2():
     tp = (t1, s1)
     r = sim.wait(tp)
     print("p2 resumes at %g (ret=%r)" % (sim.now, r))
