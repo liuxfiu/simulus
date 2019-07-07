@@ -1,9 +1,15 @@
 # Changelog
 
 
-## (unreleased)
+## 1.1.0 (2019-07-07)
 
 ### New
+
+* Added sections to explain the use of resource and store in tutorial; also added readme jupyter notebook. chg: dev: changed the use of super() in init methods. chg: test: changed tomjerry.py; gauss distribution may return negative time. [Jason Liu]
+
+* Added store facility and some examples, including most simpy examples. [Jason Liu]
+
+* Added a couple simpy examples (carwash, moviegoers). [Jason Liu]
 
 * Changed sched() and process() to allow arbitrary functions; examples and documents have been updated accordingly. [Jason Liu]
 
