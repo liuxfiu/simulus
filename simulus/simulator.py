@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-05 11:38:50 liux>
+# Last Update: Time-stamp: <2019-07-06 17:09:45 liux>
 ###############################################################
 
 from collections import deque
@@ -15,7 +15,7 @@ from .event import *
 from .process import *
 from .sync import *
 from .resource import *
-#from .store import *
+from .store import *
 
 __all__ = ["simulator", "sync", "infinite_time", "minus_infinite_time"]
 
@@ -100,15 +100,15 @@ class Simulator:
             # if both are missing, it's now!
             time = self.now
         elif until != None and offset != None:
-            raise Exception("Simulator.sched(until=%r, offset=%r) duplicate specification" %
-                            (until, offset))
+            raise ValueError("Simulator.sched(until=%r, offset=%r) duplicate specification" %
+                             (until, offset))
         elif offset != None:
             if offset < 0:
-                raise Exception("Simulator.sched(offset=%r) negative offset" % offset)
+                raise ValueError("Simulator.sched(offset=%r) negative offset" % offset)
             time = self.now + offset
         elif until < self.now:
-            raise Exception("Simulator.sched(until=%r) earlier than current time (%r)" %
-                            (until, self.now))
+            raise ValueError("Simulator.sched(until=%r) earlier than current time (%r)" %
+                             (until, self.now))
         else: time = until
 
         ## consolidate arguments
@@ -118,10 +118,10 @@ class Simulator:
         #    try:
         #        params.update(kargs)
         #    except AttributeError:
-        #        raise Exception("Simulator.sched() params not a dictionary");
+        #        raise TypeError("Simulator.sched() params not a dictionary");
 
         if repeat_intv is not None and repeat_intv <= 0:
-            raise Exception("Simulator.sched(repeat_intv=%r) non-postive repeat interval" % repeat_intv)
+            raise ValueError("Simulator.sched(repeat_intv=%r) non-postive repeat interval" % repeat_intv)
             
         #e = _DirectEvent(self, time, func, params, name, repeat_intv)
         e = _DirectEvent(self, time, func, name, repeat_intv, args, kwargs)
@@ -140,7 +140,7 @@ class Simulator:
         """
         
         if not isinstance(e, _Event):
-            raise Exception("Simulator.cancel(e=%r) not an event" % e)
+            raise TypeError("Simulator.cancel(e=%r) not an event" % e)
         try:
             self._eventlist.cancel(e)
         except Exception:
@@ -168,22 +168,22 @@ class Simulator:
         """
 
         if not isinstance(e, _Event):
-            raise Exception("Simulator.resched(e=%r) not an event" % e)
+            raise TypeError("Simulator.resched(e=%r) not an event" % e)
 
         # figure out the event time
         if until == None and offset == None:
             # if both are missing, it's now!
             e.time = self.now
         elif until != None and offset != None:
-            raise Exception("Simulator.resched(until=%r, offset=%r) duplicate specification" %
-                            (until, offset))
+            raise ValueError("Simulator.resched(until=%r, offset=%r) duplicate specification" %
+                             (until, offset))
         elif offset != None:
             if offset < 0:
-                raise Exception("Simulator.resched(offset=%r) negative offset" % offset)
+                raise ValueError("Simulator.resched(offset=%r) negative offset" % offset)
             e.time = self.now + offset
         elif until < self.now:
-            raise Exception("Simulator.resched(until=%r) earlier than current time (%r)" %
-                            (until, self.now))
+            raise ValueError("Simulator.resched(until=%r) earlier than current time (%r)" %
+                             (until, self.now))
         else: e.time = until     
 
         try:
@@ -251,15 +251,15 @@ class Simulator:
             # if both are missing, it's now!
             time = self.now
         elif until != None and offset != None:
-            raise Exception("Simulator.process(until=%r, offset=%r) duplicate specification" %
-                            (until, offset))
+            raise ValueError("Simulator.process(until=%r, offset=%r) duplicate specification" %
+                             (until, offset))
         elif offset != None:
             if offset < 0:
-                raise Exception("Simulator.process(offset=%r) negative offset" % offset)
+                raise ValueError("Simulator.process(offset=%r) negative offset" % offset)
             time = self.now + offset
         elif until < self.now:
-            raise Exception("Simulator.process(until=%r) earlier than current time (%g)" %
-                            (until, self.now))
+            raise ValueError("Simulator.process(until=%r) earlier than current time (%g)" %
+                             (until, self.now))
         else: time = until
 
         ## consolidate arguments
@@ -269,7 +269,7 @@ class Simulator:
         #    try:
         #        params.update(kargs)
         #    except AttributeError:
-        #        raise Exception("Simulator.process() params not a dictionary");
+        #        raise TypeError("Simulator.process() params not a dictionary");
 
         #p = _Process(self, name, proc, params)
         p = _Process(self, name, proc, args, kwargs)
@@ -289,7 +289,7 @@ class Simulator:
         """Check whether the given process has terminated.""" 
 
         if not isinstance(p, _Process):
-            raise Exception("Simulator.terminated(p=%r) not a process" % p)
+            raise TypeError("Simulator.terminated(p=%r) not a process" % p)
         return p.state == _Process.STATE_TERMINATED
 
     def kill(self, p=None):
@@ -306,7 +306,7 @@ class Simulator:
         if p is not None:
             # kill another process
             if not isinstance(p, _Process):
-                raise Exception("Simulator.kill(p=%r) not a process" % p)
+                raise TypeError("Simulator.kill(p=%r) not a process" % p)
 
             if p.state != _Process.STATE_TERMINATED:
                 # if the process has not been terminated already
@@ -317,7 +317,7 @@ class Simulator:
             # kill oneself
             p = self.cur_process()
             if p is None:
-                raise Exception("Simulator.kill() outside process context")
+                raise RuntimeError("Simulator.kill() outside process context")
             p.terminate()
 
     def get_priority(self, p=None):
@@ -331,12 +331,12 @@ class Simulator:
         if p is not None:
             # get priority of another process
             if not isinstance(p, _Process):
-                raise Exception("Simulator.get_priority(p=%r) not a process" % p)
+                raise TypeError("Simulator.get_priority(p=%r) not a process" % p)
         else:
             # get the priority of the current process
             p = self.cur_process()
             if p is None:
-                raise Exception("Simulator.get_priority() outside process context")
+                raise RuntimeError("Simulator.get_priority() outside process context")
         return p.priority
 
     def set_priority(self, prio, p=None):
@@ -351,12 +351,12 @@ class Simulator:
         if p is not None:
             # set priority of another process
             if not isinstance(p, _Process):
-                raise Exception("Simulator.set_priority(p=%r) not a process" % p)
+                raise TypeError("Simulator.set_priority(p=%r) not a process" % p)
         else:
             # set the priority of the current process
             p = self.cur_process()
             if p is None:
-                raise Exception("Simulator.set_priority() outside process context")
+                raise RuntimeError("Simulator.set_priority() outside process context")
         p.priority = prio
 
     def sleep(self, offset=None, until=None):
@@ -390,21 +390,21 @@ class Simulator:
         # must be called within process context
         p = self.cur_process()
         if p is None:
-            raise Exception("Simulator.sleep() outside process context")
+            raise RuntimeError("Simulator.sleep() outside process context")
 
         # figure out the expected wakeup time
         if until == None and offset == None:
-            raise Exception("Simulator.sleep() missing time specification")
+            raise ValueError("Simulator.sleep() missing time specification")
         elif until != None and offset != None:
-            raise Exception("Simulator.sleep(until=%r, offset=%r) duplicate specification" %
-                            (until, offset))
+            raise ValueError("Simulator.sleep(until=%r, offset=%r) duplicate specification" %
+                             (until, offset))
         elif offset != None:
             if offset < 0:
-                raise Exception("Simulator.sleep(offset=%r) negative offset" % offset)
+                raise ValueError("Simulator.sleep(offset=%r) negative offset" % offset)
             time = self.now + offset
         elif until < self.now:
-            raise Exception("Simulator.sleep(until=%r) earlier than current time (%g)" %
-                            (until, self.now))
+            raise ValueError("Simulator.sleep(until=%r) earlier than current time (%g)" %
+                             (until, self.now))
         else: time = until
 
         # the control will be switched back to the simulator's main
@@ -442,9 +442,9 @@ class Simulator:
         """
 
         if initval < 0:
-            raise Exception("Simulator.semaphore(initval=%r) negative init value" % initval)
+            raise ValueError("Simulator.semaphore(initval=%r) negative init value" % initval)
         if qdis < QDIS.FIFO or qdis > QDIS.PRIORITY:
-            raise Exception("Simulator.semaphore(qdis=%r) unknown queuing discipline" % qdis)
+            raise ValueError("Simulator.semaphore(qdis=%r) unknown queuing discipline" % qdis)
         return Semaphore(self, initval, qdis)
 
     def resource(self, capacity=1, qdis=QDIS.FIFO, name=None, collect=None):
@@ -472,12 +472,63 @@ class Simulator:
         """
 
         if not isinstance(capacity, int):
-            raise Exception("Simulator.resource(capacity=%r) capacity not an integer" % capacity)
+            raise TypeError("Simulator.resource(capacity=%r) capacity not an integer" % capacity)
         if capacity <= 0:
-            raise Exception("Simulator.resource(capacity=%r) non-positive capacity" % capacity)
+            raise ValueError("Simulator.resource(capacity=%r) non-positive capacity" % capacity)
         if qdis < QDIS.FIFO or qdis > QDIS.PRIORITY:
-            raise Exception("Simulator.resource(qdis=%r) unknown queuing discipline" % qdis)
+            raise ValueError("Simulator.resource(qdis=%r) unknown queuing discipline" % qdis)
         return Resource(self, name, capacity, qdis, collect)
+
+    def store(self, capacity=1, initlevel=0, initobj=None,
+              p_qdis=QDIS.FIFO, c_qdis=QDIS.FIFO, name=None, collect=None):
+        """Create and return a store.
+
+        Parameters
+        ----------
+        capacity (int, float): the capacity of the store; the value must
+                be positive; the default is one
+
+        initlevel (int, float): the initial storage level; the value
+                must be non-negative and it cannot be larger than the
+                capacity; the default is zero
+
+        initobj (object or list/tuple): initial objects to be
+                deposited in the store (if real objects are going to
+                be used for the store operation), in which case the
+                number of objects must match with the initlevel
+
+        p_qdis : the queuing discipline for the waiting producer
+                processes (putters), which can be selected from
+                QDIS.FIFO (first in first out), QDIS.LIFO (last in
+                first out), QDIS.RANDOM (random ordering), or
+                QDIS.PRIORITY (based on process priority); if ignored,
+                the default is QDIS.FIFO
+
+        c_qdis : the queuing discipline for the waiting consumer
+                processes (getter); if ignored, the default is
+                QDIS.FIFO
+
+        name (string): the optional name of the store
+
+        collect: the optional data collector for statistics
+
+        Returns
+        -------
+        This method returns the newly created store.
+
+        """
+
+        if capacity <= 0:
+            raise ValueError("Simulator.store(capacity=%r) non-positive capacity" % capacity)
+        if initlevel < 0 or initlevel > capacity:
+            raise ValueError("Simulator.store(capacity=%r, initlevel=%r) initlevel out of bound" %
+                             (capacity, initlevel))
+        if p_qdis < QDIS.FIFO or p_qdis > QDIS.PRIORITY:
+            raise ValueError("Simulator.store(p_qdis=%r) unknown queuing discipline" % p_qdis)
+        if c_qdis < QDIS.FIFO or c_qdis > QDIS.PRIORITY:
+            raise ValueError("Simulator.store(c_qdis=%r) unknown queuing discipline" % c_qdis)
+
+        return Store(self, capacity, initlevel, initobj, name, p_qdis, c_qdis, collect)
 
     def wait(self, traps, offset=None, until=None, method=all):
         """Conditional wait on one or more trappables for some time.
@@ -537,7 +588,7 @@ class Simulator:
         # must be called within process context
         p = self.cur_process()
         if p is None:
-            raise Exception("Simulator.wait() outside process context")
+            raise RuntimeError("Simulator.wait() outside process context")
 
         # sanity check of the first argument: one trappable or a
         # list/tuple of trappables
@@ -547,31 +598,31 @@ class Simulator:
         elif isinstance(traps, (list, tuple)):
             single_trappable = False
             if len(traps) == 0:
-                raise Exception("Simulator.wait() empty list of trappables")
+                raise ValueError("Simulator.wait() empty list of trappables")
             for t in traps:
                 if not isinstance(t, _Trappable):
-                    raise Exception("Simulator.wait() not a trappable in list") 
+                    raise TypeError("Simulator.wait() not a trappable in list") 
         else:
-            raise Exception("Simulator.wait() one trappable or a list of trappables expected") 
+            raise TypeError("Simulator.wait() one trappable or a list of trappables expected") 
         
         # figure out the expected wakeup time
         if until == None and offset == None:
             time = infinite_time
         elif until != None and offset != None:
-            raise Exception("Simulator.wait(until=%r, offset=%r) duplicate specification" %
-                            (until, offset))
+            raise ValueError("Simulator.wait(until=%r, offset=%r) duplicate specification" %
+                             (until, offset))
         elif offset != None:
             if offset < 0:
-                raise Exception("Simulator.wait(offset=%r) negative offset" % offset)
+                raise ValueError("Simulator.wait(offset=%r) negative offset" % offset)
             time = self.now + offset
         elif until < self.now:
-            raise Exception("Simulator.wait(until=%r) earlier than current time (%g)" %
-                            (until, self.now))
+            raise ValueError("Simulator.wait(until=%r) earlier than current time (%g)" %
+                             (until, self.now))
         else: time = until
 
         # only two methods are allowed
         if method != all and method != any:
-            raise Exception("Simulator.wait() unknown method")
+            raise ValueError("Simulator.wait() unknown method")
 
         # a mask indicating whether the corresponding trap has been
         # triggered or not; if it is, there's no need to wait
@@ -676,15 +727,15 @@ class Simulator:
             upper = infinite_time
             upper_specified = False
         elif until != None and offset != None:
-            raise Exception("Simulator.run(until=%r, offset=%r) duplicate specification" %
-                            (until, offset))
+            raise ValueError("Simulator.run(until=%r, offset=%r) duplicate specification" %
+                             (until, offset))
         elif offset != None:
             if offset < 0:
-                raise Exception("Simulator.run(offset=%r) negative offset" % offset)
+                raise ValueError("Simulator.run(offset=%r) negative offset" % offset)
             upper = self.now + offset
         elif until < self.now:
-            raise Exception("Simulator.run(until=%r) earlier than current time (%g)" %
-                            (until, self.now))
+            raise ValueError("Simulator.run(until=%r) earlier than current time (%g)" %
+                             (until, self.now))
         else: upper = until
 
         # this is the main event loop of the simulator!
@@ -756,7 +807,7 @@ class Simulator:
         elif isinstance(e, _ProcessEvent):
             e.proc.activate()
         else:
-            raise Exception("unknown event type: " + str(e))
+            raise RuntimeError("unknown event type: " + str(e))
 
         # processes are run only from the main loop!!
         while len(self._readyq) > 0:

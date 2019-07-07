@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-04 08:33:45 liux>
+# Last Update: Time-stamp: <2019-07-06 06:04:26 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector
@@ -70,7 +70,7 @@ class Resource(_Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise Exception("Resource.acquire() outside process context")
+            raise RuntimeError("Resource.acquire() outside process context")
 
         self._sample_arrival(p)
         self._sem.wait()
@@ -87,7 +87,7 @@ class Resource(_Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise Exception("Resource.acquire() outside process context")
+            raise RuntimeError("Resource.acquire() outside process context")
 
         self._sample_departure(p)
         self._sem.signal()

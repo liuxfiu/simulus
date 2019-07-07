@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-03 21:02:43 liux>
+# Last Update: Time-stamp: <2019-07-06 06:05:24 liux>
 ###############################################################
 
 from .trappable import _Trappable
@@ -57,7 +57,7 @@ class Trap(_Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise Exception("Trap.wait() outside process context")
+            raise RuntimeError("Trap.wait() outside process context")
 
         if self.state == Trap.TRAP_UNSET or \
            self.state == Trap.TRAP_SET:
@@ -79,7 +79,7 @@ class Trap(_Trappable):
             self.state = Trap.TRAP_SPRUNG
         elif self.state == Trap.TRAP_SPRUNG:
             # a trap can only be triggered at most once
-            raise Exception("Trap.trigger() duplicate action")
+            raise RuntimeError("Trap.trigger() duplicate action")
         else:
             # when the trap is set, there is at least one process
             # blocked by the trap

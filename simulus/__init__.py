@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-04 20:14:30 liux>
+# Last Update: Time-stamp: <2019-07-06 06:32:44 liux>
 ###############################################################
 
 """Simulus is a discrete-event simulator in Python."""
@@ -19,4 +19,5 @@ from .trappable import *
 from .trap import *
 from .semaphore import *
 from .resource import *
+from .store import *
 from .simulator import *

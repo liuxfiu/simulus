@@ -23,11 +23,9 @@ def test_basic_examples():
     failed = 0
     script_file = os.path.realpath(__file__)
     script_path = os.path.dirname(script_file)
-    script_path += '/../examples/basics/*.py'
-    #print("here:"+script_path)
-    pyfs = glob.glob(script_path)
-    outfs = ['out'.join(f.rsplit('py')) for f in pyfs]
-    #print(outfs)
+    pyfs = glob.glob(script_path+'/../examples/basics/*.py')
+    pyfs.extend(glob.glob(script_path+'/../examples/simpy/*.py'))
+    outfs = ['.out'.join(f.rsplit('.py')) for f in pyfs]
     for pyf, outf in zip(pyfs, outfs):
         cmd = 'python '+pyf
         try: 

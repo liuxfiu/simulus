@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-03 17:51:12 liux>
+# Last Update: Time-stamp: <2019-07-06 06:06:16 liux>
 ###############################################################
 
 # runstats must be installed as additional python package
@@ -27,7 +27,7 @@ class DataCollector:
             try:
                 params.update(kargs)
             except AttributeError:
-                raise Exception("DataCollector() params not a dictionary");
+                raise TypeError("DataCollector() params not a dictionary");
         self.params = params
 
         for k, v in self.params.items():
@@ -46,7 +46,7 @@ class DataCollector:
                 setattr(self, k+'_acc_t', 0)
                 setattr(self, k+'_acc_v', 0)
             else:
-                raise Exception("DataCollector() unknown value type (%s)" % v)
+                raise ValueError("DataCollector() unknown value type (%s)" % v)
 
     def sample(self, k, v):
         if k in self.params:

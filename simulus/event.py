@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-05 06:14:03 liux>
+# Last Update: Time-stamp: <2019-07-06 06:03:50 liux>
 ###############################################################
 
 """Simulation event types and event list."""
@@ -321,8 +321,8 @@ class _EventList_(object):
             #heapq.heappush(self.pqueue, (evt.time, id(evt), evt))
             self.pqueue[id(evt)] = evt
         else:
-            raise Exception("EventList.insert(%s): past event (last=%g)" %
-                            (evt, self.last))
+            raise ValueError("EventList.insert(%s): past event (last=%g)" %
+                             (evt, self.last))
 
     def get_min(self):
         if len(self.pqueue) > 0:
@@ -330,7 +330,7 @@ class _EventList_(object):
             x, e = self.pqueue.peek()
             return e.time  # just return the time
         else:
-            raise Exception("EventList.get_min() from empty list")
+            raise IndexError("EventList.get_min() from empty list")
 
     def delete_min(self):
         if len(self.pqueue) > 0:
@@ -342,21 +342,21 @@ class _EventList_(object):
             self.last = e.time
             return e
         else:
-            raise Exception("EventList.delete_min() from empty list")
+            raise IndexError("EventList.delete_min() from empty list")
 
     def cancel(self, evt):
         if id(evt) not in self.pqueue:
-            raise Exception("EventList.cancel(%s): event not found" % evt)
+            raise ValueError("EventList.cancel(%s): event not found" % evt)
         del self.pqueue[id(evt)]
 
     def update(self, evt):
         if id(evt) not in self.pqueue:
-            raise Exception("EventList.update(%s): event not found" % evt)
+            raise ValueError("EventList.update(%s): event not found" % evt)
         if self.last <= evt.time:
             self.pqueue[id(evt)] = evt
         else:
-            raise Exception("EventList.update(%s): past event (last=%g)" %
-                            (evt, self.last))
+            raise ValueError("EventList.update(%s): past event (last=%g)" %
+                             (evt, self.last))
 
     def current_event(self, evt):
         # check whether the event is current

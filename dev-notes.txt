@@ -212,7 +212,7 @@ simulator.py:
     * _process_one_event()
 
 * simulator()  # public interface
-    
+
 ************
 resource.py:
 ************
@@ -230,3 +230,49 @@ resource.py:
     * acquire()
     * release()
 
+*********
+store.py:
+*********
+
+* Store  # public interface
+    * __init__()  # supposedly hidden
+    * capacity
+    * level
+    * name
+    * stats
+    * _p_sem
+    * _c_sem
+    * _last_p_arrival
+    * _last_c_arrival
+    * _p_arrivals
+    * _c_arrivals
+    * _obj_store
+    * _obj_decided
+    * get()
+    * put()
+    * getter()
+    *   GetTrappable  # public interface
+    *     __init__()  # supposedly hidden
+    *     _store
+    *     _amt
+    *     obj
+    *     _try_wait()
+    *     _cancel_wait()
+    *     _commit_wait()
+    *     _true_trappable()
+    * putter()
+    *   PutTrappable  # public interface
+    *     __init__()  # supposedly hidden
+    *     _store
+    *     _amt
+    *     _obj
+    *     _try_wait()
+    *     _cancel_wait()
+    *     _commit_wait()
+    *     _true_trappable()
+    * getters_in_queue()
+    * putters_in_queue()
+
+
+
+    

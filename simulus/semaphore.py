@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-03 22:38:12 liux>
+# Last Update: Time-stamp: <2019-07-06 06:04:54 liux>
 ###############################################################
 
 from collections import deque
@@ -81,7 +81,7 @@ class Semaphore(_Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise Exception("Semaphore.wait() outside process context")
+            raise RuntimeError("Semaphore.wait() outside process context")
 
         self.val -= 1
         if self.val < 0:
