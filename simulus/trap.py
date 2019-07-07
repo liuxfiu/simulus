@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-06 06:05:24 liux>
+# Last Update: Time-stamp: <2019-07-07 08:11:31 liux>
 ###############################################################
 
 from .trappable import _Trappable
@@ -47,7 +47,7 @@ class Trap(_Trappable):
         """A trap can only be created using simulator's trap() function; it
         starts from "unset" state and there are no waiting processes."""
 
-        super(Trap, self).__init__(sim)
+        super().__init__(sim)
         self.state = Trap.TRAP_UNSET
         self.blocked = []
 

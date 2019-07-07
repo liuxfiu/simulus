@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-06 06:04:54 liux>
+# Last Update: Time-stamp: <2019-07-07 08:11:19 liux>
 ###############################################################
 
 from collections import deque
@@ -61,7 +61,7 @@ class Semaphore(_Trappable):
         as well as one of the four queuing disciplines of the
         semaphore."""
 
-        super(Semaphore, self).__init__(sim)
+        super().__init__(sim)
         assert initval >= 0
         self.val = initval
         self.qdis = qdis

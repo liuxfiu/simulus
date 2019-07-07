@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-06 06:04:26 liux>
+# Last Update: Time-stamp: <2019-07-07 08:11:10 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector
@@ -44,7 +44,7 @@ class Resource(_Trappable):
         resource), a queuing discipline, and also an optional data
         collector for statistics."""
 
-        super(Resource, self).__init__(sim)
+        super().__init__(sim)
         self.name = name
         self.capacity = capacity
         self.qdis = qdis

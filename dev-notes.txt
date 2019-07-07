@@ -42,6 +42,11 @@ underscore. The hidden variables and methods, on the other hand,
 should start with an underscore, to indicate that the user shall not
 access them directly.
 
+Constants
+---------
+
+All constants (classes or varables) are all in CAPTITAL LETTERS.
+
 
 List of Files, Classes and Methods
 ==================================

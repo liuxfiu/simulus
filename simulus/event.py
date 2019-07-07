@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-06 06:03:50 liux>
+# Last Update: Time-stamp: <2019-07-07 08:09:38 liux>
 ###############################################################
 
 """Simulation event types and event list."""
@@ -230,7 +230,7 @@ class _Event(_Trappable):
     """The base class for all simulation events."""
 
     def __init__(self, sim, time, name=None):
-        super(_Event, self).__init__(sim)
+        super().__init__(sim)
         self.time = time
         self.name = name
         self.trap = None
@@ -270,7 +270,7 @@ class _DirectEvent(_Event):
 
     #def __init__(self, sim, time, func, params, name, repeat_intv):
     def __init__(self, sim, time, func, name, repeat_intv, usr_args, usr_kwargs):
-        super(_DirectEvent, self).__init__(sim, time, name)
+        super().__init__(sim, time, name)
         self.func = func
         #self.params = params
         self.repeat_intv = repeat_intv
@@ -291,7 +291,7 @@ class _ProcessEvent(_Event):
     """The event type for process scheduling."""
 
     def __init__(self, sim, time, proc, name):
-        super(_ProcessEvent, self).__init__(sim, time, name)
+        super().__init__(sim, time, name)
         self.proc = proc
 
     def __str__(self):

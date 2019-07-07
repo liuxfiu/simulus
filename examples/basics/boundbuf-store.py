@@ -20,7 +20,6 @@ def producer(idx):
               (sim.now, idx, num))
         
 def consumer(idx):
-    global items_consumed
     while True:
         num = s.get()
         print("%f: c[%d] retrieves item [%d] from buffer" %

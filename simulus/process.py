@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-05 06:56:47 liux>
+# Last Update: Time-stamp: <2019-07-07 08:11:02 liux>
 ###############################################################
 
 # greenlet must be installed as additional python package
@@ -27,7 +27,7 @@ class _Process(_Trappable):
         a process can be created by an other process or within the
         main function."""
 
-        super(_Process, self).__init__(sim)
+        super().__init__(sim)
         self.name = name
         self.func = func
         #self.params = params
