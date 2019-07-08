@@ -1,13 +1,13 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-06 22:24:10 liux>
+# Last Update: Time-stamp: <2019-07-08 16:36:58 liux>
 ###############################################################
 
 from collections import deque
 
 from .utils import QDIS, DataCollector
-from .trap import _Trappable
+from .trap import Trappable
 from .semaphore import Semaphore
 
 __all__ = ["Store"]
@@ -245,12 +245,11 @@ class Store(object):
         resources) on which one can apply conditional wait using the
         simulator's wait() function."""
 
-        class _GetTrappable(_Trappable):
+        class _GetTrappable(Trappable):
             def __init__(self, store, amt):
                 super().__init__(store._sim)
                 self._store = store
                 self._amt = amt
-                self.obj = None # return value from sim.wait()
 
                 if store.capacity < amt:
                     raise ValueError("Store.getter(amt=%r) more than capacity (%r)" %
@@ -296,7 +295,7 @@ class Store(object):
                         np = self._store._p_sem._next_unblock()
                     else: break
                     
-                self.obj = self._store._sample_c_departure(p, self._amt)
+                self.retval = self._store._sample_c_departure(p, self._amt)
 
             def _true_trappable(self):
                 return self._store._c_sem
@@ -310,7 +309,7 @@ class Store(object):
         resources) on which one can apply conditional wait using the
         simulator's wait() function."""
 
-        class PutTrappable(_Trappable):
+        class PutTrappable(Trappable):
             def __init__(self, store, amt, obj):
                 super().__init__(store._sim)
                 self._store = store

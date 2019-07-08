@@ -22,7 +22,7 @@ def compete():
         (r1, r2), timedout = sim.wait((p, e), 100, method=any)
         if timedout:
             print("%g: both disqualified" % sim.now)
-            sim.kill(p)
+            sim.cancel(p)
             sim.cancel(e)
         elif r1: 
             print("%g: tom wins" % sim.now)
@@ -31,7 +31,7 @@ def compete():
         else:
             print("%g: jerry wins" % sim.now)
             jerry_won += 1
-            sim.kill(p)
+            sim.cancel(p)
     print("final result: tom:jerry=%d:%d" % (tom_won, jerry_won))
     
 sim = simulus.simulator()

@@ -22,7 +22,7 @@ def trywaits(sem):
     # create ten processes which will all block on the semaphore
     for i in range(10):
         sim.process(p, idx=i, sem=sem)
-    sim.sleep(100)
+    sim.sleep(10)
     
     # release them all and check the order they are unblocked
     print('-'*40)

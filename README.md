@@ -1,5 +1,5 @@
 
-# Simulus - A Discrete-Event Simulator in Python
+# Quick Start
 
 Simulus is an open-source discrete-event simulator in Python. Simulus implements a process-oriented simulation world-view with several advanced features to ease modeling and simulation tasks with both events and processes.  Simulus will soon add support for parallel and distributed simulation (planned for version 1.2), and real-time simulation (planned for version 1.3).
 
@@ -103,13 +103,11 @@ sim.run(100)
     Hello world at time 100
 
 
-Simulus allows events and processes to coexist. For example, simulus supports conditional-wait on both events and processes. The following shows a example that models Tom and Jerry entering a race. 
+Simulus allows events and processes to coexist. For example, simulus supports conditional-wait on both events and processes. The following shows an example that models Tom and Jerry entering a race. 
 
-Tom is modeled by processes. Each time Tom enters the race by creating a process which calls `sleep()` to represent the time during for running. The time duration is a random variable from a normal distribution with a mean 100 and a standard deviation of 50 (and a cutoff below zero). 
+Tom is modeled by processes. Each time Tom enters the race, we create a process, which calls `sleep()` to represent the time duration for the run. The time duration is a random variable from a normal distribution with a mean of 100 and a standard deviation of 50 (and a cutoff below zero). Jerry is modeled by events. Each time Jerry enters the race, we schedule an event using `sched()` with a time offset representing the time duration for the run. The time duration is a random variable from a uniform distribution between 50 and 100. 
 
-Jerry is modeled by events. Each time Jerry enters the race by scheduling an event using `sched()` with a time offset to represent running time. The time offset is a random variable from a uniform distribution between 50 and 100. 
-
-Tom and Jerry compete for ten times; the next race would start as soon as the previous one finishes. For each rase, whoever runs fastest wins. But if they run for more than 100, both are disqualified for that race. The simulation finds out who wins more races.
+Tom and Jerry compete for ten times; the next race would start as soon as the previous one finishes. For each race, whoever runs the fastest wins. But if they run for more than 100, both are disqualified for that race. The simulation finds out who eventually wins more races.
 
 
 ```python
@@ -138,7 +136,7 @@ def compete():
         # the return values indicate which wait conditions have been satisfied
         if timedout:
             print("%g: both disqualified" % sim.now)
-            sim.kill(p) # both tom and ...
+            sim.cancel(p) # both tom and ...
             sim.cancel(e) # jerry can stop running now
         elif r1: 
             print("%g: tom wins" % sim.now)
@@ -147,7 +145,7 @@ def compete():
         else:
             print("%g: jerry wins" % sim.now)
             jerry_won += 1
-            sim.kill(p) # tom can stop running now
+            sim.cancel(p) # tom can stop running now
     print("final result: tom:jerry=%d:%d" % (tom_won, jerry_won))
 
 sim = simulus.simulator()
@@ -264,8 +262,3 @@ sim.run(5)
     2.754613: consumer 2 consumes item [6]
     3.223988: consumer 0 consumes item [7]
 
-
-
-```python
-
-```

@@ -1,12 +1,12 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 3, 2019
-# Last Update: Time-stamp: <2019-07-05 23:21:36 liux>
+# Last Update: Time-stamp: <2019-07-08 16:32:13 liux>
 ###############################################################
 
-__all__ = ["_Trappable"]
+__all__ = ["Trappable"]
 
-class _Trappable(object):
+class Trappable(object):
     """The base class for all trappables. 
 
     This class defines an abstract interface; all subclasses must
@@ -17,6 +17,7 @@ class _Trappable(object):
 
     def __init__(self, sim):
         self._sim = sim
+        self.retval = None
 
     def _try_wait(self): pass
     def _commit_wait(self): pass

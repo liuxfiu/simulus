@@ -1,14 +1,14 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-07 08:11:31 liux>
+# Last Update: Time-stamp: <2019-07-08 16:33:33 liux>
 ###############################################################
 
-from .trappable import _Trappable
+from .trappable import Trappable
 
 __all__ = ["Trap"]
 
-class Trap(_Trappable):
+class Trap(Trappable):
     """A one-time signaling mechanism for inter-process communication.
 
     Trap is one of the two primitive methods in simulus designed for

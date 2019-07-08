@@ -1,14 +1,14 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-07 08:09:38 liux>
+# Last Update: Time-stamp: <2019-07-08 16:34:26 liux>
 ###############################################################
 
 """Simulation event types and event list."""
 
 from collections.abc import MutableMapping
 
-from .trappable import _Trappable
+from .trappable import Trappable
 from .trap import Trap
 
 __all__ = ["_Event", "_DirectEvent", "_ProcessEvent", "_EventList_", \
@@ -226,7 +226,7 @@ class _PQDict_(MutableMapping):
         heap[pos] = entry
         position[entry.dkey] = pos
 
-class _Event(_Trappable):
+class _Event(Trappable):
     """The base class for all simulation events."""
 
     def __init__(self, sim, time, name=None):

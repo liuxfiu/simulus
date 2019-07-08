@@ -1,19 +1,19 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-07 08:11:02 liux>
+# Last Update: Time-stamp: <2019-07-08 16:34:48 liux>
 ###############################################################
 
 # greenlet must be installed as additional python package
 from greenlet import greenlet
 
-from .trappable import _Trappable
+from .trappable import Trappable
 from .trap import *
 from .event import *
 
 __all__ = ["_Process"]
 
-class _Process(_Trappable):
+class _Process(Trappable):
     """A process is an independent thread of execution."""
 
     # process runtime state

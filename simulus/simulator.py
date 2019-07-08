@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-06 17:09:45 liux>
+# Last Update: Time-stamp: <2019-07-08 16:38:34 liux>
 ###############################################################
 
 from collections import deque
@@ -128,24 +128,32 @@ class Simulator:
         self._eventlist.insert(e)
         return e
 
-    def cancel(self, e):
-        """Cancel a scheduled event.
+    def cancel(self, o):
+        """Cancel a scheduled event or kill a process.
 
-        This method takes one argument, which is the return value (as
-        opaque object, which is an event) from sched(). When
-        cancelled, the previously scheduled function will no longer be
-        invoked at the expected time. The method would have no effect
-        if the event that has already happened.
+        This method takes one argument, which is the return value from
+        sched() or process(). In either case, it's an opaque object to
+        the user, which can be either an event or process. If it's an
+        event, when cancelled, the previously scheduled function will
+        no longer be invoked at the expected time. Note that the
+        method has no effect if the event that has already happened.
+        If the argument is a process, it's the same as to kill the
+        process using the kill() method.
 
         """
         
-        if not isinstance(e, _Event):
-            raise TypeError("Simulator.cancel(e=%r) not an event" % e)
-        try:
-            self._eventlist.cancel(e)
-        except Exception:
-            # the event is not in the event list; that's OK
-            pass
+        if o is None:
+            raise ValueError("Simulator.cancel() object not provided.")
+        elif isinstance(o, _Event):
+            try:
+                self._eventlist.cancel(o)
+            except Exception:
+                # the event is not in the event list; that's OK
+                pass
+        elif isinstance(o, _Process):
+            self.kill(o)
+        else:
+            raise TypeError("Simulator.cancel(o=%r) not an event or process" % o)
 
     def resched(self, e, offset=None, until=None):
         """Reschedule an event.
@@ -592,7 +600,7 @@ class Simulator:
 
         # sanity check of the first argument: one trappable or a
         # list/tuple of trappables
-        if isinstance(traps, _Trappable):
+        if isinstance(traps, Trappable):
             single_trappable = True
             traps = [traps]
         elif isinstance(traps, (list, tuple)):
@@ -600,7 +608,7 @@ class Simulator:
             if len(traps) == 0:
                 raise ValueError("Simulator.wait() empty list of trappables")
             for t in traps:
-                if not isinstance(t, _Trappable):
+                if not isinstance(t, Trappable):
                     raise TypeError("Simulator.wait() not a trappable in list") 
         else:
             raise TypeError("Simulator.wait() one trappable or a list of trappables expected") 

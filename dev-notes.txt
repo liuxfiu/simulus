@@ -136,8 +136,10 @@ utils.py:
 trappable.py:
 *************
 
-* _Trappable  # partially hidden, opaque reference
+* Trappable  # public interface
+    * __init__()  # supposed hidden
     * _sim
+    * retval
     * _try_wait()
     * _commit_wait()
     * _cancel_wait()
@@ -324,7 +326,6 @@ store.py:
     *     __init__()  # supposedly hidden
     *     _store
     *     _amt
-    *     obj
     *     _try_wait()
     *     _cancel_wait()
     *     _commit_wait()

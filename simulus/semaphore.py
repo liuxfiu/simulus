@@ -1,18 +1,18 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-07 08:11:19 liux>
+# Last Update: Time-stamp: <2019-07-08 16:36:05 liux>
 ###############################################################
 
 from collections import deque
 import heapq, random
 
-from .trappable import _Trappable
+from .trappable import Trappable
 from .utils import QDIS
 
 __all__ = ["Semaphore"]
 
-class Semaphore(_Trappable):
+class Semaphore(Trappable):
     """A multi-use signaling mechanism for inter-process communication.
 
     A semaphore is one of the two primitive methods in simulus

@@ -1,16 +1,16 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-07 08:11:10 liux>
+# Last Update: Time-stamp: <2019-07-08 16:35:56 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector
-from .trappable import _Trappable
+from .trappable import Trappable
 from .semaphore import Semaphore
 
 __all__ = ["Resource"]
 
-class Resource(_Trappable):
+class Resource(Trappable):
     """A resource provides services to processes.
 
     A resource basically models a single-server or multi-server queue.
