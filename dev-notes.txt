@@ -1,3 +1,67 @@
+Python Development Environment
+==============================
+
+Install Python3
+---------------
+
+(update Xcode and ports first)
+
+sudo port install python37
+sudo port select --set python python37
+sudo port select --set python3 python37
+
+add [../3.7/bin] to PATH
+(/opt/local/Library/Frameworks/Python.framework/Versions/3.7/bin:~/Library/Python/3.7/bin)
+
+sudo port install py37-pip
+sudo port select --set pip pip37
+sudo port select --set pip3 pip37
+
+python -m pip install —user --upgrade setuptools wheel twine pipenv virtualenv
+
+Set Up Simulus Dev Environment
+------------------------------
+
+Under simulus project root directory:
+
+pipenv clean
+pipenv check
+pipenv run pip freeze
+pipenv install greenlet runstats
+pipenv install pytest tox
+pipenv install gitchangelog pystache
+pipenv install jupyter sphinx nbsphinx
+pipenv install [more packages when needed]
+pipenv run pip freeze > ./dev-requirements.txt
+pipenv shell
+(simulus) pip install -user -e .
+
+
+Packaging Instructions
+======================
+
+(change [version] in setup.py)
+git tag -a [version] -m [message]
+gitchangelog > CHANGELOG.md
+python setup.py sdist bdist_wheel
+git add (all changed files)
+git commit -m [message] --tags
+python -m twine upload dist/simulus-[version]*
+
+
+Fix Git Commit Messages (if necessary)
+--------------------------------------
+
+(1) git rebase -i HEAD~X (or root)
+# move to the line of your commit, change pick into edit
+(2) git commit --amend
+# change the commit message for the
+(3) git rebase —continue
+# move to the next commit, repeat step 2 until success
+(4) git push —f
+# update the repository (make sure branch pretection is turned off)
+
+
 Name Convention of Classes and Methods
 ======================================
 
@@ -45,7 +109,7 @@ access them directly.
 Constants
 ---------
 
-All constants (classes or varables) are all in CAPTITAL LETTERS.
+All constants (classes or varables) are in CAPTITAL LETTERS.
 
 
 List of Files, Classes and Methods
