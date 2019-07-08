@@ -85,3 +85,4 @@ wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.5.0
 zipp==0.5.2
+git+https://github.com/liuxfiu/simulus.git
