@@ -26,7 +26,6 @@ def customer(idx):
         print('%7.4f Customer%02d: RENEGED after %6.3f' %
               (sim.now, idx, sim.now-arrive))
     else:
-        # We got to the counter
         print('%7.4f Customer%02d: Waited %6.3f' %
               (sim.now, idx, sim.now-arrive))
         sim.sleep(expovariate(1.0/MEAN_BANK_TIME))
