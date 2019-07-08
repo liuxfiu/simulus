@@ -36,12 +36,14 @@ nbformat==4.4.0
 nbsphinx==0.4.2
 notebook==5.7.8
 packaging==19.0
+pandoc==1.0.2
 pandocfilters==1.4.2
 parso==0.5.0
 pexpect==4.7.0
 pickleshare==0.7.5
 pkginfo==1.5.0.1
 pluggy==0.12.0
+ply==3.11
 prometheus-client==0.7.1
 prompt-toolkit==2.0.9
 ptyprocess==0.6.0
@@ -50,7 +52,7 @@ Pygments==2.4.2
 pyparsing==2.4.0
 pyrsistent==0.15.3
 pystache==0.5.4
-pytest==5.0.0
+pytest==5.0.1
 python-dateutil==2.8.0
 pytz==2019.1
 pyzmq==18.0.2
@@ -60,7 +62,6 @@ requests==2.22.0
 requests-toolbelt==0.9.1
 runstats==1.8.0
 Send2Trash==1.5.0
--e git+https://gitlab.cs.fiu.edu/liux/simulus.git@0ab3c756d9dcdd910eaa9ba05f63eaeb99c40853#egg=simulus
 six==1.12.0
 snowballstemmer==1.9.0
 Sphinx==2.1.2
@@ -83,4 +84,4 @@ virtualenv==16.6.1
 wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.5.0
-zipp==0.5.1
+zipp==0.5.2

@@ -30,11 +30,11 @@ pipenv run pip freeze
 pipenv install greenlet runstats
 pipenv install pytest tox
 pipenv install gitchangelog pystache
-pipenv install jupyter sphinx nbsphinx
+pipenv install jupyter sphinx nbsphinx pandoc
 pipenv install [more packages when needed]
 pipenv run pip freeze > ./dev-requirements.txt
 pipenv shell
-(simulus) pip install -user -e .
+(simulus) pip install -e .
 
 
 Packaging Instructions

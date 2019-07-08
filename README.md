@@ -1,29 +1,54 @@
 
-# Simulus - A discrete-event simulator in Python
+# Simulus - A Discrete-Event Simulator in Python
 
-Simulus is an open-source discrete-event simulator in Python. Simulus
-fully supports the process-oriented simulation world-view.
+Simulus is an open-source discrete-event simulator in Python. Simulus implements a process-oriented simulation world-view with several advanced features to ease modeling and simulation tasks with both events and processes.  Simulus will soon add support for parallel and distributed simulation (planned for version 1.2), and real-time simulation (planned for version 1.3).
 
-In the near future, simulus will support parallel and distributed
-simulation, and real-time simulation.
+* Online documentation:
+http://simulus.readthedocs.io/
+
+* Source code repository:
+https://github.com/liuxfiu/simulus/
+
+* License:
+MIT – see the file LICENSE for details.
+
 
 ## Installation
 
-Run the following to install:
+Simulus should run with Python version 2.8 and above. If your python is too old, you should consider updating your Python as well as `pip` (Python’s package manager).
 
-```python
+You should be able to install simulus with `pip`:
+
+```
 pip install simulus
 ```
 
-## Usage
+This will install simulus system-wide for all users (assuming you have the necessary privilege on your machine). The installation will also automatically include all Python packages needed by simulus.
 
-Simulus works in two ways. One way is through events. The user schedules events. Simulus makes sure all events are sorted in timestamp order. When an event happens, simulus advances the simulation time to the event and calls the event handler, which is a user defined function. While processing the event, the user can schedule new events into the simulated future. We call this *direct event scheduling*. 
+You can also install simulus for just yourself, using:
 
-The other way is through processes. The user can create processes and have them run and interact. Each process is a separate thread of control. During its execution, a process may be blocked, either sleeping for some time or requesting for some resource that is currently unavailable. The process can resume execution when the specified time has passed or after the resource blocking condition has been removed. We call this *process scheduling*. 
+```
+pip install --user simulus
+```
 
-In simulus, both direct event scheduling and process scheduling can be used together to achieve the modeling tasks.
+If you had simulus installed previously, you can always upgrade the existing simulus installation with the newest release, using:
 
-The following a hello-world example, which simply schedules a function invocation in the simulated future:
+```
+pip install --upgrade --user simulus
+```
+
+
+## Basic Usage
+
+We show the basic use of simulus in the following. For more detailed information, you can check out the simulus tutorial mentioned above.
+
+Simulus can work in two ways. One way is through events. The user schedules events. Simulus makes sure all events are sorted in timestamp order. When an event happens, simulus advances the simulation time to the event and calls the event handler, which is just a user-defined function. While processing the event, the user can schedule new events into the simulated future. We call this approach *direct event scheduling*. 
+
+The other way is through processes. The user can create processes and have them run and interact. Each process is a separate thread of control. During its execution, a process may be suspended, by either sleeping for some time or getting blocked when requesting for some resources currently unavailable. The process resumes execution when the specified time has passed or after the resource blocking conditions have been removed. We call this approach *process scheduling*. 
+
+In simulus, both direct event scheduling and process scheduling can be used together seamlessly to achieve the modeling tasks.
+
+The following a hello-world example, which simply schedules a function (a.k.a. an event handler) to be invoked in the simulated future. Inside the function, the user schedules the same function again.
 
 
 ```python
@@ -50,7 +75,7 @@ sim.run(100)
     Hello world at time 100
 
 
-The following is the same hello-world example, but instead we use a process: 
+The following is the same hello-world example, but instead we use a process. A process is a continous thread of execution. In the example, once started, the process loops forever. Inside each iteration, the process prints out a message and then sleeps for some time.
 
 
 ```python
@@ -78,7 +103,13 @@ sim.run(100)
     Hello world at time 100
 
 
-Simulus supports conditional wait and allows events and processes to coexist. The following shows a example that Tom and Jerry entering a race. We model Tom as a process. Each time, Tom calls sleep() to represent running for some time, which is a random variable from a normal distribution with a mean 100 and a standard deviation of 50 (with a cutoff below zero). We model Jerry as an event. Jerry calls sched() to schedule an event to represent running for some time, which is a random variable from a uniform distribution between 50 and 100. Tom and Jerry compete for ten times; the next race starts as soon as the previous one finishes. Whoever runs fastest wins. But if they run for more than 100 seconds, both are disqualified for that race.
+Simulus allows events and processes to coexist. For example, simulus supports conditional-wait on both events and processes. The following shows a example that models Tom and Jerry entering a race. 
+
+Tom is modeled by processes. Each time Tom enters the race by creating a process which calls `sleep()` to represent the time during for running. The time duration is a random variable from a normal distribution with a mean 100 and a standard deviation of 50 (and a cutoff below zero). 
+
+Jerry is modeled by events. Each time Jerry enters the race by scheduling an event using `sched()` with a time offset to represent running time. The time offset is a random variable from a uniform distribution between 50 and 100. 
+
+Tom and Jerry compete for ten times; the next race would start as soon as the previous one finishes. For each rase, whoever runs fastest wins. But if they run for more than 100, both are disqualified for that race. The simulation finds out who wins more races.
 
 
 ```python
@@ -104,9 +135,10 @@ def compete():
     
         # let the race begin...
         (r1, r2), timedout = sim.wait((p, e), 100, method=any)
+        # the return values indicate which wait conditions have been satisfied
         if timedout:
             print("%g: both disqualified" % sim.now)
-            sim.kill(p) # both tom and ...|
+            sim.kill(p) # both tom and ...
             sim.cancel(e) # jerry can stop running now
         elif r1: 
             print("%g: tom wins" % sim.now)
@@ -152,6 +184,88 @@ sim.run()
     final result: tom:jerry=4:2
 
 
-Simulus also provides several advanced features to ease the common modeling tasks. For example, simulus provides the modeling abstraction for resources and facilities, so that multiple processes can access single-server or multi-server queues, perform producer-consumer synchronization over bounded buffers, and conduct message-passing communication among them.
+Simulus also provides several advanced features to ease the common modeling and simulation tasks, including those for modeling single-server or multi-server queues, for performing producer-consumer synchronization over bounded buffers, and for conducting message-passing communication among the processes.
 
-For more information, check out the Simulus Tutorial, available at the homepage.
+For example, simulus provides the modeling abstraction of a "store", which is a facility for storing countable objects (such as jobs in a queue, packets in a network router, and io requests arrived at a storage device), or for storing uncountable quantities or volumes (such as gas in a tank, water in a reservoir, and battery power in a mobile device). The following example shows the use of store as a bounded buffer with multiple producers and consumers.
+
+
+```python
+import simulus
+
+from random import seed, expovariate
+seed(12345)
+
+items_produced = 0 # keep track the number of items being produced
+
+def producer(idx):
+    global items_produced
+    while True:
+        sim.sleep(expovariate(1)) # take time to produce an item
+        serial_no = items_produced
+        items_produced += 1
+        print("%f: producer %d produces item [%d]" % (sim.now, idx, serial_no))
+        s.put(obj=serial_no)
+        print("%f: producer %d stores item [%d] in buffer" % 
+              (sim.now, idx, serial_no))
+        
+def consumer(idx):
+    while True:
+        serial_no = s.get()
+        print("%f: consumer %d retrieves item [%d] from buffer" %
+              (sim.now, idx, serial_no))
+        sim.sleep(expovariate(1)) # take time to consume the item
+        print("%f: consumer %d consumes item [%d]" % (sim.now, idx, serial_no))
+
+sim = simulus.simulator()
+
+# create a buffer with 3 slots
+s = sim.store(capacity=3)
+
+# create 2 producers and 3 consumers
+for i in range(2): 
+    sim.process(producer, i)
+for i in range(3):
+    sim.process(consumer, i)
+
+sim.run(5)
+
+```
+
+    0.010221: producer 1 produces item [0]
+    0.010221: producer 1 stores item [0] in buffer
+    0.010221: consumer 0 retrieves item [0] from buffer
+    0.364955: consumer 0 consumes item [0]
+    0.538916: producer 0 produces item [1]
+    0.538916: producer 0 stores item [1] in buffer
+    0.538916: consumer 2 retrieves item [1] from buffer
+    0.754168: consumer 2 consumes item [1]
+    0.998434: producer 0 produces item [2]
+    0.998434: producer 0 stores item [2] in buffer
+    0.998434: consumer 1 retrieves item [2] from buffer
+    1.174799: consumer 1 consumes item [2]
+    1.754371: producer 1 produces item [3]
+    1.754371: producer 1 stores item [3] in buffer
+    1.754371: consumer 0 retrieves item [3] from buffer
+    1.833163: producer 0 produces item [4]
+    1.833163: producer 0 stores item [4] in buffer
+    1.833163: consumer 2 retrieves item [4] from buffer
+    1.887065: producer 1 produces item [5]
+    1.887065: producer 1 stores item [5] in buffer
+    1.887065: consumer 1 retrieves item [5] from buffer
+    2.024740: consumer 2 consumes item [4]
+    2.321655: consumer 0 consumes item [3]
+    2.325417: consumer 1 consumes item [5]
+    2.658879: producer 0 produces item [6]
+    2.658879: producer 0 stores item [6] in buffer
+    2.658879: consumer 2 retrieves item [6] from buffer
+    2.692757: producer 1 produces item [7]
+    2.692757: producer 1 stores item [7] in buffer
+    2.692757: consumer 0 retrieves item [7] from buffer
+    2.754613: consumer 2 consumes item [6]
+    3.223988: consumer 0 consumes item [7]
+
+
+
+```python
+
+```
