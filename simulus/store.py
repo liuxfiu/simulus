@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-08 16:36:58 liux>
+# Last Update: Time-stamp: <2019-07-09 06:58:48 liux>
 ###############################################################
 
 from collections import deque
@@ -120,8 +120,8 @@ class Store(object):
     def get(self, amt=1):
         """Retrieve objects or quantities from the store.
 
-        Parameter:
-        ----------
+        Parameters:
+        -----------
         amt (int, float): the number of countable objects or the
                 amount of uncountable quantities to be retrieved all
                 at once (default is one)
@@ -174,8 +174,8 @@ class Store(object):
     def put(self, amt=1, *, obj=None):
         """Deposit objects or quantities to the store.
 
-        Parameter:
-        ----------
+        Parameters:
+        -----------
         amt (int, float): the number of countable objects or the
                 amount of uncountable quantities to be deposited all
                 at once (default is one)
@@ -185,6 +185,8 @@ class Store(object):
                 optional; however, if provided, this is a mandatory
                 keyworded argument, i.e., user must use the 'obj'
                 keyword if providing the object(s) after all
+
+        This method does not return a value.
 
         """
         
@@ -240,12 +242,12 @@ class Store(object):
 
     def getter(self, amt=1):
         """Return a trappable for getting objects or quantities from the
-        store. This function is the same as the get() method, except
+        store. This function is similar to the get() method, except
         that it returns a trappable (like traps, semaphores, and
         resources) on which one can apply conditional wait using the
         simulator's wait() function."""
 
-        class _GetTrappable(Trappable):
+        class GetTrappable(Trappable):
             def __init__(self, store, amt):
                 super().__init__(store._sim)
                 self._store = store
@@ -304,7 +306,7 @@ class Store(object):
     
     def putter(self, amt=1, *, obj=None):
         """Return a trappable for putting objects or quantities to the
-        store. This function is the same as the put() method, except
+        store. This function is similar to the put() method, except
         that it returns a trappable (like traps, semaphores, and
         resources) on which one can apply conditional wait using the
         simulator's wait() function."""

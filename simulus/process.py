@@ -1,8 +1,10 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-08 16:34:48 liux>
+# Last Update: Time-stamp: <2019-07-09 05:01:11 liux>
 ###############################################################
+
+"""Simulation process."""
 
 # greenlet must be installed as additional python package
 from greenlet import greenlet

@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-08 16:38:34 liux>
+# Last Update: Time-stamp: <2019-07-09 06:54:37 liux>
 ###############################################################
 
 from collections import deque
@@ -58,12 +58,13 @@ class Simulator:
         An event in simulus is represented as a function invoked in
         the simulated future. 
         
-        Parameters 
-        ----------
-        func: the event handler, which is a user-defined function
+        Parameters: 
+        -----------
+        func (function): the event handler, which is a user-defined
+                function
 
-        args: the positional arguments as a list to be passed to the
-                scheduled function (the event handler) once the
+        args (list): the positional arguments as a list to be passed
+                to the scheduled function (the event handler) once the
                 function is invoked at the scheduled time
 
         offset (float): relative time from now at which the event is
@@ -82,12 +83,12 @@ class Simulator:
                 with the given time interval; the interval must be a
                 strictly postive value
 
-        kwargs: the keyworded arguments as a dictionary to be passed
-                to the scheduled function (the event handler), once
-                the function is invoked at the scheduled time
+        kwargs (dict): the keyworded arguments as a dictionary to be
+                passed to the scheduled function (the event handler),
+                once the function is invoked at the scheduled time
 
-        Returns
-        -------
+        Returns:
+        --------
         This method returns a direct scheduling event (which is an
         opaque object to the user), with which the user can cancel the
         event, or reschedule the event, or apply conditional wait on
@@ -220,14 +221,14 @@ class Simulator:
         run (from a starting function) in the simulated future
         (including now).
         
-        Parameters 
-        ----------
-        proc: the starting function of the process, which can be an
-                arbitrary user-defined function.
+        Parameters:
+        -----------
+        proc (function): the starting function of the process, which
+                can be an arbitrary user-defined function.
 
-        args: the positional arguments as a list to be passed to the
-                starting function when the process begins at the
-                scheduled time
+        args (list): the positional arguments as a list to be passed
+                to the starting function when the process begins at
+                the scheduled time
 
         offset (float): relative time from now at which the process is
                 expected to start running; if provided, it must be a
@@ -241,12 +242,12 @@ class Simulator:
 
         name (string): an optional name for the process
 
-        kwargs: the keyworded arguments as a dictionary to be passed
-                to the starting function when the process begins at
-                the scheduled time
+        kwargs (dict): the keyworded arguments as a dictionary to be
+                passed to the starting function when the process
+                begins at the scheduled time
 
-        Returns
-        -------
+        Returns:
+        --------
         This method returns the process being created (it's an opaque
         object to the user); the user can use it to check whether the
         process is terminated, to join the process (i.e., to wait for
@@ -379,8 +380,8 @@ class Simulator:
         can be killed by another process when it's asleep. For
         interruptable sleep, use the wait() method.
 
-        Parameters 
-        ----------
+        Parameters:
+        -----------
         offset (float): relative time from now until which the process
                 will be put on hold; if provided, it must be a
                 non-negative value
@@ -432,19 +433,19 @@ class Simulator:
     def semaphore(self, initval=0, qdis=QDIS.FIFO):
         """Create a semaphore for inter-process communication.
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         initval (int): the initial value of the semaphore; the value must be non-negative; 
                 the default is zero
 
-        qdis : the queuing discipline for the waiting processes, which
-                can be selected from QDIS.FIFO (first in first out),
-                QDIS.LIFO (last in first out), QDIS.RANDOM (random
-                ordering), or QDIS.PRIORITY (based on process
+        qdis (int): the queuing discipline for the waiting processes,
+                which can be selected from QDIS.FIFO (first in first
+                out), QDIS.LIFO (last in first out), QDIS.RANDOM
+                (random ordering), or QDIS.PRIORITY (based on process
                 priority); if ignored, the default is QDIS.FIFO
 
-        Returns
-        -------
+        Returns:
+        --------
         This method returns a newly created semaphore.
 
         """
@@ -458,23 +459,23 @@ class Simulator:
     def resource(self, capacity=1, qdis=QDIS.FIFO, name=None, collect=None):
         """Create and return a resource.
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         capacity (int): the capacity of the resource; the value must
                 be a positive integer; the default is one
 
-        qdis : the queuing discipline for the waiting processes, which
-                can be selected from QDIS.FIFO (first in first out),
-                QDIS.LIFO (last in first out), QDIS.RANDOM (random
-                ordering), or QDIS.PRIORITY (based on process
+        qdis (int) : the queuing discipline for the waiting processes,
+                which can be selected from QDIS.FIFO (first in first
+                out), QDIS.LIFO (last in first out), QDIS.RANDOM
+                (random ordering), or QDIS.PRIORITY (based on process
                 priority); if ignored, the default is QDIS.FIFO
 
         name (string): the optional name of the resource
 
-        collect: the optional collector for statistics
+        collect (DataCollector): the optional collector for statistics
 
-        Returns
-        -------
+        Returns:
+        --------
         This method returns the newly created resource.
 
         """
@@ -491,8 +492,8 @@ class Simulator:
               p_qdis=QDIS.FIFO, c_qdis=QDIS.FIFO, name=None, collect=None):
         """Create and return a store.
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         capacity (int, float): the capacity of the store; the value must
                 be positive; the default is one
 
@@ -505,23 +506,23 @@ class Simulator:
                 be used for the store operation), in which case the
                 number of objects must match with the initlevel
 
-        p_qdis : the queuing discipline for the waiting producer
+        p_qdis (int): the queuing discipline for the waiting producer
                 processes (putters), which can be selected from
                 QDIS.FIFO (first in first out), QDIS.LIFO (last in
                 first out), QDIS.RANDOM (random ordering), or
                 QDIS.PRIORITY (based on process priority); if ignored,
                 the default is QDIS.FIFO
 
-        c_qdis : the queuing discipline for the waiting consumer
+        c_qdis (int): the queuing discipline for the waiting consumer
                 processes (getter); if ignored, the default is
                 QDIS.FIFO
 
         name (string): the optional name of the store
 
-        collect: the optional data collector for statistics
+        collect (DataCollector): the optional data collector for statistics
 
-        Returns
-        -------
+        Returns:
+        --------
         This method returns the newly created store.
 
         """
@@ -547,11 +548,12 @@ class Simulator:
         given amount of time if specified. The process will resume
         execution after the given condition is met.
 
-        Parameters
-        ----------
-        traps: either a trappable (an event, a process, a trap, a
-                semaphore, or one of the resources and facilities), or
-                a list/tuple of trappables
+        Parameters:
+        -----------
+        traps (trappable, list, tuple): either a trappable (an event,
+                a process, a trap, a semaphore, or one of the
+                resources and facilities), or a list/tuple of
+                trappables
 
         offset (float): relative time from now until which the process
                 will wait at the latest; if provided, it must be a
@@ -564,17 +566,17 @@ class Simulator:
                 not both; if both 'offset' and 'until' are ignored,
                 there will be no time limit on the wait
 
-        method: can be either 'all' (the default) or 'any'; if 'all',
-                all trappables must be triggered before this process
-                can resume execution (or timed out); if 'any', one of
-                the trappables must be triggered before this process
-                can resume execution (or timed out); this parameter
-                would have no effect if only one trappable (whether
-                it's standalone or as part of the list) is provided as
-                the first argument
+        method (function): can be either 'all' (the default) or 'any';
+                if 'all', all trappables must be triggered before this
+                process can resume execution (or timed out); if 'any',
+                one of the trappables must be triggered before this
+                process can resume execution (or timed out); this
+                parameter would have no effect if only one trappable
+                (whether it's standalone or as part of the list) is
+                provided as the first argument
 
-        Returns
-        -------
+        Returns:
+        --------
         The return value of this method is a tuple that consists of
         two elements: the first element is to indicate which of the
         trappables have been triggered or not; the second element of
@@ -703,8 +705,8 @@ class Simulator:
         This method processes the events in timestamp order and
         advances the simulation time accordingly.
 
-        Parameters 
-        ----------
+        Parameters:
+        -----------
         offset (float): relative time from now until which the
                 simulator should advance its simulation time; if
                 provided, it must be a non-negative value
@@ -836,8 +838,8 @@ def simulator(name = None, init_time = 0):
     scheduled functions and processes) and keeps track of the
     simulation time.
 
-    Parameters
-    ----------
+    Parameters:
+    -----------
     name (string): an optional name of the simulator; if specified,
         the name must be unique among all simulators created; the name
         can be used to retrieve the corresponding simulator; if
@@ -847,6 +849,10 @@ def simulator(name = None, init_time = 0):
 
     init_time (float): the optional start time of the simulator; if
         unspecified, the default is 0
+
+    Returns:
+    --------
+    This function returns the newly created simulator.
 
     """
     
