@@ -1,0 +1,25 @@
+0.538916: job[0] enters queue 0
+0.538916: job[0] leaves queue 0
+2: clock's ticking
+2.25469: job[1] enters queue 2
+2.25469: job[1] leaves queue 2
+4: clock's ticking
+4.18666: job[2] enters queue 1
+4.18666: job[2] leaves queue 1
+4.50171: job[3] enters queue 3
+4.50171: job[3] leaves queue 3
+4.67807: job[4] enters queue 0
+4.67807: job[4] leaves queue 0
+6: clock's ticking
+6.75093: job[5] enters queue 2
+6.75093: job[5] leaves queue 2
+7.57665: job[6] enters queue 1
+7.57665: job[6] leaves queue 1
+8: clock's ticking
+8.5228: job[7] enters queue 1
+8.5228: job[7] leaves queue 1
+8.96115: job[8] enters queue 0
+8.96115: job[8] leaves queue 0
+9.7184: job[9] enters queue 3
+9.7184: job[9] leaves queue 3
+10: clock's ticking

@@ -59,6 +59,7 @@
 ##
 ignore_regexps = [
     r'cpt',
+    r'minor',
     r'@minor', r'!minor', 
     r'@cosmetic', r'!cosmetic',
     r'@refactor', r'!refactor',

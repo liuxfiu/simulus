@@ -1,6 +1,23 @@
 # Changelog
 
 
+## 1.1.1 (2019-07-09)
+
+### New
+
+* Sphinx generated documents for simulus api. [Jason Liu]
+
+### Changes
+
+* Moved to github, fixed pipenv requirements, changed cancel() to also kill process, and made trappable a public interface with retval. chg: doc: updated README.md from readme.ipynb; updated tutorial. [Jason Liu]
+
+### Other
+
+* Set theme jekyll-theme-cayman. [liuxfiu]
+
+* Tagged and published version 1.1.0. [Jason Liu]
+
+
 ## 1.1.0 (2019-07-07)
 
 ### New
@@ -49,8 +66,6 @@
 
 ### New
 
-* Updated docs and added examples of using trappables; also some minor changes to interface (0.0.3). [Jason Liu]
-
 * Adding trapping mechanisms for inter-process communication. [Jason Liu]
 
 
@@ -68,10 +83,6 @@
 
 * Restructured examples directory (0.0.2). [Jason Liu]
 
-* Minor incremental updates. [Jason Liu]
-
-* Minor updates on a few interface functions including the sleep function. [Jason Liu]
-
 ### Fix
 
 * Fixed process scheduling issue. [Jason Liu]
@@ -86,8 +97,6 @@
 * This project got started in the evening on June 14, 2019 with a simple idea of creating an easy-to-use python simulator to replace our somewhat dilapitated Simian simulator and also outdoing the esoteric SimPy simulator. [Jason Liu]
 
 ### Changes
-
-* Some minor updates (0.0.1). [Jason Liu]
 
 * Updated the jupyter notebooks. [Jason Liu]
 

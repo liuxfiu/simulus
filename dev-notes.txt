@@ -46,7 +46,8 @@ git tag -a [version] -m [message]
 gitchangelog > CHANGELOG.md
 python setup.py sdist bdist_wheel
 git add (all changed files)
-git commit -m [message] --tags
+git commit -m [message]
+git push --tags
 python -m twine upload dist/simulus-[version]*
 
 
