@@ -1,6 +1,17 @@
 # Changelog
 
 
+## 1.1.2 (2019-07-10)
+
+### New
+
+* Added documentation for mailbox and examples. [Jason Liu]
+
+### Changes
+
+* Added section on using store with examples. [Jason Liu]
+
+
 ## 1.1.1 (2019-07-09)
 
 ### New
