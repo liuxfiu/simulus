@@ -1,0 +1,17 @@
+init sent job[0] to node 3 with delay 2.31933
+init sent job[1] to node 2 with delay 2.93198
+init sent job[2] to node 1 with delay 1.31505
+init sent job[3] to node 3 with delay 1.17636
+init sent job[4] to node 0 with delay 3.07286
+1.17636: node 3 received job[3], sent to node 2 with delay 1.82572
+1.31505: node 1 received job[2], sent to node 1 with delay 1.94616
+2.31933: node 3 received job[0], sent to node 1 with delay 1.43835
+2.93198: node 2 received job[1], sent to node 0 with delay 1.75724
+3.00208: node 2 received job[3], sent to node 3 with delay 1.8796
+3.07286: node 0 received job[4], sent to node 1 with delay 1.16034
+3.2612: node 1 received job[2], sent to node 0 with delay 1.21069
+3.75768: node 1 received job[0], sent to node 2 with delay 1.38867
+4.2332: node 1 received job[4], sent to node 3 with delay 1.41479
+4.47189: node 0 received job[2], sent to node 3 with delay 1.00346
+4.68922: node 0 received job[1], sent to node 1 with delay 2.47331
+4.88168: node 3 received job[3], sent to node 1 with delay 1.33768

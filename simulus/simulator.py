@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-09 21:24:54 liux>
+# Last Update: Time-stamp: <2019-07-10 14:01:23 liux>
 ###############################################################
 
 from collections import deque
@@ -58,41 +58,40 @@ class Simulator:
         An event in simulus is represented as a function invoked in
         the simulated future. 
         
-        Parameters: 
-        -----------
-        func (function): the event handler, which is a user-defined
-                function
+        Args: 
+            func (function): the event handler, which is a
+                user-defined function
 
-        args (list): the positional arguments as a list to be passed
-                to the scheduled function (the event handler) once the
-                function is invoked at the scheduled time
+            args (list): the positional arguments as a list to be
+                passed to the scheduled function (the event handler)
+                once the function is invoked at the scheduled time
 
-        offset (float): relative time from now at which the event is
-                scheduled to happen; if provided, must be a
+            offset (float): relative time from now at which the event
+                is scheduled to happen; if provided, must be a
                 non-negative value
 
-        until (float): the absolute time at which the event is
+            until (float): the absolute time at which the event is
                 scheduled to happen; if provided, it must not be
                 earlier than the current time; note that either
                 'offset' or 'until' can be used, but not both; if both
                 are ignored, it's assumed to be the current time
 
-        name (string): an optional name for the event
+            name (string): an optional name for the event
 
-        repeat_intv (float): if provided, the event will be repeated
-                with the given time interval; the interval must be a
-                strictly postive value
+            repeat_intv (float): if provided, the event will be
+                repeated with the given time interval; the interval
+                must be a strictly postive value
 
-        kwargs (dict): the keyworded arguments as a dictionary to be
-                passed to the scheduled function (the event handler),
-                once the function is invoked at the scheduled time
+            kwargs (dict): the keyworded arguments as a dictionary to
+                be passed to the scheduled function (the event
+                handler), once the function is invoked at the
+                scheduled time
 
-        Returns:
-        --------
-        This method returns a direct scheduling event (which is an
-        opaque object to the user), with which the user can cancel the
-        event, or reschedule the event, or apply conditional wait on
-        the event if needed
+        Returns: 
+            This method returns a direct scheduling event (which is an
+            opaque object to the user), with which the user can cancel
+            the event, or reschedule the event, or apply conditional
+            wait on the event if needed
 
         """
 
@@ -220,37 +219,36 @@ class Simulator:
         run (from a starting function) in the simulated future
         (including now).
         
-        Parameters:
-        -----------
-        proc (function): the starting function of the process, which
-                can be an arbitrary user-defined function.
+        Args:
+            proc (function): the starting function of the process,
+                which can be an arbitrary user-defined function.
 
-        args (list): the positional arguments as a list to be passed
-                to the starting function when the process begins at
-                the scheduled time
+            args (list): the positional arguments as a list to be
+                passed to the starting function when the process
+                begins at the scheduled time
 
-        offset (float): relative time from now at which the process is
-                expected to start running; if provided, it must be a
-                non-negative value (zero is OK)
+            offset (float): relative time from now at which the
+                process is expected to start running; if provided, it
+                must be a non-negative value (zero is OK)
 
-        until (float): the absolute time at which the process is
+            until (float): the absolute time at which the process is
                 expected to start running; if provided, it must not be
                 earlier than the current time; note that either
                 'offset' or 'until' can be used, but not both; if both
                 are ignored, it is assumed to be the current time
 
-        name (string): an optional name for the process
+            name (string): an optional name for the process
 
-        kwargs (dict): the keyworded arguments as a dictionary to be
-                passed to the starting function when the process
+            kwargs (dict): the keyworded arguments as a dictionary to
+                be passed to the starting function when the process
                 begins at the scheduled time
 
         Returns:
-        --------
-        This method returns the process being created (it's an opaque
-        object to the user); the user can use it to check whether the
-        process is terminated, to join the process (i.e., to wait for
-        its termination), or even to explicitly kill the process.
+            This method returns the process being created (it's an
+            opaque object to the user); the user can use it to check
+            whether the process is terminated, to join the process
+            (i.e., to wait for its termination), or even to explicitly
+            kill the process.
 
         """
         
@@ -379,13 +377,12 @@ class Simulator:
         can be killed by another process when it's asleep. For
         interruptable sleep, use the wait() method.
 
-        Parameters:
-        -----------
-        offset (float): relative time from now until which the process
-                will be put on hold; if provided, it must be a
+        Args:
+            offset (float): relative time from now until which the
+                process will be put on hold; if provided, it must be a
                 non-negative value
 
-        until (float): the absolute time at which the process is
+            until (float): the absolute time at which the process is
                 expected to resume execution; if provided, it must not
                 be earlier than the current time; either 'offset' or
                 'until' must be provided, but not both
@@ -432,20 +429,19 @@ class Simulator:
     def semaphore(self, initval=0, qdis=QDIS.FIFO):
         """Create a semaphore for inter-process communication.
 
-        Parameters:
-        -----------
-        initval (int): the initial value of the semaphore; the value must be non-negative; 
-                the default is zero
+        Args:
+            initval (int): the initial value of the semaphore; the
+                value must be non-negative; the default is zero
 
-        qdis (int): the queuing discipline for the waiting processes,
-                which can be selected from QDIS.FIFO (first in first
-                out), QDIS.LIFO (last in first out), QDIS.RANDOM
-                (random ordering), or QDIS.PRIORITY (based on process
-                priority); if ignored, the default is QDIS.FIFO
+            qdis (int): the queuing discipline for the waiting
+                processes, which can be selected from QDIS.FIFO (first
+                in first out), QDIS.LIFO (last in first out),
+                QDIS.RANDOM (random ordering), or QDIS.PRIORITY (based
+                on process priority); if ignored, the default is
+                QDIS.FIFO
 
         Returns:
-        --------
-        This method returns a newly created semaphore.
+            This method returns a newly created semaphore.
 
         """
 
@@ -458,24 +454,23 @@ class Simulator:
     def resource(self, capacity=1, qdis=QDIS.FIFO, name=None, collect=None):
         """Create and return a resource.
 
-        Parameters:
-        -----------
-        capacity (int): the capacity of the resource; the value must
-                be a positive integer; the default is one
+        Args:
+            capacity (int): the capacity of the resource; the value
+                must be a positive integer; the default is one
 
-        qdis (int) : the queuing discipline for the waiting processes,
-                which can be selected from QDIS.FIFO (first in first
-                out), QDIS.LIFO (last in first out), QDIS.RANDOM
-                (random ordering), or QDIS.PRIORITY (based on process
-                priority); if ignored, the default is QDIS.FIFO
+            qdis (int) : the queuing discipline for the waiting
+                processes, which can be selected from QDIS.FIFO (first
+                in first out), QDIS.LIFO (last in first out),
+                QDIS.RANDOM (random ordering), or QDIS.PRIORITY (based
+                on process priority); if ignored, the default is
+                QDIS.FIFO
 
-        name (string): the optional name of the resource
+            name (string): the optional name of the resource
 
-        collect (DataCollector): the optional collector for statistics
+            collect (DataCollector): the optional collector for statistics
 
         Returns:
-        --------
-        This method returns the newly created resource.
+            This method returns the newly created resource.
 
         """
 
@@ -491,38 +486,37 @@ class Simulator:
               p_qdis=QDIS.FIFO, c_qdis=QDIS.FIFO, name=None, collect=None):
         """Create and return a store.
 
-        Parameters:
-        -----------
-        capacity (int, float): the capacity of the store; the value must
-                be positive; the default is one
+        Args:
+            capacity (int, float): the capacity of the store; the
+                value must be positive; the default is one
 
-        initlevel (int, float): the initial storage level; the value
-                must be non-negative and it cannot be larger than the
-                capacity; the default is zero
+            initlevel (int, float): the initial storage level; the
+                value must be non-negative and it cannot be larger
+                than the capacity; the default is zero
 
-        initobj (object or list/tuple): initial objects to be
+            initobj (object or list/tuple): initial objects to be
                 deposited in the store (if real objects are going to
                 be used for the store operation), in which case the
                 number of objects must match with the initlevel
 
-        p_qdis (int): the queuing discipline for the waiting producer
-                processes (putters), which can be selected from
-                QDIS.FIFO (first in first out), QDIS.LIFO (last in
-                first out), QDIS.RANDOM (random ordering), or
+            p_qdis (int): the queuing discipline for the waiting
+                producer processes (putters), which can be selected
+                from QDIS.FIFO (first in first out), QDIS.LIFO (last
+                in first out), QDIS.RANDOM (random ordering), or
                 QDIS.PRIORITY (based on process priority); if ignored,
                 the default is QDIS.FIFO
 
-        c_qdis (int): the queuing discipline for the waiting consumer
-                processes (getter); if ignored, the default is
-                QDIS.FIFO
+            c_qdis (int): the queuing discipline for the waiting
+                consumer processes (getter); if ignored, the default
+                is QDIS.FIFO
 
-        name (string): the optional name of the store
+            name (string): the optional name of the store
 
-        collect (DataCollector): the optional data collector for statistics
+            collect (DataCollector): the optional data collector for
+                statistics
 
         Returns:
-        --------
-        This method returns the newly created store.
+            This method returns the newly created store.
 
         """
 
@@ -541,21 +535,20 @@ class Simulator:
     def mailbox(self, nparts=1, min_delay=0, name=None, collect=None):
         """Create and return a mailbox.
 
-        Parameters:
-        -----------
-        nparts (int): the number of compartments/partitions; the value
-                must be a positive integer; the default is one
+        Args:
+            nparts (int): the number of compartments/partitions; the
+                value must be a positive integer; the default is one
 
-        min_delay (float): the minimum delay for messages to be
+            min_delay (float): the minimum delay for messages to be
                 transported through the mailbox
 
-        name (string): an optional name of the mailbox
+            name (string): an optional name of the mailbox
 
-        collect (DataCollector): the optional collector for statistics
+            collect (DataCollector): the optional collector for
+                statistics
 
         Returns:
-        --------
-        This method returns the newly created mailbox.
+            This method returns the newly created mailbox.
 
         """
 
@@ -585,50 +578,50 @@ class Simulator:
         given amount of time if specified. The process will resume
         execution after the given condition is met.
 
-        Parameters:
-        -----------
-        traps (trappable, list, tuple): either a trappable (an event,
-                a process, a trap, a semaphore, or one of the
+        Args:
+            traps (trappable, list, tuple): either a trappable (an
+                event, a process, a trap, a semaphore, or one of the
                 resources and facilities), or a list/tuple of
                 trappables
 
-        offset (float): relative time from now until which the process
-                will wait at the latest; if provided, it must be a
-                non-negative value
+            offset (float): relative time from now until which the
+                process will wait at the latest; if provided, it must
+                be a non-negative value
 
-        until (float): the absolute time at which the process is
+            until (float): the absolute time at which the process is
                 expected to resume execution at the latest; if
                 provided, it must not be earlier than the current
                 time; either 'offset' or 'until' can be provided, but
                 not both; if both 'offset' and 'until' are ignored,
                 there will be no time limit on the wait
 
-        method (function): can be either 'all' (the default) or 'any';
-                if 'all', all trappables must be triggered before this
-                process can resume execution (or timed out); if 'any',
-                one of the trappables must be triggered before this
-                process can resume execution (or timed out); this
-                parameter would have no effect if only one trappable
-                (whether it's standalone or as part of the list) is
-                provided as the first argument
+            method (function): can be either 'all' (the default) or
+                'any'; if 'all', all trappables must be triggered
+                before this process can resume execution (or timed
+                out); if 'any', one of the trappables must be
+                triggered before this process can resume execution (or
+                timed out); this parameter would have no effect if
+                only one trappable (whether it's standalone or as part
+                of the list) is provided as the first argument
 
         Returns:
-        --------
-        The return value of this method is a tuple that consists of
-        two elements: the first element is to indicate which of the
-        trappables have been triggered or not; the second element of
-        tuple is to indicate whether timeout happens.
+            The return value of this method is a tuple that consists
+            of two elements: the first element is to indicate which of
+            the trappables have been triggered or not; the second
+            element of tuple is to indicate whether timeout happens.
 
-        If the first argument when calling this method is only one
-        trappable (not in a list or tuple), the first element of the
-        returned tuple will be simply a scalar value, True or False,
-        depending on whether the trappable has been triggered or not.
+            If the first argument when calling this method is only one
+            trappable (not in a list or tuple), the first element of
+            the returned tuple will be simply a scalar value, True or
+            False, depending on whether the trappable has been
+            triggered or not.
 
-        If the first argument when calling this method is a list or a
-        tuple of trappables (even if the list or the tuple has only
-        one element), the first element of the returned tuple will be
-        a list of booleans, each of which indicates whether the
-        corresponding trappable has been triggered or not.
+            If the first argument when calling this method is a list
+            or a tuple of trappables (even if the list or the tuple
+            has only one element), the first element of the returned
+            tuple will be a list of booleans, each of which indicates
+            whether the corresponding trappable has been triggered or
+            not.
 
         """
 
@@ -742,13 +735,12 @@ class Simulator:
         This method processes the events in timestamp order and
         advances the simulation time accordingly.
 
-        Parameters:
-        -----------
-        offset (float): relative time from now until which the
+        Args:
+            offset (float): relative time from now until which the
                 simulator should advance its simulation time; if
                 provided, it must be a non-negative value
 
-        until (float): the absolute time until which the simulator
+            until (float): the absolute time until which the simulator
                 should advance its simulation time; if provided, it
                 must not be earlier than the current time
 
@@ -875,21 +867,19 @@ def simulator(name = None, init_time = 0):
     scheduled functions and processes) and keeps track of the
     simulation time.
 
-    Parameters:
-    -----------
-    name (string): an optional name of the simulator; if specified,
-        the name must be unique among all simulators created; the name
-        can be used to retrieve the corresponding simulator; if
-        there's a duplicate name, the name will represent the
-        simulator that gets created later; a simulator can also remain
-        anonymous
+    Args:
+        name (string): an optional name of the simulator; if
+                specified, the name must be unique among all
+                simulators created; the name can be used to retrieve
+                the corresponding simulator; if there's a duplicate
+                name, the name will represent the simulator that gets
+                created later; a simulator can also remain anonymous
 
-    init_time (float): the optional start time of the simulator; if
-        unspecified, the default is 0
+        init_time (float): the optional start time of the simulator;
+                if unspecified, the default is zero
 
     Returns:
-    --------
-    This function returns the newly created simulator.
+        This function returns the newly created simulator.
 
     """
     
@@ -897,9 +887,3 @@ def simulator(name = None, init_time = 0):
     if name is not None:
         _Sync_.register_simulator(name, sim)
     return sim
-
-def send(name, msg, delay=0, partid=0):
-    mb = _Sync_.get_mailbox(name)
-    if not mb:
-        raise ValueError("send(%s) mailbox not found" % name)
-    mb.send(msg, delay, partid)

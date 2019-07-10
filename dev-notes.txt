@@ -306,6 +306,17 @@ resource.py:
     * _services
     * acquire()
     * release()
+    * num_in_system()
+    * num_in_service()
+    * num_in_queue()
+    * _try_wait()
+    * _cancel_wait()
+    * _commit_wait()
+    * _true_trappable()
+    * _make_arrival()
+    * _make_service()
+    * _make_renege()
+    * _make_departure()
 
 *********
 store.py:
@@ -348,23 +359,27 @@ store.py:
     *     _true_trappable()
     * getters_in_queue()
     * putters_in_queue()
+    * _make_p_arrival()
+    * _make_c_arrival()
+    * _make_p_renege()
+    * _make_c_renege()
+    * _make_p_departure()
+    * _make_c_departure()
 
 **********
 mailbox.py
 **********
 
-* _Compartment(Trappable)  # partially hidden, opaque reference
-    * __init__()
-    * _callbacks
-    * _trap
-    * _msgbuf
-    * _try_wait()
-    * _cancel_wait()
-    * _commit_wait()
-    * _true_trappable()
-    
-* Mailbox(Trappable)  # public interface
+* Mailbox  # public interface
     * __init__()  # supposedly hidden
+    *   _Compartment  # partially hidden, opaque reference
+    * 	  __init__()
+    * 	  callbacks
+    * 	  trap
+    * 	  msgbuf
+    *	  peek()
+    *	  retrieve()
+    * _sim
     * nparts
     * min_delay
     * name
@@ -373,11 +388,15 @@ mailbox.py
     * send()
     * recv()
     * receiver()
+    *   _GetTrappable(_Trappable)  # partially hidden, opaque reference
+    *     __init__()
+    *     _part
+    *     _isall
+    *     _try_wait()
+    *     _cancel_wait()
+    *     _commit_wait()
+    *     _true_trappable()
     * add_callback()
-    * check()
+    * peek()
     * retrieve()
-    * _process_mailbox_event()
-    * _try_wait()
-    * _cancel_wait()
-    * _commit_wait()
-    * _true_trappable()
+    * _mailbox_event()

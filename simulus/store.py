@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-09 20:59:25 liux>
+# Last Update: Time-stamp: <2019-07-10 13:38:16 liux>
 ###############################################################
 
 from collections import deque
@@ -120,19 +120,18 @@ class Store(object):
     def get(self, amt=1):
         """Retrieve objects or quantities from the store.
 
-        Parameters:
-        -----------
-        amt (int, float): the number of countable objects or the
+        Args:
+            amt (int, float): the number of countable objects or the
                 amount of uncountable quantities to be retrieved all
                 at once (default is one)
 
         Returns:
-        --------
-        This method returns none if no Python objects are
-        stored. Otherwise, if 'amt' is one, this method returns the
-        object that was first put into the store; if the 'amt' is more
-        than one, this method returns the 'amt' number of objects in a
-        list. The objects are stored first in and first out.
+            This method returns none if no Python objects are
+            stored. Otherwise, if 'amt' is one, this method returns
+            the object that was first put into the store; if the 'amt'
+            is more than one, this method returns the 'amt' number of
+            objects in a list. The objects are stored first in and
+            first out.
 
         """
         
@@ -147,7 +146,7 @@ class Store(object):
         if amt <= 0:
             raise ValueError("Store.get(amt=%r) non-positive amount" % amt)
 
-        self._sample_c_arrival(p, amt)
+        self._make_c_arrival(p, amt)
 
         # the consumer must be blocked if there isn't enough quantity
         # in the store
@@ -169,18 +168,17 @@ class Store(object):
                 np = self._p_sem._next_unblock()
             else: break
 
-        return self._sample_c_departure(p, amt)
+        return self._make_c_departure(p, amt)
 
     def put(self, amt=1, *, obj=None):
         """Deposit objects or quantities to the store.
 
-        Parameters:
-        -----------
-        amt (int, float): the number of countable objects or the
+        Args:
+            amt (int, float): the number of countable objects or the
                 amount of uncountable quantities to be deposited all
                 at once (default is one)
 
-        obj (object): the python object or a list/tuple of python
+            obj (object): the python object or a list/tuple of python
                 objects to be deposited to the store; this is
                 optional; however, if provided, this is a mandatory
                 keyworded argument, i.e., user must use the 'obj'
@@ -216,7 +214,7 @@ class Store(object):
                     raise ValueError("Store.put(amt=%r, obj=%r) unmatched "
                                      "number of objects" % (amt, obj))
             
-        self._sample_p_arrival(p, amt, obj)
+        self._make_p_arrival(p, amt, obj)
 
         # the producer will be blocked if the put amount would
         # overflow the store
@@ -238,7 +236,7 @@ class Store(object):
                 nc = self._c_sem._next_unblock()
             else: break
 
-        self._sample_p_departure(p, amt)
+        self._make_p_departure(p, amt)
 
     def getter(self, amt=1):
         """Return a trappable for getting objects or quantities from the
@@ -265,7 +263,7 @@ class Store(object):
                 p = self._store._sim.cur_process()
                 assert p is not None
                 
-                self._store._sample_c_arrival(p, self._amt)
+                self._store._make_c_arrival(p, self._amt)
 
                 # the consumer will be blocked if there isn't enough
                 # quantity in the store
@@ -277,7 +275,7 @@ class Store(object):
             def _cancel_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
-                self._store._sample_c_renege(p)
+                self._store._make_c_renege(p)
                 self._store._c_sem._cancel_wait()
 
             def _commit_wait(self):
@@ -299,7 +297,7 @@ class Store(object):
                         np = self._store._p_sem._next_unblock()
                     else: break
                     
-                self.retval = self._store._sample_c_departure(p, self._amt)
+                self.retval = self._store._make_c_departure(p, self._amt)
 
             def _true_trappable(self):
                 return self._store._c_sem
@@ -349,7 +347,7 @@ class Store(object):
                 p = self._store._sim.cur_process()
                 assert p is not None
 
-                self._store._sample_p_arrival(p, self._amt, self._obj)
+                self._store._make_p_arrival(p, self._amt, self._obj)
 
                 # the producer must be blocked if the put amount would
                 # overflow the store
@@ -361,7 +359,7 @@ class Store(object):
             def _cancel_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
-                self._store._sample_p_renege(p)
+                self._store._make_p_renege(p)
                 self._store._p_sem._cancel_wait()
 
             def _commit_wait(self):
@@ -384,7 +382,7 @@ class Store(object):
                         nc = self._store._c_sem._next_unblock()
                     else: break
 
-                self._store._sample_p_departure(p, self._amt)
+                self._store._make_p_departure(p, self._amt)
 
             def _true_trappable(self):
                 return self._store._p_sem
@@ -397,12 +395,7 @@ class Store(object):
     def putters_in_queue(self):
         return len(self._p_arrivals)
 
-
-    ##################
-    ##  STATISTICS  ##
-    ##################
-
-    def _sample_p_arrival(self, p, amt, obj):
+    def _make_p_arrival(self, p, amt, obj):
         self._p_arrivals[p] = (self._sim.now, amt)
         if obj is not None:
             if self._obj_decided and self._obj_store is None:
@@ -426,7 +419,7 @@ class Store(object):
             self.stats.sample("putters_in_queue", (self._sim.now, len(self._p_arrivals)))
         self._last_p_arrival = self._sim.now
 
-    def _sample_c_arrival(self, p, amt):
+    def _make_c_arrival(self, p, amt):
         self._c_arrivals[p] = (self._sim.now, amt)
         if self.stats is not None:
             self.stats.sample("c_arrivals", self._sim.now);
@@ -434,21 +427,21 @@ class Store(object):
             self.stats.sample("getters_in_queue", (self._sim.now, len(self._c_arrivals)))
         self._last_c_arrival = self._sim.now
 
-    def _sample_p_renege(self, p):
+    def _make_p_renege(self, p):
         t,a = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
         if self.stats is not None:
             self.stats.sample("p_reneges", self._sim.now);
             self.stats.sample("p_renege_queuing_time", self._sim.now-t)
             self.stats.sample("putters_in_queue", (self._sim.now, len(self._p_arrivals)))
 
-    def _sample_c_renege(self, p):
+    def _make_c_renege(self, p):
         t,a = self._c_arrivals.pop(p) # throw a KeyError if not in dictionary
         if self.stats is not None:
             self.stats.sample("c_reneges", self._sim.now);
             self.stats.sample("c_renege_queuing_time", self._sim.now-t)
             self.stats.sample("getters_in_queue", (self._sim.now, len(self._c_arrivals)))
 
-    def _sample_p_departure(self, p, amt):
+    def _make_p_departure(self, p, amt):
         t,a = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
         assert a == amt
         if self.stats is not None:
@@ -456,7 +449,7 @@ class Store(object):
             self.stats.sample("p_queuing_time", self._sim.now-t)
             self.stats.sample("putters_in_queue", (self._sim.now, len(self._p_arrivals)))
             
-    def _sample_c_departure(self, p, amt):
+    def _make_c_departure(self, p, amt):
         t,a = self._c_arrivals.pop(p) # throw a KeyError if not in dictionary
         assert a == amt
         if self.stats is not None:

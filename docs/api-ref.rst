@@ -44,6 +44,14 @@ simulus.store
    :undoc-members:
    :show-inheritance:
 
+simulus.mailbox
+-----------------
+		
+.. automodule:: simulus.mailbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 simulus.simulator
 -----------------
 		
@@ -54,6 +62,7 @@ simulus.simulator
 
 .. autoclass:: Simulator
    :members:
+   :show-inheritance:
 
 simulus.utils
 -----------------
@@ -62,4 +71,4 @@ simulus.utils
    :members:
    :undoc-members:
    :show-inheritance:
-		
+

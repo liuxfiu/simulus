@@ -12,34 +12,34 @@ def mailman():
         sim.sleep(until=day*24*3600+8*3600) # 8 o'clock
         print('--- day %d ---' % day)
         
-        # the mailman sort the mails in the moring and only start to
-        # get out deliver the mails at 2 PM
+        # sort the mails in the moring and get out for delivery at 2
+        # o'clock in the afternoon
         sim.sleep(until=day*24*3600+14*3600)
 
         # it may take variable amount of time (between 1 to 5 hours)
-        # before the mails can be delivered to the mailbox
+        # before the mails can be delivered to people's mailboxes
         delay = randint(3600, 5*3600)
         mb.send('letter for day %d' % day, delay)
-
-        print("%s: mail truck's out, expected delivery at %s" %
+        print("%s mail truck's out, expected delivery at %s" %
               (strnow(), strnow(sim.now+delay)))
 
         # go to the next day
         day += 1
 
-def receiver():
+def patron():
     day = 0
     while True:
         # come back from work at 5 PM
         sim.sleep(until=day*24*3600+17*3600)
         
-        # wait for to check the mailbox within an hour
-        _, timedout = sim.wait(mb, 3600)
+        # check the mailbox within an hour (until 6 PM)
+        rcv = mb.receiver()
+        _, timedout = sim.wait(rcv, 3600)
         if timedout:
-            print("%s: mail truck didn't come today" % strnow())
+            print("%s mail truck didn't come today" % strnow())
         else:
-            for ltr in mb.retval:
-                print("%s: receives '%s'" % (strnow(), ltr))
+            for ltr in rcv.retval:
+                print("%s receives '%s'" % (strnow(), ltr))
 
         # go to the next day
         day += 1
@@ -50,6 +50,6 @@ sim = simulus.simulator()
 mb = sim.mailbox()
 
 sim.process(mailman)
-sim.process(receiver)
+sim.process(patron)
 
-sim.run(10*24*3600)
+sim.run(5*24*3600)

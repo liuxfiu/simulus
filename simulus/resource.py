@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-08 16:35:56 liux>
+# Last Update: Time-stamp: <2019-07-10 10:04:08 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector
@@ -72,9 +72,9 @@ class Resource(Trappable):
         if p is None:
             raise RuntimeError("Resource.acquire() outside process context")
 
-        self._sample_arrival(p)
+        self._make_arrival(p)
         self._sem.wait()
-        self._sample_service(p)
+        self._make_service(p)
 
     def release(self):
         """Relinquish the resource acquired previously.
@@ -89,7 +89,7 @@ class Resource(Trappable):
         if p is None:
             raise RuntimeError("Resource.acquire() outside process context")
 
-        self._sample_departure(p)
+        self._make_departure(p)
         self._sem.signal()
 
     def num_in_system(self):
@@ -109,29 +109,24 @@ class Resource(Trappable):
     def _try_wait(self):
         p = self._sim.cur_process()
         assert p is not None
-        self._sample_arrival(p)
+        self._make_arrival(p)
         return self._sem._try_wait()
 
     def _cancel_wait(self):
         p = self._sim.cur_process()
         assert p is not None
-        self._sample_renege(p)
+        self._make_renege(p)
         self._sem._cancel_wait()
 
     def _commit_wait(self):
         p = self._sim.cur_process()
         assert p is not None
-        self._sample_service(p)
+        self._make_service(p)
 
     def _true_trappable(self):
         return self._sem
 
-
-    ##################
-    ##  STATISTICS  ##
-    ##################
-
-    def _sample_arrival(self, p):
+    def _make_arrival(self, p):
         self._arrivals[p] = self._sim.now
         if self.stats is not None:
             self.stats.sample("arrivals", self._sim.now);
@@ -139,21 +134,21 @@ class Resource(Trappable):
             self.stats.sample("num_in_system", (self._sim.now, len(self._arrivals)))
         self._last_arrival = self._sim.now
 
-    def _sample_service(self, p):
+    def _make_service(self, p):
         self._services[p] = self._sim.now
         if self.stats is not None:
             self.stats.sample("entering_service_time", self._sim.now);
             self.stats.sample("queuing_time", self._sim.now-self._arrivals[p])
             self.stats.sample("num_in_service", (self._sim.now, len(self._services)))
 
-    def _sample_renege(self, p):
+    def _make_renege(self, p):
         t = self._arrivals.pop(p) # throw a KeyError if not in dictionary
         if self.stats is not None:
             self.stats.sample("reneges", self._sim.now);
             self.stats.sample("renege_queuing_time", self._sim.now-t)
             self.stats.sample("num_in_system", (self._sim.now, len(self._arrivals)))
 
-    def _sample_departure(self, p):
+    def _make_departure(self, p):
         ta = self._arrivals.pop(p) # throw a KeyError if not in dictionary
         ts = self._services.pop(p) # ... this also
         if self.stats is not None:
