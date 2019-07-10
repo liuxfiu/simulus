@@ -48,6 +48,7 @@ python setup.py sdist bdist_wheel
 git add (all changed files)
 git commit -m [message]
 git push --tags
+git push
 python -m twine upload dist/simulus-[version]*
 
 
@@ -151,7 +152,7 @@ trappable.py:
 trap.py
 *******
 
-* Trap  # public interface
+* Trap(Trappable)  # public interface
     * __init__()  # supposedly hidden
     * state: TRAP_UNSET, TRAP_SET, TRAP_SPRUNG
     * blocked
@@ -164,7 +165,7 @@ trap.py
 semaphore.py:
 *************
 
-* Semaphore  # public interface
+* Semaphore(Trappable)  # public interface
     * __init__()  # supposedly hidden
     * val
     * qdis: QDIS.*
@@ -184,7 +185,7 @@ event.py:
 * _MaxEntry_  # completely hidden
 * _PQDict_  # completely hidden
 
-* _Event  # partially hidden, opaque reference
+* _Event(Trappable)  # partially hidden, opaque reference
     * __init__()
     * time
     * name
@@ -195,7 +196,7 @@ event.py:
     * _cancel_wait()
     * _true_trappable()
 
-* _DirectEvent  # partially hidden, opaque reference
+* _DirectEvent(_Event)  # partially hidden, opaque reference
     * __init__()
     * func
     * params
@@ -203,7 +204,7 @@ event.py:
     * __str__()
     * renew()
 
-* _ProcessEvent  # partially hidden, opaque reference
+* _ProcessEvent(_Event)  # partially hidden, opaque reference
     * __init__()
     * proc
     * __str__()
@@ -224,7 +225,7 @@ event.py:
 process.py:
 ***********
 
-* _Process  # partially hidden, opaque reference
+* _Process(Trappable)  # partially hidden, opaque reference
     * __init__()
     * name
     * func
@@ -277,6 +278,8 @@ simulator.py:
     * trap()
     * semaphore()
     * resource()
+    * store()
+    * mailbox()
     * wait()
     * run()
     * step()
@@ -285,12 +288,13 @@ simulator.py:
     * _process_one_event()
 
 * simulator()  # public interface
+* send()  # public interface
 
 ************
 resource.py:
 ************
 
-* Resource  # public interface
+* Resource(Trappable)  # public interface
     * __init__()  # supposedly hidden
     * name
     * capacity
@@ -324,8 +328,8 @@ store.py:
     * get()
     * put()
     * getter()
-    *   GetTrappable  # public interface
-    *     __init__()  # supposedly hidden
+    *   _GetTrappable(Trappable)  # partially hidden, opaque reference
+    *     __init__()
     *     _store
     *     _amt
     *     _try_wait()
@@ -333,8 +337,8 @@ store.py:
     *     _commit_wait()
     *     _true_trappable()
     * putter()
-    *   PutTrappable  # public interface
-    *     __init__()  # supposedly hidden
+    *   _PutTrappable(Trappable)  # partially hidden, opaque reference
+    *     __init__()
     *     _store
     *     _amt
     *     _obj
@@ -345,6 +349,35 @@ store.py:
     * getters_in_queue()
     * putters_in_queue()
 
+**********
+mailbox.py
+**********
 
-
+* _Compartment(Trappable)  # partially hidden, opaque reference
+    * __init__()
+    * _callbacks
+    * _trap
+    * _msgbuf
+    * _try_wait()
+    * _cancel_wait()
+    * _commit_wait()
+    * _true_trappable()
     
+* Mailbox(Trappable)  # public interface
+    * __init__()  # supposedly hidden
+    * nparts
+    * min_delay
+    * name
+    * stats
+    * _parts
+    * send()
+    * recv()
+    * receiver()
+    * add_callback()
+    * check()
+    * retrieve()
+    * _process_mailbox_event()
+    * _try_wait()
+    * _cancel_wait()
+    * _commit_wait()
+    * _true_trappable()

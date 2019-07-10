@@ -1,0 +1,33 @@
+--- day 0 ---
+14:00: mail truck's out, expected delivery at 16:53
+17:00: receives 'letter for day 0'
+--- day 1 ---
+14:00: mail truck's out, expected delivery at 18:20
+18:00: mail truck didn't come today
+--- day 2 ---
+14:00: mail truck's out, expected delivery at 15:02
+17:00: receives 'letter for day 1'
+17:00: receives 'letter for day 2'
+--- day 3 ---
+14:00: mail truck's out, expected delivery at 18:43
+18:00: mail truck didn't come today
+--- day 4 ---
+14:00: mail truck's out, expected delivery at 18:45
+17:00: receives 'letter for day 3'
+--- day 5 ---
+14:00: mail truck's out, expected delivery at 18:39
+17:00: receives 'letter for day 4'
+--- day 6 ---
+14:00: mail truck's out, expected delivery at 16:21
+17:00: receives 'letter for day 5'
+17:00: receives 'letter for day 6'
+--- day 7 ---
+14:00: mail truck's out, expected delivery at 18:53
+18:00: mail truck didn't come today
+--- day 8 ---
+14:00: mail truck's out, expected delivery at 16:40
+17:00: receives 'letter for day 7'
+17:00: receives 'letter for day 8'
+--- day 9 ---
+14:00: mail truck's out, expected delivery at 15:52
+17:00: receives 'letter for day 9'

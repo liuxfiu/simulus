@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-09 06:54:37 liux>
+# Last Update: Time-stamp: <2019-07-09 21:24:54 liux>
 ###############################################################
 
 from collections import deque
@@ -16,6 +16,7 @@ from .process import *
 from .sync import *
 from .resource import *
 from .store import *
+from .mailbox import *
 
 __all__ = ["simulator", "sync", "infinite_time", "minus_infinite_time"]
 
@@ -51,7 +52,6 @@ class Simulator:
     # direct event scheduling methods #
     ###################################
         
-    #def sched(self, func, offset=None, name=None, until=None, params=None, repeat_intv=None, **kargs):
     def sched(self, func, *args, offset=None, until=None, name=None, repeat_intv=None, **kwargs):
         """Schedule an event.
 
@@ -207,7 +207,6 @@ class Simulator:
     # process scheduling methods #
     ##############################
     
-    #def process(self, proc, offset=None, name=None, until=None, params=None, **kargs):
     def process(self, proc, *args, offset=None, until=None, name=None, **kwargs):
         """Create a process and schedule its execution.
 
@@ -422,9 +421,9 @@ class Simulator:
         # the control comes back now; the process resumes execution...
 
 
-    ##############################
-    # trappable handling methods #
-    ##############################
+    #########################################
+    # trappables, resources, and facilities #
+    #########################################
     
     def trap(self):
        """Create and return a trap for inter-process communication."""
@@ -538,6 +537,44 @@ class Simulator:
             raise ValueError("Simulator.store(c_qdis=%r) unknown queuing discipline" % c_qdis)
 
         return Store(self, capacity, initlevel, initobj, name, p_qdis, c_qdis, collect)
+
+    def mailbox(self, nparts=1, min_delay=0, name=None, collect=None):
+        """Create and return a mailbox.
+
+        Parameters:
+        -----------
+        nparts (int): the number of compartments/partitions; the value
+                must be a positive integer; the default is one
+
+        min_delay (float): the minimum delay for messages to be
+                transported through the mailbox
+
+        name (string): an optional name of the mailbox
+
+        collect (DataCollector): the optional collector for statistics
+
+        Returns:
+        --------
+        This method returns the newly created mailbox.
+
+        """
+
+        if not isinstance(nparts, int):
+            raise TypeError("Simulator.mailbox(nparts=%r) nparts not an integer" % nparts)
+        if nparts <= 0:
+            raise ValueError("Simulator.mailbox(nparts=%r) non-positive nparts" % nparts)
+        if min_delay < 0:
+            raise ValueError("Simulator.mailbox(min_delay=%r) negative min_delay" % min_delay)
+
+        mb = Mailbox(self, nparts, min_delay, name, collect)
+        if name is not None:
+            _Sync_.register_mailbox(name, mb)
+        return mb
+            
+
+    ####################
+    # conditional wait #
+    ####################
 
     def wait(self, traps, offset=None, until=None, method=all):
         """Conditional wait on one or more trappables for some time.
@@ -857,36 +894,12 @@ def simulator(name = None, init_time = 0):
     """
     
     sim = Simulator(name, init_time)
-    if name != None:
+    if name is not None:
         _Sync_.register_simulator(name, sim)
     return sim
 
-## ------------------------------------------------------------
-
-def test_simulator():
-    sim = simulator()
-    sim1 = simulator("sim1")
-    sim2 = simulator("sim2")
-    try:
-        sim3 = simulator("sim2")
-    except Exception as ex:
-        print(ex)
-
-    sim.run(offset=10)
-    sim.run(until=50)
-    try:
-        sim.run(offset=-1)
-    except Exception as ex:
-        print(ex)
-    try:
-        sim.run(until=10)
-    except Exception as ex:
-        print(ex)
-    try:
-        sim.run()
-    except Exception as ex:
-        print(ex)
-    try:
-        sim.run(offset=10, until=100)
-    except Exception as ex:
-        print(ex)
+def send(name, msg, delay=0, partid=0):
+    mb = _Sync_.get_mailbox(name)
+    if not mb:
+        raise ValueError("send(%s) mailbox not found" % name)
+    mb.send(msg, delay, partid)

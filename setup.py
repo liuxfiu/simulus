@@ -15,7 +15,7 @@ setuptools.setup(
     license='MIT',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="http://people.cis.fiu.edu/liux/research/simulus/",
+    url="http://simulus.readthedocs.io/",
     packages=setuptools.find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",

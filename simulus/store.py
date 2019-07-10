@@ -1,13 +1,13 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-09 06:58:48 liux>
+# Last Update: Time-stamp: <2019-07-09 20:59:25 liux>
 ###############################################################
 
 from collections import deque
 
 from .utils import QDIS, DataCollector
-from .trap import Trappable
+from .trappable import Trappable
 from .semaphore import Semaphore
 
 __all__ = ["Store"]
@@ -71,9 +71,9 @@ class Store(object):
     
     def __init__(self, sim, capacity, initlevel, initobj, name, p_qdis, c_qdis, dc):
         """A store should be created using simulator's store() function. A
-        store has an optional name, a capacity (must be positive), a
-        queuing discipline, and a QStats instance for statistics
-        collection."""
+        store has a capacity (must be positive), an initial level,
+        optional initial jobs, an optional name, a queuing discipline,
+        and a DataCollector instance for statistics collection."""
 
         self._sim = sim
         self.capacity = capacity # postive
@@ -247,7 +247,9 @@ class Store(object):
         resources) on which one can apply conditional wait using the
         simulator's wait() function."""
 
-        class GetTrappable(Trappable):
+        class _GetTrappable(Trappable):
+            """The store's trappable for conditional wait on get."""
+            
             def __init__(self, store, amt):
                 super().__init__(store._sim)
                 self._store = store
@@ -302,7 +304,7 @@ class Store(object):
             def _true_trappable(self):
                 return self._store._c_sem
 
-        return GetTrappable(self, amt)
+        return _GetTrappable(self, amt)
     
     def putter(self, amt=1, *, obj=None):
         """Return a trappable for putting objects or quantities to the
@@ -311,7 +313,9 @@ class Store(object):
         resources) on which one can apply conditional wait using the
         simulator's wait() function."""
 
-        class PutTrappable(Trappable):
+        class _PutTrappable(Trappable):
+            """The store's trappable for conditional wait on put."""
+            
             def __init__(self, store, amt, obj):
                 super().__init__(store._sim)
                 self._store = store
@@ -385,7 +389,7 @@ class Store(object):
             def _true_trappable(self):
                 return self._store._p_sem
 
-        return PutTrappable(self, amt, obj)
+        return _PutTrappable(self, amt, obj)
     
     def getters_in_queue(self):
         return len(self._c_arrivals)

@@ -1,0 +1,70 @@
+0.538916: send 0
+0.538916: func(0) checked 0
+0.538916: func(1) checked 0
+0.538916: proc(2) got 0
+0.538916: proc(3) got nothing
+0.549138: send 1
+0.549138: func(0) checked 1
+0.549138: func(1) checked 1
+0.549138: proc(2) got 1
+0.549138: proc(3) got nothing
+2.29329: send 2
+2.29329: func(0) checked 2
+2.29329: func(1) checked 2
+2.29329: proc(2) got 2
+2.29329: proc(3) got nothing
+2.64802: send 3
+2.64802: func(0) checked 3
+2.64802: func(1) checked 3
+2.64802: proc(2) got 3
+2.64802: proc(3) got nothing
+3.10754: send 4
+3.10754: func(0) checked 4
+3.10754: func(1) checked 4
+3.10754: proc(2) got 4
+3.10754: proc(3) got nothing
+3.32279: send 5
+3.32279: func(0) checked 5
+3.32279: func(1) checked 5
+3.32279: proc(2) got 5
+3.32279: proc(3) got nothing
+4.15752: send 6
+4.15752: func(0) checked 6
+4.15752: func(1) checked 6
+4.15752: proc(2) got 6
+4.15752: proc(3) got nothing
+4.33388: send 7
+4.33388: func(0) checked 7
+4.33388: func(1) checked 7
+4.33388: proc(2) got 7
+4.33388: proc(3) got nothing
+4.46658: send 8
+4.46658: func(0) checked 8
+4.46658: func(1) checked 8
+4.46658: proc(2) got 8
+4.46658: proc(3) got nothing
+5.03386: send 9
+5.03386: func(0) checked 9
+5.03386: func(1) checked 9
+5.03386: proc(2) got 9
+5.03386: proc(3) got nothing
+5.85958: send 10
+5.85958: func(0) checked 10
+5.85958: func(1) checked 10
+5.85958: proc(2) got 10
+5.85958: proc(3) got nothing
+6.05115: send 11
+6.05115: func(0) checked 11
+6.05115: func(1) checked 11
+6.05115: proc(2) got 11
+6.05115: proc(3) got nothing
+6.85685: send 12
+6.85685: func(0) checked 12
+6.85685: func(1) checked 12
+6.85685: proc(2) got 12
+6.85685: proc(3) got nothing
+7.2952: send 13
+7.2952: func(0) checked 13
+7.2952: func(1) checked 13
+7.2952: proc(2) got 13
+7.2952: proc(3) got nothing
