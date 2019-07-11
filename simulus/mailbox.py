@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 9, 2019
-# Last Update: Time-stamp: <2019-07-10 13:59:21 liux>
+# Last Update: Time-stamp: <2019-07-11 08:23:58 liux>
 ###############################################################
 
 from collections import deque
@@ -347,6 +347,6 @@ def send(name, msg, delay=None, part=0):
     """
 
     mb = _Sync_.get_mailbox(name)
-    if not mb:
+    if mb is None:
         raise ValueError("send(%s) to mailbox not found" % name)
     return mb.send(msg, delay, part)
