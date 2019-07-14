@@ -1,11 +1,11 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-08 16:36:05 liux>
+# Last Update: Time-stamp: <2019-07-13 11:31:35 liux>
 ###############################################################
 
 from collections import deque
-import heapq, random
+import heapq
 
 from .trappable import Trappable
 from .utils import QDIS
@@ -96,7 +96,7 @@ class Semaphore(Trappable):
                 l = len(self.blocked)
                 if l > 1:
                      # get random index (from 0 to l-1) 
-                    i = random.randrange(l)
+                    i = self._sim.rng().randrange(l)
                     if i != l-1:
                         # swap with the last element
                         self.blocked[i], self.blocked[-1] = \
@@ -177,7 +177,7 @@ class Semaphore(Trappable):
                 l = len(self.blocked)
                 if l > 1:
                      # get random index (from 0 to l-1) 
-                    i = random.randrange(l)
+                    i = self._sim.rng().randrange(l)
                     if i != l-1:
                         # swap with the last element
                         self.blocked[i], self.blocked[-1] = \

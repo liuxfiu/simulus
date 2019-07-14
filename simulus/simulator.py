@@ -1,9 +1,10 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-10 14:01:23 liux>
+# Last Update: Time-stamp: <2019-07-13 20:29:54 liux>
 ###############################################################
 
+import random, uuid
 from collections import deque
 
 from .utils import *
@@ -46,6 +47,8 @@ class Simulator:
         self._eventlist = _EventList_()
         self._theproc = None
         self._readyq = deque()
+        self._rng = None
+        #self._fast_rng = None
   
 
     ###################################
@@ -822,6 +825,46 @@ class Simulator:
         for e in sorted(self._eventlist.pqueue.values()):
             print("  %s" % e)
 
+    def rng(self):
+        """Return the pseudo-random number generator attached to this
+        simulator. It's a random.Random instance (Mersenne twister)."""
+
+        if self._rng is None:
+            u = uuid.uuid3(_Sync_.namespace, self.name)
+            self._rng = random.Random(int(u.int/2**32))
+        return self._rng
+
+    # def fast_rng(self):
+    #     """Return a fast pseudo-random number generator attached to this
+    #     simulator. It's a Lehmer random number generator, which has a
+    #     very short period. Use with caution!"""
+    #     class _FastRNG(random.Random):
+    #         M = 2147483647
+    #         A = 48271
+    #         A256 = 22925
+    #         Q = int(M/A)
+    #         R = M%A
+    #         def __init__(self, initial_seed):
+    #             self._seed = initial_seed
+    #         def random(self):
+    #             t = _FastRNG.A*(self._seed%_FastRNG.Q)-_FastRNG.R*int(self._seed/_FastRNG.Q)
+    #             if t > 0: self._seed = t
+    #             else: self._seed = t+_FastRNG.M
+    #             return float(self._seed)/_FastRNG.M
+    #         def seed(self, a):
+    #             t = a%_FastRNG.M
+    #             if t > 0: self._seed = t
+    #             else: self._seed = t+_FastRNG.M
+    #         def getstate(self):
+    #             return self._seed
+    #         def setstate(self, state):
+    #             self._seed(state)
+    #         #def getrandbits(self, k): pass
+    #     if self._fast_rng is None:
+    #         u = uuid.uuid3(_Sync_.namespace, self.name)
+    #         self._fast_rng = _FastRNG(int(u.int/2**32))
+    #     return self._fast_rng
+
     def _process_one_event(self):
         """Process one event on the event list, assuming there is a least one
         event on the event list."""
@@ -868,12 +911,13 @@ def simulator(name = None, init_time = 0):
     simulation time.
 
     Args:
-        name (string): an optional name of the simulator; if
-                specified, the name must be unique among all
-                simulators created; the name can be used to retrieve
-                the corresponding simulator; if there's a duplicate
-                name, the name will represent the simulator that gets
-                created later; a simulator can also remain anonymous
+        name (string): a name of the simulator; if ignored, the system
+                will generate a unique name for the simulator; if
+                specified, the name needs to be unique so that the
+                name can be used to retrieve the corresponding
+                simulator instance; the name is also used to determine
+                the seed of the pseudo-random generator attached to
+                the simulator
 
         init_time (float): the optional start time of the simulator;
                 if unspecified, the default is zero
@@ -882,8 +926,13 @@ def simulator(name = None, init_time = 0):
         This function returns the newly created simulator.
 
     """
-    
-    sim = Simulator(name, init_time)
-    if name is not None:
+
+    _Sync_.init() # make sure we have it
+
+    if name is None:
+        name = _Sync_.unique_name()
+        sim = Simulator(name, init_time)
+    else:
+        sim = Simulator(name, init_time)
         _Sync_.register_simulator(name, sim)
     return sim

@@ -252,6 +252,13 @@ sync.py:
 ********
 
 * _Sync_:  # completely hidden
+    * init()
+    * get_simulator()
+    * register_simulator()
+    * get_mailbox()
+    * register_mailbox()
+    * unique_name()
+    
 * sync()  # public interface
 
 *************
@@ -265,6 +272,7 @@ simulator.py:
     * _eventlist
     * _theproc
     * _readq
+    * _rng
     * sched()
     * cancel()
     * resched()
@@ -285,10 +293,10 @@ simulator.py:
     * step()
     * peek()
     * show_calendar()
+    * rng()
     * _process_one_event()
 
 * simulator()  # public interface
-* send()  # public interface
 
 ************
 resource.py:
@@ -400,3 +408,5 @@ mailbox.py
     * peek()
     * retrieve()
     * _mailbox_event()
+
+* send()  # public interface
