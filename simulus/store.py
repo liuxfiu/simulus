@@ -1,12 +1,12 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-10 13:38:16 liux>
+# Last Update: Time-stamp: <2019-07-14 14:21:10 liux>
 ###############################################################
 
 from collections import deque
 
-from .utils import QDIS, DataCollector
+from .utils import QDIS, DataCollector, TimeSeries, RunStats, TimeMarks
 from .trappable import Trappable
 from .semaphore import Semaphore
 
@@ -87,8 +87,6 @@ class Store(object):
         self._c_sem = Semaphore(sim, 0, c_qdis)
 
         # for statistics and bookkeeping
-        self._last_p_arrival = sim.now
-        self._last_c_arrival = sim.now
         self._p_arrivals = {} # map from producer process to its arrival time and put amount
         self._c_arrivals = {} # map from consumer process to its arrival time and get amount
 
@@ -116,6 +114,18 @@ class Store(object):
                         raise ValueError("Store(initlevel=%r, initobj=%r) unmatched "
                                          "number of objects" % (initlevel, initobj))
                     self._obj_store = deque(initobj) # shallow copy from the list or tuple
+
+        if self.stats is not None:
+            for k, v in dc._attrs.items():
+                if k in ('puts', 'put_queues', 'gets', 'get_queues', 'levels'):
+                    if not isinstance(v, TimeSeries):
+                        raise TypeError("Store DataCollector: '%s' not timeseries" % k)
+                elif k in ('put_times', 'get_times'):
+                    if not isinstance(v, RunStats):
+                        raise TypeError("Store DataCollector: '%s' not runstats" % k)
+                else:
+                    raise ValueError("Store DataCollector: '%s' unrecognized" % k)
+            self.stats._sample("levels", (sim.init_time, initlevel))
 
     def get(self, amt=1):
         """Retrieve objects or quantities from the store.
@@ -414,48 +424,42 @@ class Store(object):
                 self._obj_decided = True
             
         if self.stats is not None:
-            self.stats.sample("p_arrivals", self._sim.now);
-            self.stats.sample("inter_p_arrival_time", self._sim.now-self._last_p_arrival)
-            self.stats.sample("putters_in_queue", (self._sim.now, len(self._p_arrivals)))
-        self._last_p_arrival = self._sim.now
+            self.stats._sample("puts", (self._sim.now, amt))
+            self.stats._sample("put_queues", (self._sim.now, len(self._p_arrivals)))
 
     def _make_c_arrival(self, p, amt):
         self._c_arrivals[p] = (self._sim.now, amt)
         if self.stats is not None:
-            self.stats.sample("c_arrivals", self._sim.now);
-            self.stats.sample("inter_c_arrival_time", self._sim.now-self._last_c_arrival)
-            self.stats.sample("getters_in_queue", (self._sim.now, len(self._c_arrivals)))
-        self._last_c_arrival = self._sim.now
+            self.stats._sample("gets", (self._sim.now, amt))
+            self.stats._sample("get_queues", (self._sim.now, len(self._c_arrivals)))
 
     def _make_p_renege(self, p):
         t,a = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
         if self.stats is not None:
-            self.stats.sample("p_reneges", self._sim.now);
-            self.stats.sample("p_renege_queuing_time", self._sim.now-t)
-            self.stats.sample("putters_in_queue", (self._sim.now, len(self._p_arrivals)))
+            self.stats._sample("put_times", self._sim.now-t)
+            self.stats._sample("put_queues", (self._sim.now, len(self._p_arrivals)))
 
     def _make_c_renege(self, p):
         t,a = self._c_arrivals.pop(p) # throw a KeyError if not in dictionary
         if self.stats is not None:
-            self.stats.sample("c_reneges", self._sim.now);
-            self.stats.sample("c_renege_queuing_time", self._sim.now-t)
-            self.stats.sample("getters_in_queue", (self._sim.now, len(self._c_arrivals)))
+            self.stats._sample("get_times", self._sim.now-t)
+            self.stats._sample("get_queues", (self._sim.now, len(self._c_arrivals)))
 
     def _make_p_departure(self, p, amt):
         t,a = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
         assert a == amt
         if self.stats is not None:
-            self.stats.sample("p_departures", self._sim.now);
-            self.stats.sample("p_queuing_time", self._sim.now-t)
-            self.stats.sample("putters_in_queue", (self._sim.now, len(self._p_arrivals)))
+            self.stats._sample("put_times", self._sim.now-t)
+            self.stats._sample("put_queues", (self._sim.now, len(self._p_arrivals)))
+            self.stats._sample("levels", (self._sim.now, self.level))
             
     def _make_c_departure(self, p, amt):
         t,a = self._c_arrivals.pop(p) # throw a KeyError if not in dictionary
         assert a == amt
         if self.stats is not None:
-            self.stats.sample("c_departures", self._sim.now);
-            self.stats.sample("c_queuing_time", self._sim.now-t)
-            self.stats.sample("getters_in_queue", (self._sim.now, len(self._c_arrivals)))
+            self.stats._sample("get_times", self._sim.now-t)
+            self.stats._sample("get_queues", (self._sim.now, len(self._c_arrivals)))
+            self.stats._sample("levels", (self._sim.now, self.level))
         if self._obj_store is not None:
             if amt == 1: 
                 return self._obj_store.popleft()

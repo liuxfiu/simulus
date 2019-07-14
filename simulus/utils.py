@@ -1,13 +1,14 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-06 06:06:16 liux>
+# Last Update: Time-stamp: <2019-07-14 17:48:25 liux>
 ###############################################################
 
 # runstats must be installed as additional python package
-from runstats import Statistics
+import runstats
+import re
 
-__all__ = ["QDIS", "DataCollector"]
+__all__ = ["QDIS", "DataCollector", "TimeSeries", "RunStats", "TimeMarks"]
 
 class QDIS:
     """Queuing disciplines used by semaphores and resources."""
@@ -16,88 +17,212 @@ class QDIS:
     RANDOM      = 2
     PRIORITY    = 3
 
-class DataCollector:
-    """Collect data and statistics for resources and facilities."""
+class TimeSeries(object):
+    """A series of time-value pairs."""
+    
+    def __init__(self, keep_data=False):
+        if keep_data: self.d = []
+        else: self.d = None
+        self.n = 0
+        self.a = 0
 
-    def __init__(self, params=None, **kargs):
-        # consolidate arguments
-        if params is None:
-            params = kargs
-        else:
-            try:
-                params.update(kargs)
-            except AttributeError:
-                raise TypeError("DataCollector() params not a dictionary");
-        self.params = params
-
-        for k, v in self.params.items():
-            if 'all' == v:
-                # a list of all samples
-                setattr(self, k+'_all', [])
-            elif 'sum' == v:
-                # running statistics
-                setattr(self, k+'_sum', Statistics())
-            elif 'cnt' == v:
-                # counting the number so far
-                setattr(self, k+'_cnt', 0)
-            elif 'acc' == v:
-                # accumulating area under value over time
-                setattr(self, k+'_acc', 0)
-                setattr(self, k+'_acc_t', 0)
-                setattr(self, k+'_acc_v', 0)
+    def _push(self, d):
+        t, v = d
+        #print("push: t=%g, v=%d" % d)
+        if self.n == 0:
+            # the very first entry
+            if self.d is not None:
+                self.d.append((t,v))
+            self.t = t
+            self.v = v
+            self.n = 1
+        elif t > self.t:
+            # if it's time in the future, whether or not the value is
+            # the same, we enter a new entry
+            if self.d is not None:
+                self.d.append((t,v))
+            self.n += 1
+            self.a += (t-self.t)*self.v
+            self.t = t
+            self.v = v
+        elif t == self.t:
+            # if it's current time (same as previous entry)
+            if v != self.v:
+                # if the value is not the same, we update entry in place
+                self.v = v
+                if self.d is not None:
+                    self.d[-1] = (t, v)
             else:
-                raise ValueError("DataCollector() unknown value type (%s)" % v)
-
-    def sample(self, k, v):
-        if k in self.params:
-            if 'all' == self.params[k]:
-                getattr(self, k+'_all').append(v)
-            elif 'sum' == self.params[k]:
-                getattr(self, k+'_sum').push(v)
-            elif 'cnt' == self.params[k]:
-                n1 = k+'_cnt'
-                x = getattr(self, n1) + 1
-                setattr(self, n1, x)
-            elif 'acc' == self.params[k]:
-                n1, n2, n3 = k+'_acc', k+'_acc_t', k+'_acc_v'
-                x = getattr(self, n1) + (v[0]-getattr(self, n2))*getattr(self, n3)
-                setattr(self, n1, x)
-                setattr(self, n2,  v[0])
-                setattr(self, n3,  v[1])
-
-    def finalize(self, time):
-        for k, v in self.params.items():
-            if 'all' == v:
+                # if time and value are the same, ignore
                 pass
-            elif 'sum' == v:
-                pass
-            elif 'cnt' == v:
-                n1, n2 = k+'_cnt', k+'_rate'
-                x = getattr(self, n1)
-                setattr(self, n2, x/time)
-            elif 'acc' == v:
-                n1, n2, n3 = k+'_acc', k+'_acc_t', k+'_acc_v'
-                x = getattr(self, n1) + (time-getattr(self, n2))*getattr(self, n3)
-                setattr(self, n1, x)
-                setattr(self, n2, time)
-                setattr(self, k+'_avg', x/time)
+        else:
+            raise ValueError("TimeSeries._push(%r) earlier than last entry (%g)" %
+                             (d, self.t))
+                
+    def num(self):
+        """Return the number of collected samples."""
+        return self.n
+    
+    def data(self):
+        """Return all samples if keep_data was set when intializing the
+        timeseries; otherwise, return None."""
+        return self.d
+    
+    def avg(self, t):
+        """Return the average value up to the given time."""
+        if self.n > 0:
+            if t < self.t:
+                raise ValueError("TimeSeries.avg(t=%g) earlier than last entry (%g)" %
+                                 (t, self.t))
+            return (self.a+(t-self.t)*self.v)/t
+        else:
+            return 0
 
-    def report(self):
-        for k, v in self.params.items():
-            if 'all' == v:
-                print("%s all samples = %r" % (k, getattr(self, k+'_all')))
-            elif 'sum' == v:
-                rs = getattr(self, k+'_sum')
-                if len(rs) > 0:
-                    print(k+' summary:')
-                    print('  mean = %g' % rs.mean())
-                    print('  stdev = %g' % rs.stddev())
-                    print('  var = %g' % rs.variance())
-                    print('  min = %g' % rs.minimum())
-                    print('  max = %g' % rs.maximum())
-                else:
-                    print(k+': no samples')
-            elif 'cnt' == v:
-                print("%s rate = %r" % (k, getattr(self, k+'_rate')))
-            elif 'acc' == v:
-                print("%s avg = %r" % (k, getattr(self, k+'_avg')))
+class RunStats(object):
+    """A series of numbers."""
+    
+    def __init__(self, keep_data=False):
+        if keep_data: self.d = []
+        else: self.d = None
+        self.rs = runstats.Statistics()
+        
+    def _push(self, d):
+        if self.d is not None:
+            self.d.append(d)
+        self.rs.push(d)
+
+    def num(self):
+        """Return the number of collected samples."""
+        return len(self.rs)
+
+    def data(self):
+        """Return all samples if keep_data was set when intializing the
+        timeseries; otherwise, return None."""
+        return self.d
+
+    def mean(self):
+        """Return the sample mean."""
+        if self.num() > 0:
+            return self.rs.mean()
+    
+    def stdev(self):
+        """Return the sample standard deviation."""
+        if self.num() > 1:
+            return self.rs.stddev()
+
+    def var(self):
+        """Return the sample variance."""
+        if self.num() > 1:
+            return self.rs.variance()
+
+    def min(self):
+        """Return the minimum of all samples."""
+        if self.num() > 0:
+            return self.rs.minimum()
+
+    def max(self):
+        """Return the maximum of all samples."""
+        if self.num() > 0:
+            return self.rs.maximum()
+
+class TimeMarks(object):
+    """A series of (increasing) time instances."""
+    
+    def __init__(self, keep_data=False):
+        if keep_data: self.d = []
+        else: self.d = None
+        self.n = 0
+        
+    def _push(self, t):
+        if self.n == 0 or t >= self.t:
+            if self.d is not None:
+                self.d.append(t)
+            self.n += 1
+            self.t = t
+        else:
+           raise ValueError("TimeMarks._push(%g) earlier than last entry (%g)" %
+                             (t, self.t)) 
+
+    def num(self):
+        """Return the number of collected samples."""
+        return self.n
+    
+    def data(self):
+        """Return all samples if keep_data was set when intializing the
+        timeseries; otherwise, return None."""
+        return self.d
+    
+    def rate(self, t):
+        """Return the arrival rate (the averge number of timemarks up to the
+        given time)."""
+        if self.n > 0:
+            if t < self.t:
+                raise ValueError("TimeMarks.rate(t=%g) earlier than last entry (%g)" %
+                                 (t, self.t))
+            return self.n/t
+        else:
+            return 0
+
+class DataCollector(object):
+    """Statistics collection for resources and facilities."""
+
+    def __init__(self, **kwargs):
+        """Initialize the data collector. kwargs is the keyworded arguments as
+        a dictionary containing all attributes allowed to be collected
+        for the corresponding resource or facility."""
+        
+        self._attrs = kwargs
+        makers = {
+            re.compile(r'timeseries\s*(\(\s*(all)?\s*\))?') : TimeSeries,
+            re.compile(r'runstats\s*(\(\s*(all)?\s*\))?') : RunStats,
+            re.compile(r'timemarks\s*(\(\s*(all)?\s*\))?') : TimeMarks
+        }
+        for k, v in self._attrs.items():
+            if hasattr(self, k):
+                raise ValueError("DataCollector() attribute %s already exists" % k)
+            for pat, cls in makers.items():
+                m = pat.match(v)
+                if m is not None:
+                    if m.group(2): v = cls(True)
+                    else: v = cls(False)
+                    setattr(self, k, v)
+                    self._attrs[k] = v
+                    break
+            else:
+                raise ValueError("DataCollector() %r has unknown value (%r)" % k, v)
+
+    def _sample(self, k, v):
+        if k in self._attrs:
+            getattr(self, k)._push(v)
+
+    def report(self, t):
+        """Print out the collected statistics in a formatted way."""
+        
+        for k, v in self._attrs.items():
+            if isinstance(v, TimeSeries):
+                print("%s (timeseries): samples=%d" % (k, v.num()))
+                if v.num() > 0:
+                    d = v.data()
+                    if d is not None:
+                        print("  data=%r ..." % d[:3])
+                    print("  avg=%g" % v.avg(t))
+            elif isinstance(v, RunStats):
+                print("%s (runstats): samples=%d" % (k, v.num()))
+                if v.num() > 0:
+                    d = v.data()
+                    if d is not None:
+                        print("  data=%r ..." % d[:3])
+                    print('  mean = %g' % v.mean())
+                    if v.num() > 1:
+                        print('  stdev = %g' % v.stdev())
+                        print('  var = %g' % v.var())
+                    print('  min = %g' % v.min())
+                    print('  max = %g' % v.max())
+            else:
+                assert isinstance(v, TimeMarks)
+                print("%s (timemarks): samples=%d" % (k, v.num()))
+                if v.num() > 0:
+                    d = v.data()
+                    if d is not None:
+                        print("  data=%r ..." % d[:3])
+                    print('  rate = %g' % v.rate(t))

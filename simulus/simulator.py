@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-13 20:29:54 liux>
+# Last Update: Time-stamp: <2019-07-14 17:02:43 liux>
 ###############################################################
 
 import random, uuid
@@ -43,6 +43,7 @@ class Simulator:
         """A simulator can only be created using the simulator() function."""
 
         self.name = name
+        self.init_time = init_time
         self.now = init_time
         self._eventlist = _EventList_()
         self._theproc = None
@@ -475,6 +476,20 @@ class Simulator:
         Returns:
             This method returns the newly created resource.
 
+        The DataCollector, if provided, accepts the following values:
+            * **arrivals**: timemarks (time of job arrivals)
+            * **services**: timemarks (time of jobs entering services)
+            * **reneges**: timemarks (time of jobs reneging from queue)
+            * **departs**: timemarks (time of jobs departing from system)
+            * **inter_arrivals**: runstats (job inter-arrival time)
+            * **queue_times**: runstats (time of jobs in queue before servicing)
+            * **renege_times**: runstats (time of jobs in queue before reneging)
+            * **service_times**: runstats (time of jobs in service)
+            * **system_times**: runstats (time of jobs in system)
+            * **in_systems**: timeseries (number of jobs in system)
+            * **in_services**: timeseries (number of jobs in service)
+            * **in_queues**: timeseries (number of jobs in queue)
+
         """
 
         if not isinstance(capacity, int):
@@ -521,6 +536,15 @@ class Simulator:
         Returns:
             This method returns the newly created store.
 
+        The DataCollector, if provided, accepts the following values:
+            * **puts**: timeseries (time and amount of put requests)
+            * **put_times**: runstats (waiting time to put items)
+            * **put_queues**: timeseries (number of processes waiting to put items)
+            * **gets**: timeseries (time and amount of get requests)
+            * **get_times**: runstats (waiting time to get items)
+            * **get_queues**: timeseries (number of processes waiting to get items)
+            * **levels**: timeseries (storage levels)
+
         """
 
         if capacity <= 0:
@@ -548,10 +572,19 @@ class Simulator:
             name (string): an optional name of the mailbox
 
             collect (DataCollector): the optional collector for
-                statistics
+                statistics; when provided, if the number of partitions
+                is greater than one, it should be a list or tuple of
+                DataCollectors, one for each partition; if there's
+                only one partition, it should be the DataCollector
+                itself (as opposed to be wrapped in a list)
 
         Returns:
             This method returns the newly created mailbox.
+
+        The DataCollector, if provided, accepts the following values:
+            * **arrivals**: timemarks (time of message arrivals)
+            * **retrievals**: timemarks (time of message retrieval requests)
+            * **messages**: timeseries (number of messages in mailbox)
 
         """
 

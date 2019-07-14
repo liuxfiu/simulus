@@ -30,11 +30,11 @@ release = simulus.__version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'nbsphinx', #'numpy', 'matplotlib',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.coverage',
     'sphinx.ext.napoleon',
-    'nbsphinx', 'numpy', 'matplotlib',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

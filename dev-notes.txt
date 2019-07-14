@@ -131,16 +131,44 @@ utils.py:
 
 * DataCollector  # public interface
     * __init__()
-    * sample()
-    * finalize()
+    * _attrs
+    * _sample()
     * report()
+
+* TimeSeries  # public interface
+    * __init__()  supposedly hidden
+    * d, n, a, t, v
+    * _push()
+    * num()
+    * data()
+    * avg()
+
+# RunStats  # public interface
+    * __init__()  supposedly hidden
+    * d, rs
+    * _push()
+    * num()
+    * data()
+    * mean()
+    * stdev()
+    * var()
+    * min()
+    * max()
+
+# TimeMarks  # public interface
+    * __init__()  supposedly hidden
+    * d, n, t
+    * _push()
+    * num()
+    * data()
+    * rate()
 
 *************
 trappable.py:
 *************
 
 * Trappable  # public interface
-    * __init__()  # supposed hidden
+    * __init__()  # supposedly hidden
     * _sim
     * retval
     * _try_wait()
@@ -268,6 +296,7 @@ simulator.py:
 * Simulator  # public interface
     * __init__()
     * name
+    * init_time
     * now
     * _eventlist
     * _theproc
@@ -309,9 +338,9 @@ resource.py:
     * qdis
     * stats
     * _sem
-    * _last_arrival
     * _arrivals
     * _services
+    * _last_arrival
     * acquire()
     * release()
     * num_in_system()

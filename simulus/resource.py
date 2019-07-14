@@ -1,10 +1,10 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-10 10:04:08 liux>
+# Last Update: Time-stamp: <2019-07-14 13:56:32 liux>
 ###############################################################
 
-from .utils import QDIS, DataCollector
+from .utils import QDIS, DataCollector, TimeSeries, RunStats, TimeMarks
 from .trappable import Trappable
 from .semaphore import Semaphore
 
@@ -53,11 +53,25 @@ class Resource(Trappable):
         # internally we use a semaphore to implement the resource
         self._sem = Semaphore(sim, capacity, qdis)
 
-        # for statistics and bookkeeping
-        self._last_arrival = sim.now
+        # for bookkeeping and statistics
         self._arrivals = {} # map from process to its arrival time
         self._services = {} # map from process to its entering service time
-
+        if self.stats is not None:
+            for k, v in dc._attrs.items():
+                if k in ('in_systems', 'in_services', 'in_queues'):
+                    if not isinstance(v, TimeSeries):
+                        raise TypeError("Resource DataCollector: '%s' not timeseries" % k)
+                elif k in ('arrivals', 'services', 'reneges', 'departs'):
+                    if not isinstance(v, TimeMarks):
+                        raise TypeError("Resource DataCollector: '%s' not timemarks" % k)
+                elif k in ('inter_arrivals', 'queue_times', 'renege_times',
+                           'service_times', 'system_times'):
+                    if not isinstance(v, RunStats):
+                        raise TypeError("Resource DataCollector: '%s' not runstats" % k)
+                else:
+                    raise ValueError("Reource DataCollector: '%s' unrecognized" % k)
+            self._last_arrival = sim.init_time
+        
     def acquire(self):
         """Acquire a server from the resource.
 
@@ -129,31 +143,34 @@ class Resource(Trappable):
     def _make_arrival(self, p):
         self._arrivals[p] = self._sim.now
         if self.stats is not None:
-            self.stats.sample("arrivals", self._sim.now);
-            self.stats.sample("inter_arrival_time", self._sim.now-self._last_arrival)
-            self.stats.sample("num_in_system", (self._sim.now, len(self._arrivals)))
-        self._last_arrival = self._sim.now
+            self.stats._sample("arrivals", self._sim.now)
+            self.stats._sample("inter_arrivals", self._sim.now-self._last_arrival)
+            self.stats._sample("in_systems", (self._sim.now, len(self._arrivals)))
+            self.stats._sample("in_queues", (self._sim.now, len(self._arrivals)-len(self._services)))
+            self._last_arrival = self._sim.now
 
     def _make_service(self, p):
         self._services[p] = self._sim.now
         if self.stats is not None:
-            self.stats.sample("entering_service_time", self._sim.now);
-            self.stats.sample("queuing_time", self._sim.now-self._arrivals[p])
-            self.stats.sample("num_in_service", (self._sim.now, len(self._services)))
+            self.stats._sample("services", self._sim.now)
+            self.stats._sample("queue_times", self._sim.now-self._arrivals[p])
+            self.stats._sample("in_queues", (self._sim.now, len(self._arrivals)-len(self._services)))
+            self.stats._sample("in_services", (self._sim.now, len(self._services)))
 
     def _make_renege(self, p):
         t = self._arrivals.pop(p) # throw a KeyError if not in dictionary
         if self.stats is not None:
-            self.stats.sample("reneges", self._sim.now);
-            self.stats.sample("renege_queuing_time", self._sim.now-t)
-            self.stats.sample("num_in_system", (self._sim.now, len(self._arrivals)))
+            self.stats._sample("reneges", self._sim.now)
+            self.stats._sample("renege_times", self._sim.now-t)
+            self.stats._sample("in_queues", (self._sim.now, len(self._arrivals)-len(self._services)))
+            self.stats._sample("in_systems", (self._sim.now, len(self._arrivals)))
 
     def _make_departure(self, p):
         ta = self._arrivals.pop(p) # throw a KeyError if not in dictionary
         ts = self._services.pop(p) # ... this also
         if self.stats is not None:
-            self.stats.sample("departures", self._sim.now);
-            self.stats.sample("service_time", self._sim.now-ts)
-            self.stats.sample("system_time", self._sim.now-ta)
-            self.stats.sample("num_in_system", (self._sim.now, len(self._arrivals)))
-            self.stats.sample("num_in_service", (self._sim.now, len(self._services)))
+            self.stats._sample("departs", self._sim.now)
+            self.stats._sample("service_times", self._sim.now-ts)
+            self.stats._sample("system_times", self._sim.now-ta)
+            self.stats._sample("in_systems", (self._sim.now, len(self._arrivals)))
+            self.stats._sample("in_services", (self._sim.now, len(self._services)))

@@ -1,12 +1,12 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 9, 2019
-# Last Update: Time-stamp: <2019-07-11 08:23:58 liux>
+# Last Update: Time-stamp: <2019-07-14 17:18:40 liux>
 ###############################################################
 
 from collections import deque
 
-from .utils import QDIS, DataCollector
+from .utils import QDIS, DataCollector, TimeSeries, RunStats, TimeMarks
 from .trappable import Trappable
 from .trap import Trap
 from .sync import *
@@ -99,10 +99,21 @@ class Mailbox(object):
 
         class _Compartment(object):
             """One compartment or partition of the mailbox."""
-            def __init__(self, mbox):
+            def __init__(self, mbox, dc):
                 self.callbacks = []
                 self.trap = Trap(mbox._sim)
                 self.msgbuf = deque()
+                self.stats = dc
+                if self.stats is not None:
+                    for k, v in dc._attrs.items():
+                        if k in ('messages',):
+                            if not isinstance(v, TimeSeries):
+                                raise TypeError("Mailbox DataCollector: '%s' not timeseries" % k)
+                        elif k in ('arrivals', 'retrievals'):
+                            if not isinstance(v, TimeMarks):
+                                raise TypeError("Mailbox DataCollector: '%s' not timemarks" % k)
+                        else:
+                            raise ValueError("Mailbox DataCollector: '%s' unrecognized" % k)
 
             def peek(self):
                 return list(self.msgbuf) # a shallow copy
@@ -122,8 +133,18 @@ class Mailbox(object):
         self.nparts = nparts
         self.min_delay = min_delay
         self.name = name
-        self.stats = dc
-        self._parts = [_Compartment(self) for _ in range(nparts)]
+
+        if nparts > 1:
+            if dc is None: dc = [None]*nparts
+            if not isinstance(dc, (list,tuple)):
+                raise TypeError("Mailbox(dc=%r): list/tuple of DataCollectors expected" % dc)
+            if nparts != len(dc):
+                raise TypeError("Mailbox(dc=%r): %d DataCollectors expected" % (dc, nparts))
+        else:
+            if dc is not None and not isinstance(dc, DataCollector):
+                raise TypeError("Mailbox(dc=%r): DataCollector expected" % dc)
+            dc = [dc]
+        self._parts = [_Compartment(self, x) for x in dc]
 
     def send(self, msg, delay=None, part=0):
         """Send a message to a mailbox partition.
@@ -197,6 +218,8 @@ class Mailbox(object):
             raise RuntimeError("Mailbox.recv() outside process context")
         if part < 0 or part >= self.nparts:
             raise IndexError("Mailbox.recv(part=%r) out of range" % part)
+        if self._parts[part].stats is not None:
+            self._parts[part].stats._sample("retrievals", self._sim.now)
         if len(self._parts[part].msgbuf) == 0:
             self._parts[part].trap.wait()
         return self.retrieve(part, isall)
@@ -213,25 +236,29 @@ class Mailbox(object):
             
             def __init__(self, mbox, part, isall):
                 super().__init__(mbox._sim)
-                self._part = mbox._parts[part] # compartment, not index
+                self._mbox = mbox
+                self._part = part
                 self._isall = isall
         
             def _try_wait(self):
-                if len(self._part.msgbuf) > 0:
+                if self._mbox._parts[self._part].stats is not None:
+                    self._mbox._parts[self._part].stats._sample("retrievals",
+                                                                self._mbox._sim.now)
+                if len(self._mbox._parts[self._part].msgbuf) > 0:
                     return False
-                return self._part.trap._try_wait() # must be true
+                return self._mbox._parts[self._part].trap._try_wait() # must be true
 
             def _commit_wait(self):
-                if self._part.trap.state == Trap.TRAP_SET:
-                    self._part.trap._commit_wait()
-                self.retval = self._part.retrieve(self._isall)
+                if self._mbox._parts[self._part].trap.state == Trap.TRAP_SET:
+                    self._mbox._parts[self._part].trap._commit_wait()
+                self.retval = self._mbox.retrieve(self._part, self._isall)
 
             def _cancel_wait(self):
-                if self._part.trap.state == Trap.TRAP_SET:
-                    self._part.trap._cancel_wait()
+                if self._mbox._parts[self._part].trap.state == Trap.TRAP_SET:
+                    self._mbox._parts[self._part].trap._cancel_wait()
 
             def _true_trappable(self):
-                return self._part.trap
+                return self._mbox._parts[self._part].trap
             
         if part < 0 or part >= self.nparts:
             raise IndexError("Mailbox.receiver(part=%r) out of range" % part)
@@ -304,14 +331,20 @@ class Mailbox(object):
        
         if part < 0 or part >= self.nparts:
             raise IndexError("Mailbox.retrieve(part=%r) out of range" % part)
-        return self._parts[part].retrieve(isall)
+        msgs = self._parts[part].retrieve(isall)
+        if self._parts[part].stats is not None:
+            self._parts[part].stats._sample("messages",
+                (self._sim.now, len(self._parts[part].msgbuf)))
+        return msgs
 
     def _mailbox_event(self, msg, part):
         """Handle the mailbox delivery event (scheduled by send)."""
         
         self._parts[part].msgbuf.append(msg)
-        if self.stats is not None:
-            self.stats.sample("messages", self._sim.now);
+        if self._parts[part].stats is not None:
+            self._parts[part].stats._sample("arrivals", self._sim.now)
+            self._parts[part].stats._sample("messages",
+                (self._sim.now, len(self._parts[part].msgbuf)))
         if self._parts[part].trap.state == Trap.TRAP_SET:
             self._parts[part].trap.trigger() # release all waiting processes
             self._parts[part].trap = Trap(self._sim) # renew the trap
