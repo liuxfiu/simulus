@@ -23,6 +23,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=['greenlet', 'runstats', 'mpi4py'],
+    install_requires=['greenlet', 'runstats'],
+#   install_requires=['greenlet', 'runstats', 'mpi4py'],
     python_requires='>=2.8',
 )
