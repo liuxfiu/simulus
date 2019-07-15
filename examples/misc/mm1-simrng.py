@@ -1,7 +1,8 @@
 import numpy # assuming numpy has been installed
 import random, simulus
 
-# this determines the random module's default random sequence
+# this determines the random module's default random sequence, 
+# which also determines the simulation namespace
 random.seed(123)
 
 def job(idx):

@@ -37,6 +37,11 @@ If you had simulus installed previously, you can always upgrade the existing sim
 pip install --upgrade --user simulus
 ```
 
+You can also install the most recent development version via:
+
+```
+pip install -e git+https://github.com/liuxfiu/simulus.git#egg=simulus
+```
 
 ## Basic Usage
 

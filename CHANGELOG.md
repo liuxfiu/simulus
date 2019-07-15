@@ -1,6 +1,21 @@
 # Changelog
 
 
+## 1.1.3 (2019-07-15)
+
+### New
+
+* Updated data collectors for resources and facilities. [Jason Liu]
+
+* Tag and release version 1.1.2. [Jason Liu]
+
+* Added mechanisms for consistent, independent random number generators. [Jason Liu]
+
+### Changes
+
+* Restructured tutorial document.
+
+
 ## 1.1.2 (2019-07-10)
 
 ### New
@@ -20,7 +35,9 @@
 
 ### Changes
 
-* Moved to github, fixed pipenv requirements, changed cancel() to also kill process, and made trappable a public interface with retval. chg: doc: updated README.md from readme.ipynb; updated tutorial. [Jason Liu]
+* Moved to github, fixed pipenv requirements, changed cancel() to also kill process, and made trappable a public interface with retval. 
+
+* Updated README.md from readme.ipynb; updated tutorial. [Jason Liu]
 
 ### Other
 
@@ -33,7 +50,7 @@
 
 ### New
 
-* Added sections to explain the use of resource and store in tutorial; also added readme jupyter notebook. chg: dev: changed the use of super() in init methods. chg: test: changed tomjerry.py; gauss distribution may return negative time. [Jason Liu]
+* Added sections to explain the use of resource and store in tutorial; also added readme jupyter notebook.
 
 * Added store facility and some examples, including most simpy examples. [Jason Liu]
 
@@ -43,12 +60,19 @@
 
 * Added regression pytest and tox support. [Jason Liu]
 
+* Changed the use of super() in init methods. 
+
+* Changed tomjerry.py; gauss distribution may return negative time. [Jason Liu]
 
 ## 1.0.5 (2019-07-04)
 
 ### New
 
-* New trappables and conditional waits (1.0.5). new: dev: added support for changelogs generated from git logs. chg: dev: changed resource reserve to acquire. [Jason Liu]
+* New trappables and conditional waits (1.0.5). 
+
+* Added support for changelogs generated from git logs. 
+
+* Changed resource reserve to acquire. [Jason Liu]
 
 * Redesigned trappables; the processes, events, semaphores, traps, and resources now work with a more intuitive interface design. [Jason Liu]
 
