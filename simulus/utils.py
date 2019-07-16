@@ -1,12 +1,10 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-15 06:22:21 liux>
+# Last Update: Time-stamp: <2019-07-16 16:59:52 liux>
 ###############################################################
 
-# runstats must be installed as additional python package
-import runstats
-import re
+import math, re
 
 __all__ = ["QDIS", "DataCollector", "TimeSeries", "RunStats", "TimeMarks"]
 
@@ -16,6 +14,31 @@ class QDIS:
     LIFO        = 1
     RANDOM      = 2
     PRIORITY    = 3
+
+class _Welford1Pass(object):
+    """Welford's One-Pass Algorithm."""
+    
+    def __init__(self):
+        self.n = 0
+        self.m = 0.0
+        self.v = 0.0
+        self.mx = float('-inf')
+        self.mn = float('inf')
+
+    def push(self, x):
+        self.n += 1
+        if x > self.mx: self.mx = x
+        if x < self.mn: self.mn = x
+        d = x-self.m
+        self.v += d*d*(self.n-1)/self.n
+        self.m += d/self.n
+        
+    def min(self): return self.mn
+    def max(self): return self.mx
+    def mean(self): return self.m    
+    def stdev(self): return math.sqrt(self.v/self.n)
+    def var(self): return self.v/self.n
+    def __len__(self): return self.n
 
 class TimeMarks(object):
     """A series of (increasing) time instances."""
@@ -61,7 +84,7 @@ class RunStats(object):
     def __init__(self, keep_data=False):
         if keep_data: self.d = []
         else: self.d = None
-        self.rs = runstats.Statistics()
+        self.rs = _Welford1Pass()
         
     def _push(self, d):
         if self.d is not None:
@@ -84,22 +107,22 @@ class RunStats(object):
     
     def stdev(self):
         """Return the sample standard deviation."""
-        if self.num() > 1: return self.rs.stddev()
+        if self.num() > 1: return self.rs.stdev()
         else: return float('inf')
 
     def var(self):
         """Return the sample variance."""
-        if self.num() > 1: return self.rs.variance()
+        if self.num() > 1: return self.rs.var()
         else: return float('inf')
 
     def min(self):
         """Return the minimum of all samples."""
-        if self.num() > 0: return self.rs.minimum()
+        if self.num() > 0: return self.rs.min()
         else: return float('-inf')
 
     def max(self):
         """Return the maximum of all samples."""
-        if self.num() > 0: return self.rs.maximum()
+        if self.num() > 0: return self.rs.max()
         else: return float('inf')
 
 class TimeSeries(object):
@@ -110,7 +133,7 @@ class TimeSeries(object):
         else: self.d = None
         self.n = 0
         self.a = 0
-        self.rs = runstats.Statistics()
+        self.rs = _Welford1Pass()
 
     def _push(self, d):
         t, v = d
@@ -175,22 +198,22 @@ class TimeSeries(object):
     
     def stdev(self):
         """Return the sample standard deviation."""
-        if self.n > 1: return self.rs.stddev()
+        if self.n > 1: return self.rs.stdev()
         else: return float('inf')
 
     def var(self):
         """Return the sample variance."""
-        if self.n > 1: return self.rs.variance()
+        if self.n > 1: return self.rs.var()
         else: return float('inf')
 
     def min(self):
         """Return the minimum of all samples."""
-        if self.n > 0: return self.rs.minimum()
+        if self.n > 0: return self.rs.min()
         else: return float('-inf')
 
     def max(self):
         """Return the maximum of all samples."""
-        if self.n > 0: return self.rs.maximum()
+        if self.n > 0: return self.rs.max()
         else: return float('inf')
 
     def avg_over_time(self, t):
