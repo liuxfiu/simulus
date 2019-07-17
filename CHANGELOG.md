@@ -1,3 +1,18 @@
+## 1.1.4 (2019-07-17)
+
+### New
+
+* Added support for dynamic process priorities. [Jason Liu]
+
+* Added data collector support; tagged 1.1.3. [Jason Liu]
+
+### Changes
+
+* Changed RunStats name to DataSeries, and QDIS.RANDOM to QDIS.SIRO. [Jason Liu]
+
+* Removed dependence on runstats. [Jason Liu]
+
+
 # Changelog
 
 

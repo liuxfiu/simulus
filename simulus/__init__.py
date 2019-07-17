@@ -23,4 +23,4 @@ from .store import *
 from .mailbox import *
 from .simulator import *
 
-__version__ = '1.1.3'
+__version__ = '1.1.4'

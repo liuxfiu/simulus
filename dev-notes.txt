@@ -43,7 +43,8 @@ Packaging Instructions
 (change [version] in setup.py)
 (change [__version__] in simulus/__init__.py)
 git tag -a [version] -m [message]
-gitchangelog > CHANGELOG.md
+gitchangelog ^[last version] HEAD | cat - CHANGELOG.md > 1
+mv 1 CHANGELOG.md
 python setup.py sdist bdist_wheel
 git add (all changed files)
 git commit -m [message]
