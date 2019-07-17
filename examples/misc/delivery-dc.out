@@ -1,0 +1,9 @@
+messages (timeseries): samples=102
+  data=[(0.5389162854563174, 1), (1, 0), (2.254685865860081, 1)] ...
+  rate = 4.63636
+  mean = 7.54902
+  stdev = 6.46351
+  var = 41.777
+  min = 0
+  max = 25
+  avg_over_time=6.45331

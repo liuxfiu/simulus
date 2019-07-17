@@ -1,12 +1,12 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-14 14:21:10 liux>
+# Last Update: Time-stamp: <2019-07-17 05:31:29 liux>
 ###############################################################
 
 from collections import deque
 
-from .utils import QDIS, DataCollector, TimeSeries, RunStats, TimeMarks
+from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
 from .trappable import Trappable
 from .semaphore import Semaphore
 
@@ -121,8 +121,8 @@ class Store(object):
                     if not isinstance(v, TimeSeries):
                         raise TypeError("Store DataCollector: '%s' not timeseries" % k)
                 elif k in ('put_times', 'get_times'):
-                    if not isinstance(v, RunStats):
-                        raise TypeError("Store DataCollector: '%s' not runstats" % k)
+                    if not isinstance(v, DataSeries):
+                        raise TypeError("Store DataCollector: '%s' not dataseries" % k)
                 else:
                     raise ValueError("Store DataCollector: '%s' unrecognized" % k)
             self.stats._sample("levels", (sim.init_time, initlevel))

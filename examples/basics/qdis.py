@@ -32,7 +32,7 @@ def trywaits(sem):
 sim = simulus.simulator()
 s1 = sim.semaphore()
 s2 = sim.semaphore(qdis=simulus.QDIS.LIFO)
-s3 = sim.semaphore(qdis=simulus.QDIS.RANDOM)
+s3 = sim.semaphore(qdis=simulus.QDIS.SIRO)
 s4 = sim.semaphore(qdis=simulus.QDIS.PRIORITY)
 sim.process(trywaits, s1, offset=0)
 sim.process(trywaits, s2, offset=100)

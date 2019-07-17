@@ -1,12 +1,12 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 9, 2019
-# Last Update: Time-stamp: <2019-07-14 17:18:40 liux>
+# Last Update: Time-stamp: <2019-07-17 06:34:16 liux>
 ###############################################################
 
 from collections import deque
 
-from .utils import QDIS, DataCollector, TimeSeries, RunStats, TimeMarks
+from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
 from .trappable import Trappable
 from .trap import Trap
 from .sync import *

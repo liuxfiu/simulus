@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-13 11:31:35 liux>
+# Last Update: Time-stamp: <2019-07-17 06:51:31 liux>
 ###############################################################
 
 from collections import deque
@@ -49,9 +49,10 @@ class Semaphore(Trappable):
     By default, we use FIFO order (that is, first in first out) to
     unblock processes if multiple processes are waiting on a
     semaphore. Other possible queuing disciplines include LIFO (last
-    in first out), RANDOM, and PRIORITY (depending on the 'priority'
-    of the processes; a lower value means higher priority). One can
-    choose a queuing discipline when the semaphore is created.
+    in first out), SIRO (service in random order), and PRIORITY
+    (depending on the 'priority' of the processes; a lower value means
+    higher priority). One can choose a queuing discipline when the
+    semaphore is created.
 
     """
     
@@ -71,7 +72,7 @@ class Semaphore(Trappable):
             # blocked processes
             self.blocked = deque()
         else:
-            # RANDOM and PRIORITY use a list for the blocked processes
+            # SIRO and PRIORITY use a list for the blocked processes
             self.blocked = []
 
     def wait(self):
@@ -89,7 +90,7 @@ class Semaphore(Trappable):
             if self.qdis == QDIS.FIFO or \
                self.qdis == QDIS.LIFO:
                 self.blocked.append(p)
-            elif self.qdis == QDIS.RANDOM:
+            elif self.qdis == QDIS.SIRO:
                 self.blocked.append(p)
                 # when we add a new process, we shuffle it with an
                 # existing one in the blocked list
@@ -121,7 +122,7 @@ class Semaphore(Trappable):
                 p = self.blocked.popleft()
             elif self.qdis == QDIS.LIFO:
                 p = self.blocked.pop()
-            elif self.qdis == QDIS.RANDOM:
+            elif self.qdis == QDIS.SIRO:
                 p = self.blocked.pop()
             else:
                 # QDIS.PRIORITY
@@ -140,7 +141,7 @@ class Semaphore(Trappable):
                self.qdis == QDIS.PRIORITY:
                 return self.blocked[0]
             elif self.qdis == QDIS.LIFO or \
-                 self.qdis == QDIS.RANDOM:
+                 self.qdis == QDIS.SIRO:
                 return self.blocked.pop[-1]
             else:
                 return None
@@ -170,7 +171,7 @@ class Semaphore(Trappable):
             if self.qdis == QDIS.FIFO or \
                self.qdis == QDIS.LIFO:
                 self.blocked.append(p)
-            elif self.qdis == QDIS.RANDOM:
+            elif self.qdis == QDIS.SIRO:
                 self.blocked.append(p)
                 # when we add a new process, we shuffle it with an
                 # existing one in the blocked list

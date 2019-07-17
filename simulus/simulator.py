@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-14 17:02:43 liux>
+# Last Update: Time-stamp: <2019-07-17 09:15:57 liux>
 ###############################################################
 
 import random, uuid
@@ -440,9 +440,9 @@ class Simulator:
             qdis (int): the queuing discipline for the waiting
                 processes, which can be selected from QDIS.FIFO (first
                 in first out), QDIS.LIFO (last in first out),
-                QDIS.RANDOM (random ordering), or QDIS.PRIORITY (based
-                on process priority); if ignored, the default is
-                QDIS.FIFO
+                QDIS.SIRO (service in random order), or QDIS.PRIORITY
+                (based on process priority); if ignored, the default
+                is QDIS.FIFO
 
         Returns:
             This method returns a newly created semaphore.
@@ -465,9 +465,9 @@ class Simulator:
             qdis (int) : the queuing discipline for the waiting
                 processes, which can be selected from QDIS.FIFO (first
                 in first out), QDIS.LIFO (last in first out),
-                QDIS.RANDOM (random ordering), or QDIS.PRIORITY (based
-                on process priority); if ignored, the default is
-                QDIS.FIFO
+                QDIS.SIRO (service in random order), or QDIS.PRIORITY
+                (based on process priority); if ignored, the default
+                is QDIS.FIFO
 
             name (string): the optional name of the resource
 
@@ -481,11 +481,11 @@ class Simulator:
             * **services**: timemarks (time of jobs entering services)
             * **reneges**: timemarks (time of jobs reneging from queue)
             * **departs**: timemarks (time of jobs departing from system)
-            * **inter_arrivals**: runstats (job inter-arrival time)
-            * **queue_times**: runstats (time of jobs in queue before servicing)
-            * **renege_times**: runstats (time of jobs in queue before reneging)
-            * **service_times**: runstats (time of jobs in service)
-            * **system_times**: runstats (time of jobs in system)
+            * **inter_arrivals**: dataseries (job inter-arrival time)
+            * **queue_times**: dataseries (time of jobs in queue before servicing)
+            * **renege_times**: dataseries (time of jobs in queue before reneging)
+            * **service_times**: dataseries (time of jobs in service)
+            * **system_times**: dataseries (time of jobs in system)
             * **in_systems**: timeseries (number of jobs in system)
             * **in_services**: timeseries (number of jobs in service)
             * **in_queues**: timeseries (number of jobs in queue)
@@ -520,7 +520,7 @@ class Simulator:
             p_qdis (int): the queuing discipline for the waiting
                 producer processes (putters), which can be selected
                 from QDIS.FIFO (first in first out), QDIS.LIFO (last
-                in first out), QDIS.RANDOM (random ordering), or
+                in first out), QDIS.SIRO (service in random order), or
                 QDIS.PRIORITY (based on process priority); if ignored,
                 the default is QDIS.FIFO
 
@@ -538,10 +538,10 @@ class Simulator:
 
         The DataCollector, if provided, accepts the following values:
             * **puts**: timeseries (time and amount of put requests)
-            * **put_times**: runstats (waiting time to put items)
+            * **put_times**: dataseries (waiting time to put items)
             * **put_queues**: timeseries (number of processes waiting to put items)
             * **gets**: timeseries (time and amount of get requests)
-            * **get_times**: runstats (waiting time to get items)
+            * **get_times**: dataseries (waiting time to get items)
             * **get_queues**: timeseries (number of processes waiting to get items)
             * **levels**: timeseries (storage levels)
 

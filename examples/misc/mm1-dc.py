@@ -16,8 +16,8 @@ sim = simulus.simulator()
 
 dc = simulus.DataCollector(
     arrivals='timemarks(all)', 
-    inter_arrivals='runstats()',
-    system_times='runstats(all)',
+    inter_arrivals='dataseries()',
+    system_times='dataseries(all)',
     in_systems='timeseries(all)',
     in_queues='timeseries(all)'
 )

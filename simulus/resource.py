@@ -1,10 +1,10 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-14 13:56:32 liux>
+# Last Update: Time-stamp: <2019-07-17 05:30:34 liux>
 ###############################################################
 
-from .utils import QDIS, DataCollector, TimeSeries, RunStats, TimeMarks
+from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
 from .trappable import Trappable
 from .semaphore import Semaphore
 
@@ -66,8 +66,8 @@ class Resource(Trappable):
                         raise TypeError("Resource DataCollector: '%s' not timemarks" % k)
                 elif k in ('inter_arrivals', 'queue_times', 'renege_times',
                            'service_times', 'system_times'):
-                    if not isinstance(v, RunStats):
-                        raise TypeError("Resource DataCollector: '%s' not runstats" % k)
+                    if not isinstance(v, DataSeries):
+                        raise TypeError("Resource DataCollector: '%s' not dataseries" % k)
                 else:
                     raise ValueError("Reource DataCollector: '%s' unrecognized" % k)
             self._last_arrival = sim.init_time

@@ -1,0 +1,12 @@
+0.295163: job(1) arrives
+0.295163: job(1) gains access
+1.84229: job(1) releases
+7.29799: job(2) arrives
+7.29799: job(2) gains access
+7.30716: job(3) arrives
+8.62792: job(2) releases
+8.62792: job(3) gains access
+8.80694: job(3) releases
+9.95584: job(4) arrives
+9.95584: job(4) gains access
+9.96089: job(5) arrives

@@ -36,15 +36,7 @@ def tank_truck(sim, fuel_pump):
 random.seed(123)
 sim = simulus.simulator()
 gas_station = sim.resource(GAS_PUMPS)
-dc = simulus.DataCollector(
-#    puts='timeseries(all)',
-#    put_times='runstats(all)',
-#    put_queues='timeseries(all)',
-#    gets='timeseries(all)',
-    get_times='runstats',
-#    get_queues='timeseries(all)',
-    levels='timeseries(all)'
-)
+dc = simulus.DataCollector(levels='timeseries(all)')
 fuel_pump = sim.store(GAS_STATION_SIZE, GAS_STATION_SIZE, collect=dc)
 sim.process(gas_station_control, sim, fuel_pump)
 sim.process(car_generator, sim, gas_station, fuel_pump)

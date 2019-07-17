@@ -127,27 +127,39 @@ utils.py:
 *********
 
 * QDIS  # public interface
-    * FIFO, LIFO, RANDOM, PRIORITY
+    * FIFO, LIFO, SIRO, PRIORITY
 
-* DataCollector  # public interface
+* WelfordStats  # public interface
     * __init__()
-    * _attrs
-    * _sample()
-    * report()
+    * _n
+    * _mean
+    * _varsum
+    * _max
+    * _mean
+    * __len__()
+    * push()
+    * min()
+    * max()
+    * mean()
+    * stdev()
+    * var()
 
-* TimeSeries  # public interface
+* TimeMarks  # public interface
     * __init__()  supposedly hidden
-    * d, n, a, t, v
+    * _data
+    * _n
+    * _last
+    * __len__()
     * _push()
-    * num()
     * data()
-    * avg()
+    * rate()
 
-# RunStats  # public interface
+* DataSeries  # public interface
     * __init__()  supposedly hidden
-    * d, rs
+    * _data
+    * _rs
+    * __len__()
     * _push()
-    * num()
     * data()
     * mean()
     * stdev()
@@ -155,13 +167,29 @@ utils.py:
     * min()
     * max()
 
-# TimeMarks  # public interface
+* TimeSeries  # public interface
     * __init__()  supposedly hidden
-    * d, n, t
+    * _data
+    * _rs,
+    * _area
+    * _last_t
+    * _last_v
+    * __len__()
     * _push()
-    * num()
     * data()
     * rate()
+    * mean()
+    * stdev()
+    * var()
+    * min()
+    * max()
+    * avg_over_time()
+
+* DataCollector  # public interface
+    * __init__()
+    * _attrs
+    * _sample()
+    * report()
 
 *************
 trappable.py:

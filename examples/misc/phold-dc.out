@@ -1,0 +1,15 @@
+messages (timeseries): samples=2468
+  data=[(1.0139141008232717, 1), (1.0139141008232717, 0), (1.0310831022356743, 1)] ...
+  rate = 24.68
+  mean = 0.5
+  stdev = 0.5
+  var = 0.25
+  min = 0
+  max = 1
+  avg_over_time=0
+arrivals (timemarks): samples=1234
+  data=[1.0139141008232717, 1.0310831022356743, 1.0987002174340126] ...
+  rate = 12.34
+retrievals (timemarks): samples=1235
+  data=[0, 1.0139141008232717, 1.0310831022356743] ...
+  rate = 12.35
