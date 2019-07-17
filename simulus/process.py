@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-09 05:01:11 liux>
+# Last Update: Time-stamp: <2019-07-17 18:06:09 liux>
 ###############################################################
 
 """Simulation process."""
@@ -24,7 +24,7 @@ class _Process(Trappable):
     STATE_SUSPENDED     = 2
     STATE_TERMINATED    = 3
     
-    def __init__(self, sim, name, func, usr_args, usr_kwargs):
+    def __init__(self, sim, name, func, usr_args, usr_kwargs, prio, prio_args):
         """A process can only be created using simulator's process() function;
         a process can be created by an other process or within the
         main function."""
@@ -38,7 +38,8 @@ class _Process(Trappable):
         self.state = _Process.STATE_STARTED
         self.main = None
         self.vert = greenlet(self.invoke)
-        self.priority = 0
+        self.prio = prio
+        self.prio_args = prio_args
         self.trap = Trap(self._sim)
         self.acting_trappables = []
 
@@ -147,7 +148,20 @@ class _Process(Trappable):
 
         #raise greenlet.GreenletExit
         self.main.switch()
-   
+
+    def set_priority(self, prio, prio_args):
+        """Set the priority of this process (either a value or a function that
+        returns a value)."""
+        self.prio = prio
+        self.prio_args = prio_args
+
+    def get_priority(self):
+        """Return the priority of this process."""
+        if callable(self.prio):
+            return self.prio(*self.prio_args)
+        else:
+            return self.prio
+        
     def _try_wait(self):
         return self.trap._try_wait()
 

@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-17 09:15:57 liux>
+# Last Update: Time-stamp: <2019-07-17 18:03:07 liux>
 ###############################################################
 
 import random, uuid
@@ -210,7 +210,8 @@ class Simulator:
     # process scheduling methods #
     ##############################
     
-    def process(self, proc, *args, offset=None, until=None, name=None, **kwargs):
+    def process(self, proc, *args, offset=None, until=None, name=None,
+                prio=0, prio_args=None, **kwargs):
         """Create a process and schedule its execution.
 
         A process is a separate thread of control. During its
@@ -243,6 +244,20 @@ class Simulator:
 
             name (string): an optional name for the process
 
+            prio: the priority of the process (which is default to be
+                zero). A priority can be any numerical value: a lower
+                value means higher priority. The argument here can
+                also be a function, which will be invoked when needed
+                by the system to prioritize waiting processes (e.g.,
+                when qdis is set to be QDIS.PRIORITY for a resource or
+                facility). If it is indeed a fucntion, the function
+                may take a list of arguments (provided by prio_args)
+                and should return a numerical value
+
+            prio_args: the user-defined arguments to the function
+                specifed by prio; if provided, the arguments must be
+                placed inside a list
+
             kwargs (dict): the keyworded arguments as a dictionary to
                 be passed to the starting function when the process
                 begins at the scheduled time
@@ -272,17 +287,7 @@ class Simulator:
                              (until, self.now))
         else: time = until
 
-        ## consolidate arguments
-        #if params is None:
-        #    params = kargs
-        #else:
-        #    try:
-        #        params.update(kargs)
-        #    except AttributeError:
-        #        raise TypeError("Simulator.process() params not a dictionary");
-
-        #p = _Process(self, name, proc, params)
-        p = _Process(self, name, proc, args, kwargs)
+        p = _Process(self, name, proc, args, kwargs, prio, prio_args)
         e = _ProcessEvent(self, time, p, name)
         self._eventlist.insert(e)
         return p
@@ -347,14 +352,28 @@ class Simulator:
             p = self.cur_process()
             if p is None:
                 raise RuntimeError("Simulator.get_priority() outside process context")
-        return p.priority
+        return p.get_priority()
 
-    def set_priority(self, prio, p=None):
+    def set_priority(self, prio, prio_args=None, p=None):
         """Set the priority of a process.
 
-        A new priority and the process for the new priority should be
-        provided. If the process is ignored, it's assumed to be the
-        current process.
+        Args:
+            prio: the new priority of the process. A priority can be
+                any numerical value: a lower value means higher
+                priority. The argument here can be a function, which
+                is invoked when needed by the system to prioritize
+                waiting processes (e.g., when qdis is set to be
+                QDIS.PRIORITY for a resource or facility). If it is
+                indeed a fucntion, the function may take a list of
+                arguments (provided by prio_args) and should return a
+                numerical value
+
+            prio_args: the user-defined arguments to the function
+                specifed by prio; if provided, the arguments must be
+                placed inside a list
+
+            p: the process to change priority; if ignored, it's
+                assumed to be the current process
 
         """
 
@@ -367,7 +386,7 @@ class Simulator:
             p = self.cur_process()
             if p is None:
                 raise RuntimeError("Simulator.set_priority() outside process context")
-        p.priority = prio
+        p.set_priority(prio, prio_args)
 
     def sleep(self, offset=None, until=None):
         """A process blocks for a certain time duration.

@@ -226,6 +226,7 @@ semaphore.py:
     * val
     * qdis: QDIS.*
     * blocked
+    * shuffled
     * wait()
     * signal()
     * trigger() == signal()
@@ -289,7 +290,8 @@ process.py:
     * state: STATE_*
     * main
     * vert
-    * priority
+    * prio
+    * prio_args
     * trap
     * acting_trappables
     * activate()
@@ -299,6 +301,8 @@ process.py:
     * sleep()
     * suspend()
     * terminate()
+    * get_priority()
+    * set_priority()
     * _try_wait()
     * _cancel_wait()
     * _true_trappable()

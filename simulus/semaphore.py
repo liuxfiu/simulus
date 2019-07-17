@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-17 06:51:31 liux>
+# Last Update: Time-stamp: <2019-07-17 17:29:14 liux>
 ###############################################################
 
 from collections import deque
@@ -50,7 +50,7 @@ class Semaphore(Trappable):
     unblock processes if multiple processes are waiting on a
     semaphore. Other possible queuing disciplines include LIFO (last
     in first out), SIRO (service in random order), and PRIORITY
-    (depending on the 'priority' of the processes; a lower value means
+    (depending on the priority of the processes; a lower value means
     higher priority). One can choose a queuing discipline when the
     semaphore is created.
 
@@ -74,6 +74,7 @@ class Semaphore(Trappable):
         else:
             # SIRO and PRIORITY use a list for the blocked processes
             self.blocked = []
+        self.shuffled = False
 
     def wait(self):
         """Waiting on a semphore will decrement its value; and if it becomes
@@ -87,24 +88,8 @@ class Semaphore(Trappable):
         self.val -= 1
         if self.val < 0:
             # enqueue the process and suspend it
-            if self.qdis == QDIS.FIFO or \
-               self.qdis == QDIS.LIFO:
-                self.blocked.append(p)
-            elif self.qdis == QDIS.SIRO:
-                self.blocked.append(p)
-                # when we add a new process, we shuffle it with an
-                # existing one in the blocked list
-                l = len(self.blocked)
-                if l > 1:
-                     # get random index (from 0 to l-1) 
-                    i = self._sim.rng().randrange(l)
-                    if i != l-1:
-                        # swap with the last element
-                        self.blocked[i], self.blocked[-1] = \
-                            self.blocked[-1], self.blocked[i] 
-            else:
-                # QDIS.PRIORITY
-                heapq.heappush(self.blocked, (p.priority, id(p), p))
+            self.blocked.append(p)
+            self.shuffled = False
             assert len(self.blocked) == -self.val
             p.suspend()
         else:
@@ -123,11 +108,30 @@ class Semaphore(Trappable):
             elif self.qdis == QDIS.LIFO:
                 p = self.blocked.pop()
             elif self.qdis == QDIS.SIRO:
+                if not self.shuffled:
+                    l = len(self.blocked)
+                    if l > 1:
+                        i = self._sim.rng().randrange(l)
+                        if i != l-1:
+                            self.blocked[i], self.blocked[-1] = \
+                                self.blocked[-1], self.blocked[i] 
                 p = self.blocked.pop()
-            else:
-                # QDIS.PRIORITY
-                p = heapq.heappop(self.blocked)[-1]
-                
+            else: # QDIS.PRIORITY
+                if not self.shuffled:
+                    l = len(self.blocked)
+                    if l > 1:
+                        prio_idx = 0
+                        prio_min = self.blocked[0].get_priority()
+                        for idx in range(1,l):
+                            prio = self.blocked[idx].get_priority()
+                            if prio < prio_min:
+                                prio_idx, prio_min = idx, prio
+                        if prio_idx != l-1:
+                            self.blocked[prio_idx], self.blocked[-1] = \
+                                self.blocked[-1], self.blocked[prio_idx] 
+                p = self.blocked.pop()
+            self.shuffled = False
+               
             p.acting_trappables.append(self)
             p.activate()
 
@@ -137,16 +141,34 @@ class Semaphore(Trappable):
     def _next_unblock(self):
         """Return the process to be unblocked next."""
         if len(self.blocked) > 0:
-            if self.qdis == QDIS.FIFO or \
-               self.qdis == QDIS.PRIORITY:
+            if self.qdis == QDIS.FIFO:
                 return self.blocked[0]
-            elif self.qdis == QDIS.LIFO or \
-                 self.qdis == QDIS.SIRO:
-                return self.blocked.pop[-1]
-            else:
-                return None
-        else:
-            return None
+            elif self.qdis == QDIS.LIFO:
+                return self.blocked[-1]
+            elif self.qdis == QDIS.SIRO:
+                l = len(self.blocked)
+                if l > 1:
+                    i = self._sim.rng().randrange(l)
+                    if i != l-1:
+                        self.blocked[i], self.blocked[-1] = \
+                            self.blocked[-1], self.blocked[i]
+                self.shuffled = True
+                return self.blocked[-1]
+            elif self.qdis == QDIS.PRIORITY:
+                l = len(self.blocked)
+                if l > 1:
+                    prio_idx = 0
+                    prio_min = self.blocked[0].get_priority()
+                    for idx in range(1,l):
+                        prio = self.blocked[idx].get_priority()
+                        if prio < prio_min:
+                            prio_idx, prio_min = idx, prio
+                    if prio_idx != l-1:
+                        self.blocked[prio_idx], self.blocked[-1] = \
+                            self.blocked[-1], self.blocked[prio_idx] 
+                self.shuffled = True
+                return self.blocked[-1]
+        return None
             
     def _try_wait(self):
         """Conditional wait on the semaphore.
@@ -168,24 +190,8 @@ class Semaphore(Trappable):
         self.val -= 1
         if self.val < 0:
             # enqueue the process and suspend it
-            if self.qdis == QDIS.FIFO or \
-               self.qdis == QDIS.LIFO:
-                self.blocked.append(p)
-            elif self.qdis == QDIS.SIRO:
-                self.blocked.append(p)
-                # when we add a new process, we shuffle it with an
-                # existing one in the blocked list
-                l = len(self.blocked)
-                if l > 1:
-                     # get random index (from 0 to l-1) 
-                    i = self._sim.rng().randrange(l)
-                    if i != l-1:
-                        # swap with the last element
-                        self.blocked[i], self.blocked[-1] = \
-                            self.blocked[-1], self.blocked[i] 
-            else:
-                # QDIS.PRIORITY
-                heapq.heappush(self.blocked, (p.priority, id(p), p))
+            self.blocked.append(p)
+            self.shuffled = False
             assert len(self.blocked) == -self.val
             return True
         else:
@@ -217,15 +223,5 @@ class Semaphore(Trappable):
         # we are going to remove this process from the waiting queue,
         # so the semaphore value needs to be bumped back up
         self.val += 1
-        if self.qdis != QDIS.PRIORITY:
-            self.blocked.remove(p)
-        else:
-            for i in len(self.blocked):
-                if p == self.blocked[i][2]:
-                    self.blocked[i] = self.blocked[-1]
-                    self.blocked.pop()
-                    if i < len(self.blocked):
-                        heapq._siftup(self.blocked, i)
-                        heapq._siftdown(self.blocked, 0, i)
-        
-
+        self.blocked.remove(p)
+        self.shuffled = False
