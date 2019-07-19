@@ -8,3 +8,4 @@ include LICENSE
 recursive-include examples *.py
 recursive-include docs *.ipynb
 prune docs/.ipynb_checkpoints
+prune notyet
