@@ -1,3 +1,14 @@
+## 1.1.5 (2019-07-26)
+
+### New
+
+* Added logging support and runtime performance metrics. [Jason Liu]
+
+* Added jupyter notebooks for queuing models. [Jason Liu]
+
+* Tagged 1.1.4 and release. [Jason Liu]
+
+
 ## 1.1.4 (2019-07-17)
 
 ### New
