@@ -1,12 +1,16 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 3, 2019
-# Last Update: Time-stamp: <2019-07-13 20:23:25 liux>
+# Last Update: Time-stamp: <2019-07-25 18:43:01 liux>
 ###############################################################
 
 import random, uuid, argparse, sys
 
 __all__ = ["_Sync_", "sync"]
+
+import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 class _Sync_(object):
     # make sure we init only once (and only once)
@@ -31,7 +35,9 @@ class _Sync_(object):
         _Sync_.args, _ = parser.parse_known_args()
         if _Sync_.args.seed is not None and \
            (_Sync_.args.seed < 0 or _Sync_.args.seed >= 2**32):
-            raise ValueError("Command argument --seed must be between 0 and 2**32-1")
+            errmsg = "--seed must be a 32-bit integer"
+            log.error(errmsg)
+            raise ValueError(errmsg)
 
         # initialize mpi if needed
         if _Sync_.args.mpi:
@@ -39,14 +45,12 @@ class _Sync_(object):
             from mpi4py import MPI
             _Sync_.comm_rank = MPI.COMM_WORLD.Get_rank()
             _Sync_.comm_size = MPI.COMM_WORLD.Get_size()
-            if _Sync_.args.verbose:
-                print("[%s] simulus running with mpi: comm_size=%d, comm_rank=%d" %
-                      (__file__, _Sync_.comm_size, _Sync_.comm_rank))
+            log.info("simulus running with mpi: comm_size=%d, comm_rank=%d" %
+                     (_Sync_.comm_size, _Sync_.comm_rank))
         else:
             _Sync_.comm_rank = 0
             _Sync_.comm_size = 1
-            if _Sync_.args.verbose:
-                print("[%s] simulus running in sequential mode" % __file__)
+            log.info("simulus running in sequential mode")
 
         if _Sync_.args.seed is None:
             old_state = random.getstate()
@@ -56,9 +60,7 @@ class _Sync_(object):
             # seeded with the same seed (across different runs and
             # across different ranks)
             _Sync_.namespace = uuid.UUID(int=random.getrandbits(128))
-            if _Sync_.args.verbose:
-                print("[%s] simulus namespace %s" %
-                      (__file__, _Sync_.namespace))
+            log.info("simulus namespace %s" % _Sync_.namespace)
 
             # now we get a random sequence for each rank: rank 0
             # inherits the random module's default random sequence;

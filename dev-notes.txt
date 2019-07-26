@@ -151,7 +151,7 @@ utils.py:
     * _n
     * _last
     * __len__()
-    * _push()
+    * push()
     * data()
     * rate()
 
@@ -160,7 +160,7 @@ utils.py:
     * _data
     * _rs
     * __len__()
-    * _push()
+    * push()
     * data()
     * mean()
     * stdev()
@@ -176,7 +176,7 @@ utils.py:
     * _last_t
     * _last_v
     * __len__()
-    * _push()
+    * push()
     * data()
     * rate()
     * mean()
@@ -335,6 +335,14 @@ simulator.py:
     * _theproc
     * _readq
     * _rng
+    * _runtime_start_clock
+    * _runtime_scheduled_events
+    * _runtime_cancelled_events
+    * _runtime_executed_events
+    * _runtime_initiated_processes
+    * _runtime_cancelled_processes
+    * _runtime_process_contexts
+    * _runtime_terminated_processes
     * sched()
     * cancel()
     * resched()
@@ -354,8 +362,9 @@ simulator.py:
     * run()
     * step()
     * peek()
-    * show_calendar()
     * rng()
+    * show_calendar()
+    * show_runtime_report()
     * _process_one_event()
 
 * simulator()  # public interface

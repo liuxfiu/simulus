@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-17 18:06:09 liux>
+# Last Update: Time-stamp: <2019-07-25 13:53:25 liux>
 ###############################################################
 
 """Simulation process."""
@@ -14,6 +14,9 @@ from .trap import *
 from .event import *
 
 __all__ = ["_Process"]
+
+import logging
+log = logging.getLogger('simulus.simulator')
 
 class _Process(Trappable):
     """A process is an independent thread of execution."""
@@ -103,6 +106,8 @@ class _Process(Trappable):
         assert self.vert
         assert not self.vert.dead
 
+        log.debug('schedule timeout event at time=%g from now=%g' % (until, self._sim.now))
+        self._sim._runtime_scheduled_events += 1
         e = _ProcessEvent(self._sim, until, self, self.name)
         self._sim._eventlist.insert(e)
         self.deactivate(_Process.STATE_SUSPENDED)
@@ -145,6 +150,9 @@ class _Process(Trappable):
         
             self.deactivate(_Process.STATE_TERMINATED)
             self.trap.trigger()
+
+        log.debug('process terminated at time=%g' % self._sim.now)
+        self._sim._runtime_terminated_processes += 1
 
         #raise greenlet.GreenletExit
         self.main.switch()

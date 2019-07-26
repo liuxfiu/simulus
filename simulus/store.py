@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-17 05:31:29 liux>
+# Last Update: Time-stamp: <2019-07-25 19:27:24 liux>
 ###############################################################
 
 from collections import deque
@@ -11,6 +11,10 @@ from .trappable import Trappable
 from .semaphore import Semaphore
 
 __all__ = ["Store"]
+
+import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 class Store(object):
     """A store for synchronizing producer and consumer processes.
@@ -97,7 +101,9 @@ class Store(object):
         if initlevel==0:
             self._obj_decided = False
             if initobj != None:
-                raise ValueError("Store(initlevel=0) initobj not None")
+                errmsg = "store(initlevel=0) initobj must be None"
+                log.error(errmsg)
+                raise ValueError(errmsg)
         else:
             self._obj_decided = True
             if initobj != None:
@@ -111,20 +117,27 @@ class Store(object):
                     # and the number must match with the amount
                     if not isinstance(initobj, (list, tuple)) or \
                        len(initobj) != initlevel:
-                        raise ValueError("Store(initlevel=%r, initobj=%r) unmatched "
-                                         "number of objects" % (initlevel, initobj))
+                        errmsg = "store(initlevel=%r, initobj=%r) unmatched objects" % (initlevel, initobj)
+                        log.error(errmsg)
+                        raise ValueError(errmsg)
                     self._obj_store = deque(initobj) # shallow copy from the list or tuple
 
         if self.stats is not None:
             for k, v in dc._attrs.items():
                 if k in ('puts', 'put_queues', 'gets', 'get_queues', 'levels'):
                     if not isinstance(v, TimeSeries):
-                        raise TypeError("Store DataCollector: '%s' not timeseries" % k)
+                        errmsg = "'%s' not timeseries in store" % k
+                        log.error(errmsg)
+                        raise TypeError(errmsg)
                 elif k in ('put_times', 'get_times'):
                     if not isinstance(v, DataSeries):
-                        raise TypeError("Store DataCollector: '%s' not dataseries" % k)
+                        errmsg = "'%s' not dataseries in store" % k
+                        log.error(errmsg)
+                        raise TypeError(errmsg)
                 else:
-                    raise ValueError("Store DataCollector: '%s' unrecognized" % k)
+                    errmsg = "'%s' unrecognized attribute in store" % k
+                    log.error(errmsg)
+                    raise TypeError(errmsg)
             self.stats._sample("levels", (sim.init_time, initlevel))
 
     def get(self, amt=1):
@@ -148,20 +161,32 @@ class Store(object):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise RuntimeError("Store.get() outside process context")
+            errmsg = "store.get() outside process context"
+            log.error(errmsg)
+            raise RuntimeError(errmsg)
 
         if self.capacity < amt:
-            raise ValueError("Store.get(amt=%r) more than capacity (%r)" %
-                             (amt, self.capacity))
+            errmsg = "store.get(amt=%r) more than capacity (%r)" % (amt, self.capacity)
+            log.error(errmsg)
+            raise ValueError(errmsg)
         if amt <= 0:
-            raise ValueError("Store.get(amt=%r) non-positive amount" % amt)
+            errmsg = "store.get(amt=%r) requires positive amount" % amt
+            log.error(errmsg)
+            raise ValueError(errmsg)
 
         self._make_c_arrival(p, amt)
 
         # the consumer must be blocked if there isn't enough quantity
         # in the store
         if amt > self.level:
+            log.debug('consumer get(amt=%r) blocked from store (level=%r) at %g' %
+                      (amt, self.level, self._sim.now))
             self._c_sem.wait()
+            log.debug('consumer get(amt=%r) unblocked from store (level=%r) at %g' %
+                      (amt, self.level, self._sim.now))
+        else:
+            log.debug('no consumer blocked to get(amt=%r) from store (level=%r) at %g' %
+                      (amt, self.level, self._sim.now))
 
         # the get amount can be satisfied now if the consumer process
         # reaches here; we lower the level and unblock as many
@@ -173,6 +198,8 @@ class Store(object):
             # if the producer process to be unblocked next has room
             # now for the put amount, we unblock it
             if self._p_arrivals[np][1] + lvl <= self.capacity:
+                log.debug('consumer get(amt=%r) unblocks producer put(amt=%r) in store (level=%r)' %
+                          (amt, self._p_arrivals[np][1], self.level))
                 lvl += self._p_arrivals[np][1]
                 self._p_sem.signal()
                 np = self._p_sem._next_unblock()
@@ -201,13 +228,18 @@ class Store(object):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise RuntimeError("Store.put() outside process context")
+            errmsg = "store.put() outside process context"
+            log.error(errmsg)
+            raise RuntimeError(errmsg)
 
         if self.capacity < amt:
-            raise ValueError("Store.put(amt=%r) more than capacity (%r)" %
-                             (amt, self.capacity))
+            errmsg = "store.put(amt=%r) more than capacity (%r)" % (amt, self.capacity)
+            log.error(errmsg)
+            raise ValueError(errmsg)
         if amt <= 0:
-            raise ValueError("Store.put(amt=%r) non-positive amount" % amt)
+            errmsg = "store.put(amt=%r) requires positive amount" % amt
+            log.error(errmsg)
+            raise ValueError(errmsg)
 
         # if object is provided, it must match with the amount
         if obj is not None:
@@ -219,17 +251,25 @@ class Store(object):
             else:
                 # otherwise, the object has to be a list or tuple and
                 # the number must match with the amount
-                if not isinstance(obj, (list, tuple)) or \
-                   len(obj) != amt:
-                    raise ValueError("Store.put(amt=%r, obj=%r) unmatched "
-                                     "number of objects" % (amt, obj))
+                if not isinstance(obj, (list, tuple)) or len(obj) != amt:
+                    errmsg = "store.put(amt=%r, obj=%r) unmatched objects" % (amt, obj)
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
             
         self._make_p_arrival(p, amt, obj)
 
         # the producer will be blocked if the put amount would
         # overflow the store
         if amt + self.level > self.capacity:
+            log.debug('producer put(amt=%r) blocked from store (level=%r) at %g' %
+                      (amt, self.level, self._sim.now))
             self._p_sem.wait()
+            log.debug('producer put(amt=%r) unblocked from store (level=%r) at %g' %
+                      (amt, self.level, self._sim.now))
+        else:
+            log.debug('no producer blocked to put(amt=%r) to store (level=%r) at %g' %
+                      (amt, self.level, self._sim.now))
+            
 
         # the put amount can be satisfied now if the producer process
         # reaches here; we increase the level and unblock as many
@@ -241,6 +281,8 @@ class Store(object):
             # if the consumer process to be unblocked next has enough
             # quantity in store now for the get amount, we unblock it
             if self._c_arrivals[nc][1] <= lvl:
+                log.debug('producer put(amt=%r) unblocks consumer get(amt=%r) in store (level=%r)' %
+                          (amt, self._c_arrivals[nc][1], self.level))
                 lvl -= self._c_arrivals[nc][1]
                 self._c_sem.signal()
                 nc = self._c_sem._next_unblock()
@@ -264,10 +306,13 @@ class Store(object):
                 self._amt = amt
 
                 if store.capacity < amt:
-                    raise ValueError("Store.getter(amt=%r) more than capacity (%r)" %
-                                     (amt, store.capacity))
+                    errmsg = "store.getter(amt=%r) more than capacity (%r)" % (amt, store.capacity)
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
                 if amt <= 0:
-                    raise ValueError("Store.getter(amt=%r) non-positive amount" % amt)
+                    errmsg = "store.getter(amt=%r) requires positive amount" % amt
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
 
             def _try_wait(self):
                 p = self._store._sim.cur_process()
@@ -278,19 +323,27 @@ class Store(object):
                 # the consumer will be blocked if there isn't enough
                 # quantity in the store
                 if self._amt > self._store.level:
+                    log.debug('consumer try-get(amt=%r) blocked from store (level=%r) at %g' %
+                              (self._amt, self._store.level, self._store._sim.now))
                     return self._store._c_sem._try_wait() # must be True
                 else:
+                    log.debug('no consumer blocked to try-get(amt=%r) from store (level=%r) at %g' %
+                              (self._amt, self._store.level, self._store._sim.now))
                     return False
 
             def _cancel_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
                 self._store._make_c_renege(p)
+                log.debug('consumer cancels try-get(amt=%r) from store (level=%r) at %g' %
+                          (self._amt, self._store.level, self._store._sim.now))
                 self._store._c_sem._cancel_wait()
 
             def _commit_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
+                log.debug('consumer try-get(amt=%r) unblocked from store (level=%r) at %g' %
+                          (self._amt, self._store.level, self._store._sim.now))
 
                 # the get amount can be satisfied if the consumer
                 # process reaches here; we lower the level and unblock
@@ -302,6 +355,8 @@ class Store(object):
                     # if the producer process to be unblocked next has
                     # room now for the put amount, we unblock it
                     if self._store._p_arrivals[np][1] + lvl <= self._store.capacity:
+                        log.debug('consumer try-get(amt=%r) unblocks producer put(amt=%r) in store (level=%r)' %
+                                  (self._amt, self._store._p_arrivals[np][1], self._store.level))
                         lvl += self._store._p_arrivals[np][1]
                         self._store._p_sem.signal()
                         np = self._store._p_sem._next_unblock()
@@ -331,10 +386,13 @@ class Store(object):
                 self._obj = obj
 
                 if store.capacity < amt:
-                    raise ValueError("Store.putter(amt=%r) more than capacity (%r)" %
-                                     (amt, store.capacity))
+                    errmsg = "store.putter(amt=%r) more than capacity (%r)" % (amt, store.capacity)
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
                 if amt <= 0:
-                    raise ValueError("Store.putter(amt=%r) non-positive amount" % amt)
+                    errmsg = "store.putter(amt=%r) requires positive amount" % amt
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
 
                 # if object is provided, it must match with the amount
                 if obj is not None:
@@ -348,10 +406,10 @@ class Store(object):
                         # otherwise, the object has to be a list or
                         # tuple and the number must match with the
                         # amount
-                        if not isinstance(obj, (list, tuple)) or \
-                           len(obj) != amt:
-                            raise ValueError("Store.putter(amt=%r, obj=%r) unmatched "
-                                             "number of objects" % (amt, obj))
+                        if not isinstance(obj, (list, tuple)) or len(obj) != amt:
+                            errmsg = "store.putter(amt=%r, obj=%r) unmatched objects" % (amt, obj)
+                            log.error(errmsg)
+                            raise ValueError(errmsg)
 
             def _try_wait(self):
                 p = self._store._sim.cur_process()
@@ -362,19 +420,27 @@ class Store(object):
                 # the producer must be blocked if the put amount would
                 # overflow the store
                 if self._amt + self._store.level > self._store.capacity:
+                    log.debug('producer try-put(amt=%r) blocked from store (level=%r) at %g' %
+                              (self._amt, self._store.level, self._store._sim.now))
                     return self._store._p_sem._try_wait() # must be True
                 else:
+                    log.debug('no producer blocked to try-put(amt=%r) to store (level=%r) at %g' %
+                              (self._amt, self._store.level, self._store._sim.now))
                     return False
 
             def _cancel_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
                 self._store._make_p_renege(p)
+                log.debug('producer cancels try-put(amt=%r) to store (level=%r) at %g' %
+                          (self._amt, self._store.level, self._store._sim.now))
                 self._store._p_sem._cancel_wait()
 
             def _commit_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
+                log.debug('producer try-put(amt=%r) unblocked from store (level=%r) at %g' %
+                          (self._amt, self._store.level, self._store._sim.now))
 
                 # the put amount can be satisfied now if the producer
                 # process reaches here; we increase the level and
@@ -387,6 +453,8 @@ class Store(object):
                     # enough quantity in store now for the get amount,
                     # we unblock it
                     if self._store._c_arrivals[nc][1] <= lvl:
+                        log.debug('producer try-put(amt=%r) unblocks consumer get(amt=%r) in store (level=%r)' %
+                                  (self._amt, self._store._c_arrivals[nc][1], self._store.level))
                         lvl -= self._store._c_arrivals[nc][1]
                         self._store._c_sem.signal()
                         nc = self._store._c_sem._next_unblock()
@@ -409,7 +477,9 @@ class Store(object):
         self._p_arrivals[p] = (self._sim.now, amt)
         if obj is not None:
             if self._obj_decided and self._obj_store is None:
-                raise RuntimeError("Store() inconsistent use of objects")
+                errmsg = "inconsistent use of objects in store"
+                log.error(errmsg)
+                raise RuntimeError(errmsg)
             elif not self._obj_decided:
                 assert self._obj_store is None
                 self._obj_decided = True
@@ -418,7 +488,9 @@ class Store(object):
                 self._obj_store.extend(obj)
         else:
             if self._obj_decided and self._obj_store is not None:
-                raise RuntimeError("Store() inconsistent use of objects")
+                errmsg = "inconsistent use of objects in store"
+                log.error(errmsg)
+                raise RuntimeError(errmsg)
             elif not self._obj_decided:
                 assert self._obj_store is None
                 self._obj_decided = True

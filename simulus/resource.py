@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-17 05:30:34 liux>
+# Last Update: Time-stamp: <2019-07-25 18:08:36 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
@@ -9,6 +9,10 @@ from .trappable import Trappable
 from .semaphore import Semaphore
 
 __all__ = ["Resource"]
+
+import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 class Resource(Trappable):
     """A resource provides services to processes.
@@ -60,16 +64,24 @@ class Resource(Trappable):
             for k, v in dc._attrs.items():
                 if k in ('in_systems', 'in_services', 'in_queues'):
                     if not isinstance(v, TimeSeries):
-                        raise TypeError("Resource DataCollector: '%s' not timeseries" % k)
+                        errmsg = "'%s' not timeseries in resource" % k
+                        log.error(errmsg)
+                        raise TypeError(errmsg)
                 elif k in ('arrivals', 'services', 'reneges', 'departs'):
                     if not isinstance(v, TimeMarks):
-                        raise TypeError("Resource DataCollector: '%s' not timemarks" % k)
+                        errmsg = "'%s' not timemarks in resource" % k
+                        log.error(errmsg)
+                        raise TypeError(errmsg)
                 elif k in ('inter_arrivals', 'queue_times', 'renege_times',
                            'service_times', 'system_times'):
                     if not isinstance(v, DataSeries):
-                        raise TypeError("Resource DataCollector: '%s' not dataseries" % k)
+                        errmsg = "'%s' not dataseries in resource" % k
+                        log.error(errmsg)
+                        raise TypeError(errmsg)
                 else:
-                    raise ValueError("Reource DataCollector: '%s' unrecognized" % k)
+                    errmsg = "'%s' unrecognized attribute in resource" % k
+                    log.error(errmsg)
+                    raise TypeError(errmsg)
             self._last_arrival = sim.init_time
         
     def acquire(self):
@@ -84,11 +96,15 @@ class Resource(Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise RuntimeError("Resource.acquire() outside process context")
+            errmsg = "acquire() outside process context"
+            log.error(errmsg)
+            raise RuntimeError(errmsg)
 
         self._make_arrival(p)
+        log.debug('process tries to acquire resource at %g' % self._sim.now)
         self._sem.wait()
         self._make_service(p)
+        log.debug('process obtains resource at %g' % self._sim.now)
 
     def release(self):
         """Relinquish the resource acquired previously.
@@ -101,9 +117,12 @@ class Resource(Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise RuntimeError("Resource.acquire() outside process context")
+            errmsg = "release() outside process context"
+            log.error(errmsg)
+            raise RuntimeError(errmsg)
 
         self._make_departure(p)
+        log.debug('process releases resource at %g' % self._sim.now)
         self._sem.signal()
 
     def num_in_system(self):

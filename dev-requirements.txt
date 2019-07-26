@@ -28,8 +28,14 @@ jsonschema==3.0.1
 jupyter==1.0.0
 jupyter-client==5.3.0
 jupyter-console==6.0.0
+jupyter-contrib-core==0.3.3
+jupyter-contrib-nbextensions==0.5.1
 jupyter-core==4.5.0
+jupyter-highlight-selected-word==0.2.0
+jupyter-latex-envs==1.4.6
+jupyter-nbextensions-configurator==0.4.1
 kiwisolver==1.1.0
+lxml==4.3.4
 MarkupSafe==1.1.1
 matplotlib==3.1.1
 mistune==0.8.4
@@ -59,6 +65,7 @@ pystache==0.5.4
 pytest==5.0.1
 python-dateutil==2.8.0
 pytz==2019.1
+PyYAML==5.1.1
 pyzmq==18.0.2
 qtconsole==4.5.1
 readme-renderer==24.0

@@ -1,12 +1,16 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-17 06:29:29 liux>
+# Last Update: Time-stamp: <2019-07-25 17:17:55 liux>
 ###############################################################
 
 import math, re
 
 __all__ = ["QDIS", 'WelfordStats', "TimeMarks", "DataSeries", "TimeSeries", "DataCollector"]
+
+import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 class QDIS:
     """Queuing disciplines used by semaphores and resources."""
@@ -55,12 +59,13 @@ class TimeMarks(object):
         """Return the number of collected samples."""
         return self._n
 
-    def _push(self, t):
+    def push(self, t):
         if self._n == 0:
             self._last = t
         elif t < self._last:
-            raise ValueError("TimeMarks._push(%g) earlier than last entry (%g)" %
-                             (t, self._last)) 
+            errmsg = "push(%g) earlier than last entry (%g)" % (t, self._last)
+            log.error(errmsg)
+            raise ValueError(errmsg) 
         if self._data is not None:
             self._data.append(t)
         self._n += 1
@@ -78,8 +83,9 @@ class TimeMarks(object):
         if self._n > 0:
             if t is None: t = self._last
             elif t < self._last:
-                raise ValueError("TimeMarks.rate(t=%g) earlier than last entry (%g)" %
-                                 (t, self._last))
+                errmsg = "rate(t=%g) earlier than last entry (%g)" % (t, self._last)
+                log.error(errmsg)
+                raise ValueError(errmsg) 
             return self._n/t
         else:
             return 0
@@ -96,7 +102,7 @@ class DataSeries(object):
         """Return the number of collected samples."""
         return len(self._rs)
 
-    def _push(self, d):
+    def push(self, d):
         if self._data is not None:
             self._data.append(d)
         self._rs.push(d)
@@ -144,14 +150,15 @@ class TimeSeries(object):
         """Return the number of collected samples."""
         return len(self._rs)
     
-    def _push(self, d):
+    def push(self, d):
         t, v = d
         if len(self._rs) == 0:
             self._last_t = t
             self._last_v = v
         elif t < self._last_t:
-            raise ValueError("TimeSeries._push(%r) earlier than last entry (%g)" %
-                             (d, self._last_t))
+            errmsg = "push(%r) earlier than last entry (%g)" % (d, self._last_t)
+            log.error(errmsg)
+            raise ValueError(errmsg) 
 
         if self._data is not None:
             self._data.append(d)
@@ -172,8 +179,9 @@ class TimeSeries(object):
         if len(self._rs) > 0:
             if t is None: t = self._last_t
             elif t < self._last_t:
-                raise ValueError("TimeSeries.rate(t=%g) earlier than last entry (%g)" %
-                                 (t, self._last_t))
+                errmsg = "rate(t=%g) earlier than last entry (%g)" % (t, self._last_t)
+                log.error(errmsg)
+                raise ValueError(errmsg) 
             return len(self._rs)/t
         else:
             return 0
@@ -209,8 +217,9 @@ class TimeSeries(object):
         if len(self._rs) > 0:
             if t is None: t = self._last_t
             if t < self._last_t:
-                raise ValueError("TimeSeries.avg_over_time(t=%g) earlier than last entry (%g)" %
-                                 (t, self._last_t))
+                errmsg = "avg_over_time(t=%g) earlier than last entry (%g)" % (t, self._last_t)
+                log.error(errmsg)
+                raise ValueError(errmsg)
             return (self._area+(t-self._last_t)*self._last_v)/t
         else:
             return 0
@@ -230,7 +239,9 @@ class DataCollector(object):
         }
         for k, v in self._attrs.items():
             if hasattr(self, k):
-                raise ValueError("DataCollector attribute %s already exists" % k)
+                errmsg = "attribute %s already exists" % k
+                log.error(errmsg)
+                raise ValueError(errmsg)
             for pat, cls in patterns.items():
                 m = pat.match(v)
                 if m is not None:
@@ -240,11 +251,13 @@ class DataCollector(object):
                     self._attrs[k] = v
                     break
             else:
-                raise ValueError("DataCollector() %r has unknown value (%r)" % k, v)
+                errmsg = "%r has unknown value (%r)" % (k, v)
+                log.error(errmsg)
+                raise ValueError(errmsg)
 
     def _sample(self, k, v):
         if k in self._attrs:
-            getattr(self, k)._push(v)
+            getattr(self, k).push(v)
 
     def report(self, t=None):
         """Print out the collected statistics nicely. If t is provided, it's

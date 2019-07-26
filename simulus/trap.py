@@ -1,12 +1,16 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-08 16:33:33 liux>
+# Last Update: Time-stamp: <2019-07-25 17:04:22 liux>
 ###############################################################
 
 from .trappable import Trappable
 
 __all__ = ["Trap"]
+
+import logging
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 class Trap(Trappable):
     """A one-time signaling mechanism for inter-process communication.
@@ -57,18 +61,22 @@ class Trap(Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            raise RuntimeError("Trap.wait() outside process context")
+            errmsg = "wait() outside process context"
+            log.error(errmsg)
+            raise RuntimeError(errmsg)
 
         if self.state == Trap.TRAP_UNSET or \
            self.state == Trap.TRAP_SET:
             # when the trap is unset or set, suspend the process
             self.state = Trap.TRAP_SET
             self.blocked.append(p)
+            log.debug('process blocked on trap wait')
             p.suspend()
         else:
             # nothing to be done when the trap is sprung; there are no
             # blocked processes
             assert len(self.blocked) == 0
+            log.debug('no block on trap wait')
                 
     def trigger(self):
         """Triggering a trap would unblock all waiting processes."""
@@ -77,13 +85,17 @@ class Trap(Trappable):
             # no one to wake up when the trap is unset
             assert len(self.blocked) == 0
             self.state = Trap.TRAP_SPRUNG
+            log.debug('unset trap triggered')
         elif self.state == Trap.TRAP_SPRUNG:
             # a trap can only be triggered at most once
-            raise RuntimeError("Trap.trigger() duplicate action")
+            errmsg = "trigger() duplicate action"
+            log.error(errmsg)
+            raise RuntimeError(errmsg)
         else:
             # when the trap is set, there is at least one process
             # blocked by the trap
             self.state = Trap.TRAP_SPRUNG
+            log.debug('%d process(es) unblocked on triggered trap' % len(self.blocked))
             assert len(self.blocked) > 0
             for p in self.blocked:
                 p.acting_trappables.append(self)
@@ -112,11 +124,13 @@ class Trap(Trappable):
             # when the trap is unset or set, suspend the process
             self.state = Trap.TRAP_SET
             self.blocked.append(p)
+            log.debug('process blocked on trap try-wait')
             return True
         else:
             # nothing to be done when the trap is sprung; there are no
             # blocked processes
             assert len(self.blocked) == 0
+            log.debug('no block on trap try-wait')
             return False
 
     def _cancel_wait(self):
@@ -142,3 +156,4 @@ class Trap(Trappable):
         self.blocked.remove(p)
         if len(self.blocked) == 0:
             self.state = Trap.TRAP_UNSET
+        log.debug('try-wait cancelled for trap')

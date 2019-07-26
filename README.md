@@ -10,8 +10,7 @@ http://simulus.readthedocs.io/
 https://github.com/liuxfiu/simulus/
 
 * License:
-MIT – see the file LICENSE for details.
-
+MIT -- see the file LICENSE for details.
 
 ## Installation
 
@@ -80,7 +79,7 @@ sim.run(100)
     Hello world at time 100
 
 
-The following is the same hello-world example, but instead we use a process. A process is a continous thread of execution. In the example, once started, the process loops forever. Inside each iteration, the process prints out a message and then sleeps for some time.
+The following is the same hello-world example, but instead we use a process. A process is a continuous thread of execution. In the example, once started, the process loops forever. Inside each iteration, the process prints out a message and then sleeps for some time.
 
 
 ```python
@@ -189,7 +188,7 @@ sim.run()
 
 Simulus also provides several advanced features to ease the common modeling and simulation tasks, including those for modeling single-server or multi-server queues, for performing producer-consumer synchronization over bounded buffers, and for conducting message-passing communication among the processes.
 
-For example, simulus provides the modeling abstraction of a "store", which is a facility for storing countable objects (such as jobs in a queue, packets in a network router, and io requests arrived at a storage device), or for storing uncountable quantities or volumes (such as gas in a tank, water in a reservoir, and battery power in a mobile device). The following example shows the use of store as a bounded buffer with multiple producers and consumers.
+For example, simulus provides the modeling abstraction of a "store", which is a facility for storing countable objects (such as jobs in a queue, packets in a network router, and i/o requests arrived at a storage device), or for storing uncountable quantities or volumes (such as gas in a tank, water in a reservoir, and battery power in a mobile device). The following example shows the use of store as a bounded buffer with multiple producers and consumers.
 
 
 ```python
@@ -267,3 +266,8 @@ sim.run(5)
     2.754613: consumer 2 consumes item [6]
     3.223988: consumer 0 consumes item [7]
 
+
+
+```python
+
+```
