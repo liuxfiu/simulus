@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-25 19:27:24 liux>
+# Last Update: Time-stamp: <2019-07-27 07:28:46 liux>
 ###############################################################
 
 from collections import deque
@@ -179,14 +179,15 @@ class Store(object):
         # the consumer must be blocked if there isn't enough quantity
         # in the store
         if amt > self.level:
-            log.debug('consumer get(amt=%r) blocked from store (level=%r) at %g' %
-                      (amt, self.level, self._sim.now))
+            #log.debug('consumer get(amt=%r) blocked from store (level=%r) at %g' %
+            #          (amt, self.level, self._sim.now))
             self._c_sem.wait()
-            log.debug('consumer get(amt=%r) unblocked from store (level=%r) at %g' %
-                      (amt, self.level, self._sim.now))
+            #log.debug('consumer get(amt=%r) unblocked from store (level=%r) at %g' %
+            #          (amt, self.level, self._sim.now))
         else:
-            log.debug('no consumer blocked to get(amt=%r) from store (level=%r) at %g' %
-                      (amt, self.level, self._sim.now))
+            #log.debug('no consumer blocked to get(amt=%r) from store (level=%r) at %g' %
+            #          (amt, self.level, self._sim.now))
+            pass
 
         # the get amount can be satisfied now if the consumer process
         # reaches here; we lower the level and unblock as many
@@ -198,8 +199,8 @@ class Store(object):
             # if the producer process to be unblocked next has room
             # now for the put amount, we unblock it
             if self._p_arrivals[np][1] + lvl <= self.capacity:
-                log.debug('consumer get(amt=%r) unblocks producer put(amt=%r) in store (level=%r)' %
-                          (amt, self._p_arrivals[np][1], self.level))
+                #log.debug('consumer get(amt=%r) unblocks producer put(amt=%r) in store (level=%r)' %
+                #          (amt, self._p_arrivals[np][1], self.level))
                 lvl += self._p_arrivals[np][1]
                 self._p_sem.signal()
                 np = self._p_sem._next_unblock()
@@ -261,16 +262,16 @@ class Store(object):
         # the producer will be blocked if the put amount would
         # overflow the store
         if amt + self.level > self.capacity:
-            log.debug('producer put(amt=%r) blocked from store (level=%r) at %g' %
-                      (amt, self.level, self._sim.now))
+            #log.debug('producer put(amt=%r) blocked from store (level=%r) at %g' %
+            #          (amt, self.level, self._sim.now))
             self._p_sem.wait()
-            log.debug('producer put(amt=%r) unblocked from store (level=%r) at %g' %
-                      (amt, self.level, self._sim.now))
+            #log.debug('producer put(amt=%r) unblocked from store (level=%r) at %g' %
+            #          (amt, self.level, self._sim.now))
         else:
-            log.debug('no producer blocked to put(amt=%r) to store (level=%r) at %g' %
-                      (amt, self.level, self._sim.now))
+            #log.debug('no producer blocked to put(amt=%r) to store (level=%r) at %g' %
+            #          (amt, self.level, self._sim.now))
+            pass
             
-
         # the put amount can be satisfied now if the producer process
         # reaches here; we increase the level and unblock as many
         # consumer processes as we can
@@ -281,8 +282,8 @@ class Store(object):
             # if the consumer process to be unblocked next has enough
             # quantity in store now for the get amount, we unblock it
             if self._c_arrivals[nc][1] <= lvl:
-                log.debug('producer put(amt=%r) unblocks consumer get(amt=%r) in store (level=%r)' %
-                          (amt, self._c_arrivals[nc][1], self.level))
+                #log.debug('producer put(amt=%r) unblocks consumer get(amt=%r) in store (level=%r)' %
+                #          (amt, self._c_arrivals[nc][1], self.level))
                 lvl -= self._c_arrivals[nc][1]
                 self._c_sem.signal()
                 nc = self._c_sem._next_unblock()
@@ -323,27 +324,27 @@ class Store(object):
                 # the consumer will be blocked if there isn't enough
                 # quantity in the store
                 if self._amt > self._store.level:
-                    log.debug('consumer try-get(amt=%r) blocked from store (level=%r) at %g' %
-                              (self._amt, self._store.level, self._store._sim.now))
+                    #log.debug('consumer try-get(amt=%r) blocked from store (level=%r) at %g' %
+                    #          (self._amt, self._store.level, self._store._sim.now))
                     return self._store._c_sem._try_wait() # must be True
                 else:
-                    log.debug('no consumer blocked to try-get(amt=%r) from store (level=%r) at %g' %
-                              (self._amt, self._store.level, self._store._sim.now))
+                    #log.debug('no consumer blocked to try-get(amt=%r) from store (level=%r) at %g' %
+                    #          (self._amt, self._store.level, self._store._sim.now))
                     return False
 
             def _cancel_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
                 self._store._make_c_renege(p)
-                log.debug('consumer cancels try-get(amt=%r) from store (level=%r) at %g' %
-                          (self._amt, self._store.level, self._store._sim.now))
+                #log.debug('consumer cancels try-get(amt=%r) from store (level=%r) at %g' %
+                #          (self._amt, self._store.level, self._store._sim.now))
                 self._store._c_sem._cancel_wait()
 
             def _commit_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
-                log.debug('consumer try-get(amt=%r) unblocked from store (level=%r) at %g' %
-                          (self._amt, self._store.level, self._store._sim.now))
+                #log.debug('consumer try-get(amt=%r) unblocked from store (level=%r) at %g' %
+                #          (self._amt, self._store.level, self._store._sim.now))
 
                 # the get amount can be satisfied if the consumer
                 # process reaches here; we lower the level and unblock
@@ -355,8 +356,8 @@ class Store(object):
                     # if the producer process to be unblocked next has
                     # room now for the put amount, we unblock it
                     if self._store._p_arrivals[np][1] + lvl <= self._store.capacity:
-                        log.debug('consumer try-get(amt=%r) unblocks producer put(amt=%r) in store (level=%r)' %
-                                  (self._amt, self._store._p_arrivals[np][1], self._store.level))
+                        #log.debug('consumer try-get(amt=%r) unblocks producer put(amt=%r) in store (level=%r)' %
+                        #          (self._amt, self._store._p_arrivals[np][1], self._store.level))
                         lvl += self._store._p_arrivals[np][1]
                         self._store._p_sem.signal()
                         np = self._store._p_sem._next_unblock()
@@ -420,27 +421,27 @@ class Store(object):
                 # the producer must be blocked if the put amount would
                 # overflow the store
                 if self._amt + self._store.level > self._store.capacity:
-                    log.debug('producer try-put(amt=%r) blocked from store (level=%r) at %g' %
-                              (self._amt, self._store.level, self._store._sim.now))
+                    #log.debug('producer try-put(amt=%r) blocked from store (level=%r) at %g' %
+                    #          (self._amt, self._store.level, self._store._sim.now))
                     return self._store._p_sem._try_wait() # must be True
                 else:
-                    log.debug('no producer blocked to try-put(amt=%r) to store (level=%r) at %g' %
-                              (self._amt, self._store.level, self._store._sim.now))
+                    #log.debug('no producer blocked to try-put(amt=%r) to store (level=%r) at %g' %
+                    #          (self._amt, self._store.level, self._store._sim.now))
                     return False
 
             def _cancel_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
                 self._store._make_p_renege(p)
-                log.debug('producer cancels try-put(amt=%r) to store (level=%r) at %g' %
-                          (self._amt, self._store.level, self._store._sim.now))
+                #log.debug('producer cancels try-put(amt=%r) to store (level=%r) at %g' %
+                #          (self._amt, self._store.level, self._store._sim.now))
                 self._store._p_sem._cancel_wait()
 
             def _commit_wait(self):
                 p = self._store._sim.cur_process()
                 assert p is not None
-                log.debug('producer try-put(amt=%r) unblocked from store (level=%r) at %g' %
-                          (self._amt, self._store.level, self._store._sim.now))
+                #log.debug('producer try-put(amt=%r) unblocked from store (level=%r) at %g' %
+                #          (self._amt, self._store.level, self._store._sim.now))
 
                 # the put amount can be satisfied now if the producer
                 # process reaches here; we increase the level and
@@ -453,8 +454,8 @@ class Store(object):
                     # enough quantity in store now for the get amount,
                     # we unblock it
                     if self._store._c_arrivals[nc][1] <= lvl:
-                        log.debug('producer try-put(amt=%r) unblocks consumer get(amt=%r) in store (level=%r)' %
-                                  (self._amt, self._store._c_arrivals[nc][1], self._store.level))
+                        #log.debug('producer try-put(amt=%r) unblocks consumer get(amt=%r) in store (level=%r)' %
+                        #          (self._amt, self._store._c_arrivals[nc][1], self._store.level))
                         lvl -= self._store._c_arrivals[nc][1]
                         self._store._c_sem.signal()
                         nc = self._store._c_sem._next_unblock()

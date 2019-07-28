@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-25 18:08:36 liux>
+# Last Update: Time-stamp: <2019-07-27 20:26:49 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
@@ -101,10 +101,10 @@ class Resource(Trappable):
             raise RuntimeError(errmsg)
 
         self._make_arrival(p)
-        log.debug('process tries to acquire resource at %g' % self._sim.now)
+        #log.debug('process tries to acquire resource at %g' % self._sim.now)
         self._sem.wait()
         self._make_service(p)
-        log.debug('process obtains resource at %g' % self._sim.now)
+        #log.debug('process obtains resource at %g' % self._sim.now)
 
     def release(self):
         """Relinquish the resource acquired previously.
@@ -122,7 +122,7 @@ class Resource(Trappable):
             raise RuntimeError(errmsg)
 
         self._make_departure(p)
-        log.debug('process releases resource at %g' % self._sim.now)
+        #log.debug('process releases resource at %g' % self._sim.now)
         self._sem.signal()
 
     def num_in_system(self):
@@ -193,3 +193,10 @@ class Resource(Trappable):
             self.stats._sample("system_times", self._sim.now-ta)
             self.stats._sample("in_systems", (self._sim.now, len(self._arrivals)))
             self.stats._sample("in_services", (self._sim.now, len(self._services)))
+
+    def __enter__(self):
+        self.acquire()
+        return self
+    
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.release()

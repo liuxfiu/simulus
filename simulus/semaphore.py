@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-25 17:04:37 liux>
+# Last Update: Time-stamp: <2019-07-27 07:31:50 liux>
 ###############################################################
 
 from collections import deque
@@ -97,12 +97,12 @@ class Semaphore(Trappable):
             self.blocked.append(p)
             self.shuffled = False
             assert len(self.blocked) == -self.val
-            log.debug('process blocked on semaphore wait (val=%d)' % self.val)
+            #log.debug('process blocked on semaphore wait (val=%d)' % self.val)
             p.suspend()
         else:
             # nothing to be done; there are no waiting processes
             assert len(self.blocked) == 0
-            log.debug('no block on semaphore wait (val=%d)' % self.val)
+            #log.debug('no block on semaphore wait (val=%d)' % self.val)
 
     def signal(self):
         """Signaling a semphore increments its value; and if there are waiting
@@ -140,11 +140,12 @@ class Semaphore(Trappable):
                 p = self.blocked.pop()
             self.shuffled = False
                
-            log.debug('process unblocked on semaphore signal (val=%d)' % self.val)
+            #log.debug('process unblocked on semaphore signal (val=%d)' % self.val)
             p.acting_trappables.append(self)
             p.activate()
         else:
-            log.debug('no unblock on semaphore signal (val=%d)' % self.val)
+            #log.debug('no unblock on semaphore signal (val=%d)' % self.val)
+            pass
 
     # create an alias method
     trigger = signal
@@ -204,12 +205,12 @@ class Semaphore(Trappable):
             self.blocked.append(p)
             self.shuffled = False
             assert len(self.blocked) == -self.val
-            log.debug('process blocked on semaphore try-wait (val=%d)' % self.val)
+            #log.debug('process blocked on semaphore try-wait (val=%d)' % self.val)
             return True
         else:
             # nothing to be done; there are no waiting processes
             assert len(self.blocked) == 0
-            log.debug('no block on semaphore try-wait (val=%d)' % self.val)
+            #log.debug('no block on semaphore try-wait (val=%d)' % self.val)
             return False
 
     def _cancel_wait(self):
@@ -238,4 +239,4 @@ class Semaphore(Trappable):
         self.val += 1
         self.blocked.remove(p)
         self.shuffled = False
-        log.debug('try-wait cancelled for semaphore (val=%d)' % self.val)
+        #log.debug('try-wait cancelled for semaphore (val=%d)' % self.val)

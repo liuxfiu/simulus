@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-25 17:04:22 liux>
+# Last Update: Time-stamp: <2019-07-27 07:32:38 liux>
 ###############################################################
 
 from .trappable import Trappable
@@ -70,13 +70,13 @@ class Trap(Trappable):
             # when the trap is unset or set, suspend the process
             self.state = Trap.TRAP_SET
             self.blocked.append(p)
-            log.debug('process blocked on trap wait')
+            #log.debug('process blocked on trap wait')
             p.suspend()
         else:
             # nothing to be done when the trap is sprung; there are no
             # blocked processes
             assert len(self.blocked) == 0
-            log.debug('no block on trap wait')
+            #log.debug('no block on trap wait')
                 
     def trigger(self):
         """Triggering a trap would unblock all waiting processes."""
@@ -85,7 +85,7 @@ class Trap(Trappable):
             # no one to wake up when the trap is unset
             assert len(self.blocked) == 0
             self.state = Trap.TRAP_SPRUNG
-            log.debug('unset trap triggered')
+            #log.debug('unset trap triggered')
         elif self.state == Trap.TRAP_SPRUNG:
             # a trap can only be triggered at most once
             errmsg = "trigger() duplicate action"
@@ -95,7 +95,7 @@ class Trap(Trappable):
             # when the trap is set, there is at least one process
             # blocked by the trap
             self.state = Trap.TRAP_SPRUNG
-            log.debug('%d process(es) unblocked on triggered trap' % len(self.blocked))
+            #log.debug('%d process(es) unblocked on triggered trap' % len(self.blocked))
             assert len(self.blocked) > 0
             for p in self.blocked:
                 p.acting_trappables.append(self)
@@ -124,13 +124,13 @@ class Trap(Trappable):
             # when the trap is unset or set, suspend the process
             self.state = Trap.TRAP_SET
             self.blocked.append(p)
-            log.debug('process blocked on trap try-wait')
+            #log.debug('process blocked on trap try-wait')
             return True
         else:
             # nothing to be done when the trap is sprung; there are no
             # blocked processes
             assert len(self.blocked) == 0
-            log.debug('no block on trap try-wait')
+            #log.debug('no block on trap try-wait')
             return False
 
     def _cancel_wait(self):
@@ -156,4 +156,4 @@ class Trap(Trappable):
         self.blocked.remove(p)
         if len(self.blocked) == 0:
             self.state = Trap.TRAP_UNSET
-        log.debug('try-wait cancelled for trap')
+        #log.debug('try-wait cancelled for trap')

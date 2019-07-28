@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 9, 2019
-# Last Update: Time-stamp: <2019-07-25 19:22:06 liux>
+# Last Update: Time-stamp: <2019-07-27 07:26:41 liux>
 ###############################################################
 
 from collections import deque
@@ -202,8 +202,8 @@ class Mailbox(object):
             errmsg = "send(part=%r) out of range" % part
             log.error(errmsg)
             raise IndexError(errmsg)
-        log.debug('send message to part=%d with delay=%g from now=%g' %
-                  (part, delay, self._sim.now))
+        #log.debug('send message to part=%d with delay=%g from now=%g' %
+        #          (part, delay, self._sim.now))
         return self._sim.sched(self._mailbox_event, msg, part, offset=delay)
 
     def recv(self, part=0, isall=True):
@@ -249,14 +249,15 @@ class Mailbox(object):
         if self._parts[part].stats is not None:
             self._parts[part].stats._sample("retrievals", self._sim.now)
         if len(self._parts[part].msgbuf) == 0:
-            log.debug('receiver blocked from mailbox part=%d at %g' %
-                      (part, self._sim.now))
+            #log.debug('receiver blocked from mailbox part=%d at %g' %
+            #          (part, self._sim.now))
             self._parts[part].trap.wait()
-            log.debug('receiver unblocked from mailbox part=%d at %g' %
-                      (part, self._sim.now))
+            #log.debug('receiver unblocked from mailbox part=%d at %g' %
+            #          (part, self._sim.now))
         else:
-            log.debug('no receiver blocked from mailbox part=%d at %g' %
-                      (part, self._sim.now))
+            #log.debug('no receiver blocked from mailbox part=%d at %g' %
+            #          (part, self._sim.now))
+            pass
         return self.retrieve(part, isall)
     
     def receiver(self, part=0, isall=True):
@@ -279,23 +280,23 @@ class Mailbox(object):
                 if self._mbox._parts[self._part].stats is not None:
                     self._mbox._parts[self._part].stats._sample("retrievals", self._mbox._sim.now)
                 if len(self._mbox._parts[self._part].msgbuf) > 0:
-                    log.debug('no receiver blocked from try-wait for mailbox part=%d at %g' %
-                              (self._part, self._mbox._sim.now))
+                    #log.debug('no receiver blocked from try-wait for mailbox part=%d at %g' %
+                    #          (self._part, self._mbox._sim.now))
                     return False
-                log.debug('receiver blocked from try-wait for mailbox part=%d at %g' %
-                          (self._part, self._mbox._sim.now))
+                #log.debug('receiver blocked from try-wait for mailbox part=%d at %g' %
+                #          (self._part, self._mbox._sim.now))
                 return self._mbox._parts[self._part].trap._try_wait() # must be true
 
             def _commit_wait(self):
-                log.debug('receiver unblocked from try-wait for mailbox part=%d at %g' %
-                          (self._part, self._mbox._sim.now))
+                #log.debug('receiver unblocked from try-wait for mailbox part=%d at %g' %
+                #          (self._part, self._mbox._sim.now))
                 if self._mbox._parts[self._part].trap.state == Trap.TRAP_SET:
                     self._mbox._parts[self._part].trap._commit_wait()
                 self.retval = self._mbox.retrieve(self._part, self._isall)
 
             def _cancel_wait(self):
-                log.debug('receiver cancels try-wait for mailbox part=%d at %g' %
-                          (self._part, self._mbox._sim.now))
+                #log.debug('receiver cancels try-wait for mailbox part=%d at %g' %
+                #          (self._part, self._mbox._sim.now))
                 if self._mbox._parts[self._part].trap.state == Trap.TRAP_SET:
                     self._mbox._parts[self._part].trap._cancel_wait()
 

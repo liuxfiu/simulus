@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-25 17:07:51 liux>
+# Last Update: Time-stamp: <2019-07-27 07:35:59 liux>
 ###############################################################
 
 import random, uuid, time
@@ -138,7 +138,7 @@ class Simulator:
             log.error(errmsg)
             raise ValueError(errmsg)
             
-        log.debug('schedule event at time=%g from now=%g' % (time, self.now))
+        #log.debug('schedule event at time=%g from now=%g' % (time, self.now))
         self._runtime_scheduled_events += 1
         e = _DirectEvent(self, time, func, name, repeat_intv, args, kwargs)
         self._eventlist.insert(e)
@@ -167,9 +167,10 @@ class Simulator:
                 self._eventlist.cancel(o)
             except Exception:
                 # the event is not in the event list; that's OK
-                log.debug('cancel non-active event from now=%g' % self.now)
+                #log.debug('cancel non-active event from now=%g' % self.now)
+                pass
             else:
-                log.debug('cancel event at time=%g from now=%g' % (o.time, self.now))
+                #log.debug('cancel event at time=%g from now=%g' % (o.time, self.now))
                 self._runtime_cancelled_events += 1
         elif isinstance(o, _Process):
             self.kill(o)
@@ -225,11 +226,11 @@ class Simulator:
 
         try:
             self._eventlist.update(e)
-            log.debug('reschedule event to time=%g from now=%g' % (e.time, self.now))
+            #log.debug('reschedule event to time=%g from now=%g' % (e.time, self.now))
             return e
         except Exception:
             # the event already happened as it's not in the event list
-            log.debug('reschedule non-active event from now=%g' % self.now)
+            #log.debug('reschedule non-active event from now=%g' % self.now)
             return None
 
 
@@ -318,7 +319,7 @@ class Simulator:
             raise ValueError(errmsg)
         else: time = until
 
-        log.debug('schedule process event at time=%g from now=%g' % (time, self.now))
+        #log.debug('schedule process event at time=%g from now=%g' % (time, self.now))
         self._runtime_scheduled_events += 1
         self._runtime_initiated_processes += 1
         p = _Process(self, name, proc, args, kwargs, prio, prio_args)
@@ -363,13 +364,14 @@ class Simulator:
 
             if p.state != _Process.STATE_TERMINATED:
                 # if the process has not been terminated already
-                log.debug('kill process at time=%g' % self.now)
+                #log.debug('kill process at time=%g' % self.now)
                 self._runtime_cancelled_processes += 1
                 p.deactivate(_Process.STATE_TERMINATED)
                 p.trap.trigger()
             else:
                 # otherwise, it's already killed; we do nothing
-                log.debug('kill non-active process at time=%g' % self.now)
+                #log.debug('kill non-active process at time=%g' % self.now)
+                pass
         else:
             # kill oneself
             p = self.cur_process()
@@ -377,7 +379,7 @@ class Simulator:
                 errmsg = "kill() outside process context"
                 log.error(errmsg)
                 raise RuntimeError(errmsg)
-            log.debug('self-kill process at time=%g' % self.now)
+            #log.debug('self-kill process at time=%g' % self.now)
             self._runtime_cancelled_processes += 1
             p.terminate()
 
@@ -837,7 +839,7 @@ class Simulator:
             
             # make sure we schedule the timeout event, only once
             if e is None and time < infinite_time:
-                log.debug('schedule timeout event at time=%g from now=%g' % (time, self.now))
+                #log.debug('schedule timeout event at time=%g from now=%g' % (time, self.now))
                 self._runtime_scheduled_events += 1
                 e = _ProcessEvent(self, time, p, p.name)
                 self._eventlist.insert(e)
@@ -863,7 +865,7 @@ class Simulator:
             
         # cancel the future timeout event
         if e is not None and not timedout:
-            log.debug('cancel timeout event at time=%g from now=%g' % (e.time, self.now))
+            #log.debug('cancel timeout event at time=%g from now=%g' % (e.time, self.now))
             self._runtime_cancelled_events += 1
             self._eventlist.cancel(e)
 
@@ -1016,7 +1018,7 @@ class Simulator:
         
         e = self._eventlist.delete_min()
         self.now = e.time
-        log.debug("execute event at time %g" % self.now)
+        #log.debug("execute event at time %g" % self.now)
         self._runtime_executed_events += 1
 
         # trigger the trap if the event already has a trap; this is a
@@ -1030,7 +1032,7 @@ class Simulator:
             if e.repeat_intv is not None:
                 # note that a renewed event is not trappable
                 e = e.renew(e.time+e.repeat_intv)
-                log.debug('schedule repeated event at time=%g from now=%g' % (e.time, self.now))
+                #log.debug('schedule repeated event at time=%g from now=%g' % (e.time, self.now))
                 self._runtime_scheduled_events += 1
                 self._eventlist.insert(e)
             e.func(*e.args, **e.kwargs)
@@ -1046,7 +1048,7 @@ class Simulator:
             p = self._readyq.popleft()
             if p.state == _Process.STATE_RUNNING:
                 self._theproc = p
-                log.debug('context switch at time %g' % self.now)
+                #log.debug('context switch at time %g' % self.now)
                 self._runtime_process_contexts += 1
                 p.run()
             else:
