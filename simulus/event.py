@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-07-08 16:34:26 liux>
+# Last Update: Time-stamp: <2019-07-31 04:37:33 liux>
 ###############################################################
 
 """Simulation event types and event list."""
@@ -296,7 +296,7 @@ class _ProcessEvent(_Event):
 
     def __str__(self):
         return "%g: prc_evt=%s" % \
-            (self.time, self.name if self.name else self.proc.__proc__+'()')
+            (self.time, self.name if self.name else self.proc.func.__name__+'()')
 
 class _EventList_(object):
     """An event list sorts events in timestamp order.

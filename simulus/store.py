@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-27 07:28:46 liux>
+# Last Update: Time-stamp: <2019-07-30 04:01:08 liux>
 ###############################################################
 
 from collections import deque
@@ -126,16 +126,16 @@ class Store(object):
             for k, v in dc._attrs.items():
                 if k in ('puts', 'put_queues', 'gets', 'get_queues', 'levels'):
                     if not isinstance(v, TimeSeries):
-                        errmsg = "'%s' not timeseries in store" % k
+                        errmsg = "'%s' not timeseries in store datacollector" % k
                         log.error(errmsg)
                         raise TypeError(errmsg)
                 elif k in ('put_times', 'get_times'):
                     if not isinstance(v, DataSeries):
-                        errmsg = "'%s' not dataseries in store" % k
+                        errmsg = "'%s' not dataseries in store datacollector" % k
                         log.error(errmsg)
                         raise TypeError(errmsg)
                 else:
-                    errmsg = "'%s' unrecognized attribute in store" % k
+                    errmsg = "unrecognized attribute '%s' in store datacollector" % k
                     log.error(errmsg)
                     raise TypeError(errmsg)
             self.stats._sample("levels", (sim.init_time, initlevel))
@@ -478,7 +478,7 @@ class Store(object):
         self._p_arrivals[p] = (self._sim.now, amt)
         if obj is not None:
             if self._obj_decided and self._obj_store is None:
-                errmsg = "inconsistent use of objects in store"
+                errmsg = "store.put() or store.putter() inconsistent use of objects"
                 log.error(errmsg)
                 raise RuntimeError(errmsg)
             elif not self._obj_decided:
@@ -489,7 +489,7 @@ class Store(object):
                 self._obj_store.extend(obj)
         else:
             if self._obj_decided and self._obj_store is not None:
-                errmsg = "inconsistent use of objects in store"
+                errmsg = "store.put() or store.putter() inconsistent use of objects"
                 log.error(errmsg)
                 raise RuntimeError(errmsg)
             elif not self._obj_decided:

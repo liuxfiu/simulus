@@ -1,10 +1,10 @@
-list of all future events (num=5) at time 100 on simulator sim1:
+list of all future events (num=5) at time 100 on simulator 'sim1':
   105: dir_evt=handle() 
   125: dir_evt=handle() 
   145: dir_evt=handle() 
   165: dir_evt=handle() 
   185: dir_evt=handle() 
-list of all future events (num=7) at time -100 on simulator sim2:
+list of all future events (num=7) at time -100 on simulator 'sim2':
   -95: dir_evt=handle() 
   -65: dir_evt=handle() 
   -35: dir_evt=handle() 

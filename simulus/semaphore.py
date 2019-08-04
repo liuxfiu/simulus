@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 15, 2019
-# Last Update: Time-stamp: <2019-07-27 07:31:50 liux>
+# Last Update: Time-stamp: <2019-07-30 03:57:24 liux>
 ###############################################################
 
 from collections import deque
@@ -87,7 +87,7 @@ class Semaphore(Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            errmsg = "wait() outside process context"
+            errmsg = "semaphore.wait() outside process context"
             log.error(errmsg)
             raise RuntimeError(errmsg)
 

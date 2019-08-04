@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 9, 2019
-# Last Update: Time-stamp: <2019-07-27 07:26:41 liux>
+# Last Update: Time-stamp: <2019-07-30 18:34:21 liux>
 ###############################################################
 
 from collections import deque
@@ -9,9 +9,8 @@ from collections import deque
 from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
 from .trappable import Trappable
 from .trap import Trap
-from .sync import *
 
-__all__ = ["Mailbox", "send"]
+__all__ = ["Mailbox"]
 
 import logging
 log = logging.getLogger(__name__)
@@ -112,16 +111,16 @@ class Mailbox(object):
                     for k, v in dc._attrs.items():
                         if k in ('messages',):
                             if not isinstance(v, TimeSeries):
-                                errmsg = "'%s' not timeseries in mailbox" % k
+                                errmsg = "'%s' not timeseries in mailbox datacollector" % k
                                 log.error(errmsg)
                                 raise TypeError(errmsg)
                         elif k in ('arrivals', 'retrievals'):
                             if not isinstance(v, TimeMarks):
-                                errmsg = "'%s' not timemarks in mailbox" % k
+                                errmsg = "'%s' not timemarks in mailbox datacollector" % k
                                 log.error(errmsg)
                                 raise TypeError(errmsg)
                         else:
-                            errmsg = "'%s' unrecognized attribute in mailbox" % k
+                            errmsg = "unrecognized attribute '%s' in mailbox datacollector" % k
                             log.error(errmsg)
                             raise ValueError(errmsg)
 
@@ -147,16 +146,16 @@ class Mailbox(object):
         if nparts > 1:
             if dc is None: dc = [None]*nparts
             if not isinstance(dc, (list,tuple)):
-                errmsg = "mailbox(dc=%r) expects list/tuple of DataCollectors" % dc
+                errmsg = "mailbox(dc=%r) expects list/tuple of datacollectors" % dc
                 log.error(errmsg)
                 raise TypeError(errmsg)
             if nparts != len(dc):
-                errmsg = "mailbox(dc=%r) expects %d DataCollectors" % (dc, nparts)
+                errmsg = "mailbox(dc=%r) expects %d datacollectors" % (dc, nparts)
                 log.error(errmsg)
                 raise ValueError(errmsg)
         else:
             if dc is not None and not isinstance(dc, DataCollector):
-                errmsg = "mailbox(dc=%r): expects DataCollector" % dc
+                errmsg = "mailbox(dc=%r): expects datacollector" % dc
                 log.error(errmsg)
                 raise TypeError(errmsg)
             dc = [dc]
@@ -188,18 +187,18 @@ class Mailbox(object):
         """
         
         if msg is None:
-            errmsg = "send() message can't be None"
+            errmsg = "mailbox.send() message can't be None"
             log.error(errmsg)
             raise ValueError(errmsg)
         if delay is None:
             delay = self.min_delay
         else:
             if delay < self.min_delay:
-                errmsg = "send(delay=%r) requires delay no less than min_delay (%r)" % (delay, self.min_delay)
+                errmsg = "mailbox.send(delay=%r) requires delay no less than min_delay (%r)" % (delay, self.min_delay)
                 log.error(errmsg)
                 raise ValueError(errmsg)
         if part < 0 or part >= self.nparts:
-            errmsg = "send(part=%r) out of range" % part
+            errmsg = "mailbox.send(part=%r) out of range" % part
             log.error(errmsg)
             raise IndexError(errmsg)
         #log.debug('send message to part=%d with delay=%g from now=%g' %
@@ -238,11 +237,11 @@ class Mailbox(object):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            errmsg = "recv() outside process context"
+            errmsg = "mailbox.recv() outside process context"
             log.error(errmsg)
             raise RuntimeError(errmsg)
         if part < 0 or part >= self.nparts:
-            errmsg = "recv(part=%r) out of range" % part
+            errmsg = "mailbox.recv(part=%r) out of range" % part
             log.error(errmsg)
             raise IndexError(errmsg)
 
@@ -304,7 +303,7 @@ class Mailbox(object):
                 return self._mbox._parts[self._part].trap
             
         if part < 0 or part >= self.nparts:
-            errmsg = "receiver(part=%r) out of range" % part
+            errmsg = "mailbox.receiver(part=%r) out of range" % part
             log.error(errmsg)
             raise IndexError(errmsg)
         return _RecvTrappable(self, part, isall)
@@ -330,7 +329,7 @@ class Mailbox(object):
         """
         
         if part < 0 or part >= self.nparts:
-            errmsg = "add_callback(part=%r) out of range" % part
+            errmsg = "mailbox.add_callback(part=%r) out of range" % part
             log.error(errmsg)
             raise IndexError(errmsg)
         self._parts[part].callbacks.append((func, args, kwargs))
@@ -349,7 +348,7 @@ class Mailbox(object):
         """ 
         
         if part < 0 or part >= self.nparts:
-            errmsg = "peek(part=%r) out of range" % part
+            errmsg = "mailbox.peek(part=%r) out of range" % part
             log.error(errmsg)
             raise IndexError(errmsg)
         return self._parts[part].peek()
@@ -379,7 +378,7 @@ class Mailbox(object):
         """
        
         if part < 0 or part >= self.nparts:
-            errmsg = "retrieve(part=%r) out of range" % part
+            errmsg = "mailbox.retrieve(part=%r) out of range" % part
             log.error(errmsg)
             raise IndexError(errmsg)
         msgs = self._parts[part].retrieve(isall)
@@ -401,38 +400,3 @@ class Mailbox(object):
             self._parts[part].trap = Trap(self._sim) # renew the trap
         for func, args, kwargs in self._parts[part].callbacks:
             func(*args, **kwargs)
-
-def send(name, msg, delay=None, part=0):
-    """Send a messsage to a named mailbox.
-
-    Args:
-        name (string): the name of the mailbox to which the
-                message is expected to be delivered
-
-        msg (object): a message can be any Python object; but it
-                cannot be None
-        
-        delay (float): the delay after which the message is expected
-                to be delivered to the mailbox; if it is ignored, the
-                delay will be set to be the min_delay of the mailbox
-                (which is by default zero); if it is set, the delay
-                value must not be smaller than the min_delay of the
-                mailbox
-        
-        part (int): the partition number of the mailbox to which the
-                message is expected to be delivered; the default is
-                zero
-
-    Returns:
-        This method returns the future event scheduled for the message
-        delivery. It's an opaque object to the user, but the user can
-        use it to cancel or reschedule the event.
-
-    """
-
-    mb = _Sync_.get_mailbox(name)
-    if mb is None:
-        errmsg = "send(%s) to mailbox not found" % name
-        log.error(errmsg)
-        raise ValueError(errmsg)
-    return mb.send(msg, delay, part)

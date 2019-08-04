@@ -1,131 +1,470 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
-# Created on July 3, 2019
-# Last Update: Time-stamp: <2019-07-25 18:43:01 liux>
+# Created on July 28, 2019
+# Last Update: Time-stamp: <2019-08-04 09:33:26 liux>
 ###############################################################
 
-import random, uuid, argparse, sys
+from collections import defaultdict
+import multiprocessing as mp
+#from concurrent import futures
 
-__all__ = ["_Sync_", "sync"]
+from .simulus import *
+from .simulator import *
+
+__all__ = ["sync"]
 
 import logging
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
-class _Sync_(object):
-    # make sure we init only once (and only once)
-    initialized = False
+class sync(object):
+    """A synchronized group of simulators whose simulation clocks will
+    advance synchronously."""
 
-    @staticmethod
-    def init():
-        """This method is expected to be called by the simulator()
-        function. We use this opportunity to initialize everything
-        (making sure we do this only once)."""
-        if _Sync_.initialized: return
-        _Sync_.initialized = True
+    def __init__(self, sims, enable_smp=False, enable_spmd=False):
+        """Create a synchronized group of multiple simulators. 
 
-        # parse command line
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-s", "--seed", type=int, metavar='SEED', default=None,
-                            help="set global pseudo-random seed")
-        parser.add_argument("-v", "--verbose", action="store_true",
-                            help="enable verbose information")
-        parser.add_argument("-x", "--mpi", action="store_true",
-                            help="enable mpi for parallel simulation")
-        _Sync_.args, _ = parser.parse_known_args()
-        if _Sync_.args.seed is not None and \
-           (_Sync_.args.seed < 0 or _Sync_.args.seed >= 2**32):
-            errmsg = "--seed must be a 32-bit integer"
+        Bring all simulators in the group to synchrony; that is, the
+        simulation clocks of all the simulators in the group, from now
+        on, will be advanced synchronously in a coordinated fashion.
+
+        Args:
+            sims (list or tuple): a list of local simulators; the
+                simulators are identified either by their names or as
+                direct references to instances
+
+            enable_smp (bool): enable SMP (Symmetric Multi-Processing)
+                mode, in which case each local simulator will run as a
+                separate process, and communication between the
+                simulators will be facilitated through inter-process
+                communication (IPC) mechanisms; the default is False,
+                in which case all local simulators will run
+                sequentially within the same process
+
+            enable_spmd (bool): enable SPMD (Single Program Multiple
+                Data) mode, in which case multiple simulus instances,
+                potentially on distributed memory machines, will run
+                in parallel, where communication between the simulus
+                instances will be facilitated through the Message
+                Passing Interface (MPI); the default is False, in
+                which case the local simulus instance will run
+                standalone with all simulators running either
+                sequentially as one process (when enable_smp is
+                False), or in parallel as separate processes (when
+                enable_smp is True)
+
+        Returns: 
+
+            This function creates, initializes, and returns a
+            synchronized group. The simulators will first advance
+            their simulation clock (asynchronously) to the maximum
+            simulation time among all simulators (including both local
+            simulators and remote ones, if enable_spmd is True). When
+            the function returns, the listed simulators are bound to
+            the synchronized group.  That is, the simulation clocks of
+            the simulators will be advanced synchronously from now on:
+            all simulators will process events (including all messages
+            sent between the simulators) in the proper timestamp
+            order. (This is also known as the local causality
+            constraint in the parallel discrete-event simulation
+            literature.) 
+        
+        """
+
+        self._simulus = _Simulus()  # the simulus instance
+        self._activated = False  # keep it false until we are done with creating the sync group
+        self._smp = enable_smp
+        self._spmd = enable_spmd
+        if self._spmd and not self._simulus.args.mpi:
+            errmsg = "sync(enable_spmd=True) requires MPI support (use --mpi or -x command-line option)"
             log.error(errmsg)
             raise ValueError(errmsg)
 
-        # initialize mpi if needed
-        if _Sync_.args.mpi:
-            global MPI
-            from mpi4py import MPI
-            _Sync_.comm_rank = MPI.COMM_WORLD.Get_rank()
-            _Sync_.comm_size = MPI.COMM_WORLD.Get_size()
-            log.info("simulus running with mpi: comm_size=%d, comm_rank=%d" %
-                     (_Sync_.comm_size, _Sync_.comm_rank))
-        else:
-            _Sync_.comm_rank = 0
-            _Sync_.comm_size = 1
-            log.info("simulus running in sequential mode")
+        # the local simulators are provided either by names or as
+        # direct references
+        self._local_sims = {} # a map from names to simulator instances
+        self._all_sims = {} # a map from names to mpi ranks (identifying simulator's location)
+        now_max = minus_infinite_time # to find out the max simulation time of all simulators
+        if not isinstance(sims, (list, tuple)):
+            errmsg = "sync(sims=%r) expects a list of simulators" % sims
+            log.error(errmsg)
+            raise TypeError(errmsg)
+        for s in sims:
+            if isinstance(s, str):
+                # if simulator name is provided, turn it into instance
+                ss = self._simulus.get_simulator(s)
+                if ss is None:
+                    errmsg = "sync() expects a list of simulators, but '%s' is not" % s
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
+                else: s = ss
 
-        if _Sync_.args.seed is None:
-            old_state = random.getstate()
-
-            # if the global seed is not provided, we use the random
-            # module's default random sequence, assuming it's been
-            # seeded with the same seed (across different runs and
-            # across different ranks)
-            _Sync_.namespace = uuid.UUID(int=random.getrandbits(128))
-            log.info("simulus namespace %s" % _Sync_.namespace)
-
-            # now we get a random sequence for each rank: rank 0
-            # inherits the random module's default random sequence;
-            # other ranks each create one separate random sequence
-            # seeded from the default random sequence and the rank
-            # itself
-            if _Sync_.comm_rank > 0:
-                seed = random.randrange(2**32)
-                seed += _Sync_.comm_rank
-                if seed >= 2**32: seed -= 2**32
-                _Sync_.rng = random.Random(seed)
+            # the item must be a simulator instance
+            if isinstance(s, simulator):
+                if s._insync:
+                    # the simulator's already in a sync group
+                    if s._insync != self:
+                        errmsg = "sync() simulator '%s' belongs to another group" % s.name
+                    else:
+                        errmsg = "sync() duplicate simulator '%s' listed" % s.name
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
+                else:
+                    s._insync = self
+                    self._local_sims[s.name] = s
+                    self._all_sims[s.name] = self._simulus.comm_rank
+                    if s.now > now_max: now_max = s.now
             else:
-                _Sync_.rng = random.Random()
-                _Sync_.rng.setstate(old_state)
+                errmsg = "sync() expects a list of simulators, but %r is not" % s
+                log.error(errmsg)
+                raise ValueError(errmsg)
 
-            # we rolled the dice to get the namespace and (possibly)
-            # seeded the rng for the simulus module, but we don't want
-            # to advance the default random sequence of the random
-            # module; so we roll it back to the old state
-            random.setstate(old_state)
+        # a synchronized group cannot be empty
+        if len(self._local_sims) < 1:
+            errmsg = "sync() sims should not be empty"
+            log.error(errmsg)
+            raise ValueError(errmsg)
+
+        # if this is a global synchronization group (i.e., when
+        # enable_spmd is true), we need to learn about the remote
+        # simulators (e.g., the ranks at which they reside), and get
+        # the maximum simulation time of all simulators in the group
+        if self._spmd:
+            self._all_sims = self._simulus.allgather(self._all_sims)
+            now_max = self._simulus.allreduce(now_max, max)
+
+        # find all mailboxes attached to local simulators
+        self._lookahead = infinite_time
+        self._local_mboxes = {} # a map from mailbox names to mailbox instances
+        self._all_mboxes = {} # a map from mail name to corresponding simulator name, min_delay and num of partitions
+        for sname, sim in self._local_sims.items():
+            for mbname, mb in sim._mailboxes.items():
+                if mbname in self._local_mboxes:
+                    if sim == mb._sim:
+                        errmsg = "sync() duplicate mailbox named '%s' in simulator '%s'" % \
+                                 (mbname, sname)
+                    else:
+                        errmsg = "sync() duplicate mailbox name '%s' in simulators '%s' and '%s'" % \
+                                 (mbname, sname, mb._sim.name)
+                    log.error(errmag)
+                    raise ValueError(errmsg)
+                else:
+                    self._local_mboxes[mbname] = mb
+                    self._all_mboxes[mbname] = (sname, mb.min_delay, mb.nparts)
+                    if mb.min_delay < self._lookahead:
+                        self._lookahead = mb.min_delay
+                        
+        # if this is a global synchronization group (i.e., when
+        # enable_spmd is true) , we need to learn about the remote
+        # mailboxes and the min delays of all mailboxes
+        if self._spmd:
+            self._all_mboxes = self._simulus.allgather(self._all_mboxes)
+            self._lookahead = self._simulus.allreduce(self._lookahead, min)
+
+        # lookahead must be strictly positive
+        if self._lookahead <= 0:
+            errmsg = "sync() expects positive lookahead; " + \
+                   "check min_delay of mailboxes in simulators"
+            log.error(errmsg)
+            raise ValueError(errmsg)
+
+        # bring all local simulators' time to the max now
+        for sname, sim in self._local_sims.items():
+            if sim.now < now_max:
+                sim._run(now_max, True)
+        self.now = now_max
+
+        log.info("[r%d] creating sync (enable_smp=%r, enable_spmd=%r): now=%g, lookahead=%g" %
+                 (self._simulus.comm_rank, self._smp, self._spmd, self.now, self._lookahead))
+        for sname, simrank in self._all_sims.items():
+            log.info("[r%d] >> simulator '%s' => r%d" %
+                     (self._simulus.comm_rank, sname, simrank))
+        for mbname, (sname, mbdly, mbparts) in self._all_mboxes.items():
+            log.info("[r%d] >> mailbox '%s' => sim='%s', min_delay=%g, nparts=%d" %
+                     (self._simulus.comm_rank, mbname, sname, mbdly, mbparts))
+
+        # ready for next window
+        self._activated = True
+        self._remote_msgbuf = defaultdict(list) # a map from rank to list of remote messages
+        self._remote_future = infinite_time
+
+    def run(self, offset=None, until=None):
+        """Process events of all simulators in the synchronized group each in
+        timestamp order and advances the simulation time of all simulators 
+        synchronously.
+
+        Args:
+            offset (float): relative time from now until which each of
+                the simulators should advance its simulation time; if
+                provided, it must be a non-negative value
+
+            until (float): the absolute time until which each of the
+                simulators should advance its simulation time; if
+                provided, it must not be earlier than the current time
+
+        The user can specify either 'offset' or 'until', but not both;
+        if both 'offset' and 'until' are ignored, the simulator will
+        run as long as there are events on the event lists of the
+        simulators. Be careful, in this case, the simulation may run
+        forever as for some models there may always be future events.
+
+        Each simulator will process their events in timestamp order.
+        Synchronization is provided so that messages sent between the
+        simulators may not produce causality errors. When this method
+        returns, the simulation time of the simulators will advance to
+        the designated time, if either 'offset' or 'until' has been
+        specified.  All events with timestamps smaller than and equal
+        to the designated time will be processed. If neither 'offset'
+        nor 'until' is provided, the simulators will advance to the
+        time of the last processed event among all simulators.
+
+        If SPMD is enabled, at most one simulus instance (at rank 0)
+        is allowed to specify the time (using 'offset' or 'until').
+        All the other simulators must not specify the time.
+
+        """
+
+        # figure out the time, up to which all events will be processed
+        upper_specified = 1
+        if until == None and offset == None:
+            upper = infinite_time
+            upper_specified = 0
+        elif until != None and offset != None:
+            errmsg = "sync.run(until=%r, offset=%r) duplicate specification" % (until, offset)
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        elif offset != None:
+            if offset < 0:
+                errmsg = "sync.run(offset=%r) requires non-negative offset" % offset
+                log.error(errmsg)
+                raise ValueError(errmsg)
+            upper = self.now + offset
+        elif until < self.now:
+            errmsg = "sync.run(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        else: upper = until
+
+        if self._spmd:
+            # only rank 0 can specify the upper for global synchronization
+            if upper_specified > 0 and self._simulation.comm_rank > 0:
+                errmsg = "sync.run(enable_spmd=True) cannot specify 'offset' or 'until' except on rank 0"
+                log.error(errmsg)
+                raise ValueError(errmsg)
+
+            # we conduct a global synchronization to get the upper
+            # time for all
+            upper = self._simulus.allreduce(upper, min)
+            upper_specified = self._simulus.allreduce(upper_specified, max)
+
+        if self._smp:
+            # each simulator is a separate process
+            self._local_queues = {} # a map from simulator name to queue
+            for sname in self._local_sims:
+                self._local_queues[sname] = mp.Queue()
+            first_sname, *rest_snames = self._local_sims.keys()
+            rest_procs = [mp.Process(target=sync._run, args=(self, sname, upper, upper_specified)) \
+                          for sname in rest_snames]
+            for p in rest_procs: p.start()
+            self._run(first_sname, upper, upper_specified)
+            for p in rest_procs: p.join()
         else:
-            # if the global seed is provided, we first use it to
-            # create a random sequence so that we can get a namespace
-            # to be the same across diffferent ranks and across
-            # different ranks; and then we generate a random sequence
-            # for the ranks greater than zero
-            _Sync_.rng = random.Random(_Sync_.args.seed)
-            _Sync_.namespace = uuid.UUID(int=_Sync_.rng.getrandbits(128))
-            if _Sync_.comm_rank > 0:
-                seed = _Sync_.args.seed+_Sync_.comm_rank
-                if seed >= 2**32: seed -= 2**32
-                _Sync_.rng = random.Random(seed)
+            self._run(None, upper, upper_specified)
 
-        # a map from names to simulator instances
-        _Sync_.named_simulators = {}
+    def _run(self, sname, upper, upper_specified):
+        """Run the simulator named as sname, each in its separate process, if
+        SMP is enabled; or run all simulators (sname=None) if SMP is disabled."""
+ 
+        #log.debug("[r%d] sync._run(sname='%s', upper=%g, upper_specified=%d)" %
+        #          (self._simulus.comm_rank, sname[-4:] if sname else 'None', upper, upper_specified))
+        sims = list(self._local_sims.keys())
+        if sname: mysims = [sname]
+        else: mysims = sims
 
-        # a map from names to mailbox instances
-        _Sync_.named_mailboxs = {}
+        while True:
+            # figure out the start time of the next window (a.k.a.,
+            # lower bound on timestamp): it's the minimum of three
+            # values: (1) the timestamp of the first event plus the
+            # lookahead, (2) the smallest timestamp of messages to be
+            # sent to a remote simulator, and (3) the upper time
+            horizon = infinite_time
+            for s in mysims:
+                t = self._local_sims[s].peek()
+                if horizon > t: horizon = t
+            if horizon < infinite_time:
+                horizon += self._lookahead
+            if horizon > self._remote_future:
+                horizon = self._remote_future
+            if horizon > upper:
+                horizon = upper
 
-    @staticmethod
-    def get_simulator(name):
-        """Return the simulator with the given name, or None if no such
-        simulator can be found."""
-        return _Sync_.named_simulators[name]
+            # find the next window for all processes on all ranks
+            if self._smp and len(sims) > 1:
+                if sname != sims[0]:
+                    self._local_queues[sims[0]].put(horizon)
+                else:
+                    for s in sims[1:]:
+                        x = self._local_queues[sname].get()
+                        if x < horizon: horizon = x
+            if self._spmd and (sname is None or sname == sims[0]):
+                horizon = self._simulus.allreduce(horizon, min)
+            if self._smp and len(sims) > 1:
+                if sname != sims[0]:
+                    horizon = self._local_queues[sname].get()
+                else:
+                    for s in sims[1:]:
+                        self._local_queues[s].put(horizon)
+            #log.debug("[r%d] sync._run(sname='%s'): sync window [%g:%g]" %
+            #          (self._simulus.comm_rank, sname[-4:] if sname else 'None', self.now, horizon))
 
-    @staticmethod
-    def register_simulator(name, sim):
-        # may possibly replace an earlier simulator of the same name
-        _Sync_.named_simulators[name] = sim
-    
-    @staticmethod
-    def get_mailbox(name):
-        """Return the mailbox with the given name, or None if no such
-        mailbox can be found."""
-        return _Sync_.named_mailboxs[name]
+            # if there's no more event anywhere, and the upper was not
+            # specified, it means we can simply stop by now, the
+            # previous iteration has already updated the current time
+            if horizon == infinite_time and upper_specified == 0:
+                break
 
-    @staticmethod
-    def register_mailbox(name, mb):
-        # may possibly replace an earlier mailbox of the same name
-        _Sync_.named_mailboxs[name] = mb
+            # bring all local simulators' time to horizon
+            for s in mysims:
+                #log.debug("[r%d] sync._run(): simulator '%s' run [%g:%g]" %
+                #          (self._simulus.comm_rank, s[-4:], self._local_sims[s].now, horizon))
+                self._local_sims[s]._run(horizon, True)
+            self.now = horizon
 
-    @staticmethod
-    def unique_name():
-        u = uuid.UUID(int=_Sync_.rng.getrandbits(128))
-        return str(u)
+            # distribute remote messages:
+            
+            # first, gather remote messages from processes
+            if self._smp and len(sims) > 1:
+                if sname != sims[0]:
+                    #log.debug("[r%d] sync._run(sname='%s'): put %r to sim '%s'" %
+                    #          (self._simulus.comm_rank, sname[-4:], self._remote_msgbuf, sims[0][-4:]))
+                    self._local_queues[sims[0]].put(self._remote_msgbuf)
+                else:
+                    for s in sims[1:]:
+                        x = self._local_queues[sname].get()
+                        #log.debug("[r%d] sync._run(sname='%s'): get %r" %
+                        #          (self._simulus.comm_rank, sname[-4:], x))
+                        for r in x.keys():
+                            self._remote_msgbuf[r].extend(x[r])
+                        
+            # second, distribute via all to all
+            if sname is None or sname == sims[0]:
+                if self._spmd:
+                    incoming = self._simulus.alltoall(self._remote_msgbuf)
+                else:
+                    incoming = self._remote_msgbuf[0]
+                #log.debug("[r%d] sync._run(sname='%s'): all-to-all incoming=%r" %
+                #          (self._simulus.comm_rank, sname[-4:] if sname else 'None', incoming))
+            
+            # third, scatter messages to target processes
+            if self._smp and len(sims) > 1:
+                if sname != sims[0]:
+                    incoming = self._local_queues[sname].get()
+                    #log.debug("[r%d] sync._run(sname='%s'): get %r" %
+                    #              (self._simulus.comm_rank, sname[-4:], incoming))
+                else:
+                    pmsgs = defaultdict(list)
+                    for m in incoming:
+                        _, mbname, *_ = m
+                        s, *_ = self._all_mboxes[mbname]
+                        pmsgs[s].append(m)
+                    for s in sims[1:]:
+                        self._local_queues[s].put(pmsgs[s])
+                        #log.debug("[r%d] sync._run(sname='%s'): put %r to sim '%s'" %
+                        #          (self._simulus.comm_rank, sname[-4:], pmsgs[s], s[-4:]))
+                    incoming = pmsgs[sname]
+                    #log.debug("[r%d] sync._run(sname='%s'): keep %r" %
+                    #          (self._simulus.comm_rank, sname[-4:], incoming))
+            ##log.debug("[r%d] simulator '%s' collect messages: %r" %
+            ##          (self._simulus.comm_rank, sname[-4:] if sname else 'None', incoming))
+            
+            for until, mbname, part, msg in incoming:
+                mbox = self._local_mboxes[mbname]
+                mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
 
-def sync(sims, lookahead):
-    raise NotImplementedError("simulus.sync() not implemented")
+            # now we can remove the old messages and get ready for next window
+            self._remote_msgbuf.clear()
+            self._remote_future = infinite_time
+
+            if horizon >= upper: break
+
+    def send(self, sim, mbox_name, msg, delay=None, part=0):
+        """Send a messsage from a simulator to a named mailbox.
+
+        Args:
+            sim (simulator): the simulator from which the message will
+                be sent
+
+            name (str): the name of the mailbox to which the message
+                is expected to be delivered
+
+            msg (object): a message can be any Python object; however,
+                a message needs to be pickle-able as it may be
+                transferred between different simulators located on
+                separate processes (with different Python interpreter)
+                or even on different machines; a message also cannot
+                be None
+        
+            delay (float): the delay with which the message is
+                expected to be delivered to the mailbox; if it is
+                ignored, the delay will be set to be the min_delay of
+                the mailbox; if it is set, the delay value must not be
+                smaller than the min_delay of the mailbox
+        
+            part (int): the partition number of the mailbox to which
+                the message will be delivered; the default is zero
+
+        Returns:
+            This method returns nothing (as opposed to the mailbox
+            send() method); once sent, it's sent, as it cannot be
+            cancelled or rescheduled.
+
+        """
+
+        if not self._activated:
+            errmsg = "sync.send() called before the synchronized is created"
+            log.error(errmsg)
+            raise RuntimeError(errmsg)
+        if msg is None:
+            errmsg = "sync.send() message cannot be None"
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        
+        # it's local delivery, send to the target mailbox directly; a
+        # local delivery can be one of the two cases: 1) if SMP is
+        # disabled (that is, all local simulators are executed on the
+        # same process), the target mailbox belongs to one of the
+        # local simulators; or 2) if SMP is enabled (that is, all
+        # local simulators are executed on separate processes), the
+        # target mailbox belongs to the same sender simulator
+        if not self._smp and mbox_name in self._local_mboxes or \
+           mbox_name in sim._mailboxes:
+            mbox = self._local_mboxes[mbox_name]
+            until = sim.now+delay
+            mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
+            #log.debug("[r%d] sync.send(sim='%s') to local mailbox '%s': msg=%r, delay=%g, part=%d" %
+            #          (self._simulus.comm_rank, sim.name[-4:], mbox_name, msg, delay, part))
+        elif mbox_name in self._all_mboxes:
+            sname, min_delay, nparts = self._all_mboxes[mbox_name]
+            if delay is None:
+                delay = min_delay
+            elif delay < min_delay:
+                errmsg = "sync.send() requires delay (%g) no less than min_delay (%r)" % \
+                         (delay, min_delay)
+                log.error(errmsg)
+                raise ValueError(errmsg)
+            if part < 0 or part >= nparts:
+                errmsg = "sync.send(part=%r) out of range (target mailbox '%s' has %d partitions)" % \
+                         (part, mbox_name, nparts)
+                log.error(errmsg)
+                raise IndexError(errmsg)
+
+            until = sim.now+delay
+            self._remote_msgbuf[self._all_sims[sname]].append((until, mbox_name, part, msg))
+            if self._remote_future > until:
+                self._remote_future = until
+            #log.debug("[r%d] sync.send(sim='%s') to remote mailbox '%s' on simulator '%s': msg=%r, delay=%g, part=%d" %
+            #          (self._simulus.comm_rank, sim.name[-4:], mbox_name, sname[-4:], msg, delay, part))
+        else:
+            errmsg = "sync.send() to mailbox named '%s' not found" % mbox_name
+            log.error(errmsg)
+            raise ValueError(errmsg)

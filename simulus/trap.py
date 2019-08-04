@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 27, 2019
-# Last Update: Time-stamp: <2019-07-27 07:32:38 liux>
+# Last Update: Time-stamp: <2019-07-30 04:01:43 liux>
 ###############################################################
 
 from .trappable import Trappable
@@ -61,7 +61,7 @@ class Trap(Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            errmsg = "wait() outside process context"
+            errmsg = "trap.wait() outside process context"
             log.error(errmsg)
             raise RuntimeError(errmsg)
 
@@ -88,7 +88,7 @@ class Trap(Trappable):
             #log.debug('unset trap triggered')
         elif self.state == Trap.TRAP_SPRUNG:
             # a trap can only be triggered at most once
-            errmsg = "trigger() duplicate action"
+            errmsg = "trap.trigger() duplicate action"
             log.error(errmsg)
             raise RuntimeError(errmsg)
         else:

@@ -308,26 +308,65 @@ process.py:
     * _cancel_wait()
     * _true_trappable()
 
+***********
+simulus.py:
+***********
+
+* _Simulus:  # completely hidden
+    * instance -> __OneInstance
+    * __new__()
+    * __getattr__()
+    * __setattr__()
+    * __OneInstance
+    *   __init__()
+    *   args
+    *     verbose
+    *     mpi
+    *     seed
+    *   comm_rank
+    *   comm_size
+    *   namespace
+    *   rng
+    *   named_simulators
+    *   register_simulator()
+    *   get_simulator()
+    *   unique_name()
+    *   allgather()
+    *   allreduce()
+    *   alltoall()
+    
 ********
 sync.py:
 ********
 
-* _Sync_:  # completely hidden
-    * init()
-    * get_simulator()
-    * register_simulator()
-    * get_mailbox()
-    * register_mailbox()
-    * unique_name()
-    
-* sync()  # public interface
+* sync
+    * __init__()  # public interface
+    * _simulus
+    * _activated
+    * _smp
+    * _spmd
+    * _local_sims
+    * _all_sims
+    * _local_mboxes
+    * _all_mboxes
+    * _lookahead
+    * now
+    * _remote_msgbuf
+    * _remote_future
+    * _local_queues
+    * run()
+    * _run()
+    * send()
 
 *************
 simulator.py:
 *************
 
-* Simulator  # public interface
-    * __init__()
+* simulator
+    * __init__()  # public interface
+    * _simulus
+    * _insync
+    * _mailboxes
     * name
     * init_time
     * now
@@ -360,14 +399,13 @@ simulator.py:
     * mailbox()
     * wait()
     * run()
+    * _run()
     * step()
     * peek()
     * rng()
+    * _process_one_event()
     * show_calendar()
     * show_runtime_report()
-    * _process_one_event()
-
-* simulator()  # public interface
 
 ************
 resource.py:
@@ -479,5 +517,3 @@ mailbox.py
     * peek()
     * retrieve()
     * _mailbox_event()
-
-* send()  # public interface

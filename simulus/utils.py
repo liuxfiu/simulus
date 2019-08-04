@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-25 17:17:55 liux>
+# Last Update: Time-stamp: <2019-07-30 04:05:39 liux>
 ###############################################################
 
 import math, re
@@ -63,7 +63,7 @@ class TimeMarks(object):
         if self._n == 0:
             self._last = t
         elif t < self._last:
-            errmsg = "push(%g) earlier than last entry (%g)" % (t, self._last)
+            errmsg = "timemarks.push(%g) earlier than last entry (%g)" % (t, self._last)
             log.error(errmsg)
             raise ValueError(errmsg) 
         if self._data is not None:
@@ -83,7 +83,7 @@ class TimeMarks(object):
         if self._n > 0:
             if t is None: t = self._last
             elif t < self._last:
-                errmsg = "rate(t=%g) earlier than last entry (%g)" % (t, self._last)
+                errmsg = "timemarks.rate(t=%g) earlier than last entry (%g)" % (t, self._last)
                 log.error(errmsg)
                 raise ValueError(errmsg) 
             return self._n/t
@@ -156,7 +156,7 @@ class TimeSeries(object):
             self._last_t = t
             self._last_v = v
         elif t < self._last_t:
-            errmsg = "push(%r) earlier than last entry (%g)" % (d, self._last_t)
+            errmsg = "timeseries.push(%r) earlier than last entry (%g)" % (d, self._last_t)
             log.error(errmsg)
             raise ValueError(errmsg) 
 
@@ -179,7 +179,7 @@ class TimeSeries(object):
         if len(self._rs) > 0:
             if t is None: t = self._last_t
             elif t < self._last_t:
-                errmsg = "rate(t=%g) earlier than last entry (%g)" % (t, self._last_t)
+                errmsg = "timeseries.rate(t=%g) earlier than last entry (%g)" % (t, self._last_t)
                 log.error(errmsg)
                 raise ValueError(errmsg) 
             return len(self._rs)/t
@@ -217,7 +217,7 @@ class TimeSeries(object):
         if len(self._rs) > 0:
             if t is None: t = self._last_t
             if t < self._last_t:
-                errmsg = "avg_over_time(t=%g) earlier than last entry (%g)" % (t, self._last_t)
+                errmsg = "timeseries.avg_over_time(t=%g) earlier than last entry (%g)" % (t, self._last_t)
                 log.error(errmsg)
                 raise ValueError(errmsg)
             return (self._area+(t-self._last_t)*self._last_v)/t
@@ -231,6 +231,7 @@ class DataCollector(object):
         """Initialize the data collector. kwargs is the keyworded arguments;
         it's a dictionary containing all attributes allowed to be
         collected at the corresponding resource or facility."""
+        log.info("creating data collector:")
         self._attrs = kwargs
         patterns = {
             re.compile(r'timemarks\s*(\(\s*(all)?\s*\))?') : TimeMarks,
@@ -239,19 +240,23 @@ class DataCollector(object):
         }
         for k, v in self._attrs.items():
             if hasattr(self, k):
-                errmsg = "attribute %s already exists" % k
+                errmsg = "datacollector attribute %s already exists" % k
                 log.error(errmsg)
                 raise ValueError(errmsg)
             for pat, cls in patterns.items():
                 m = pat.match(v)
                 if m is not None:
-                    if m.group(2): v = cls(True)
-                    else: v = cls(False)
+                    if m.group(2):
+                        v = cls(True)
+                        log.info("  %s: %s(keep_data=True)" % (k, cls.__name__))
+                    else:
+                        v = cls(False)
+                        log.info("  %s: %s(keep_data=False)" % (k, cls.__name__))
                     setattr(self, k, v)
                     self._attrs[k] = v
                     break
             else:
-                errmsg = "%r has unknown value (%r)" % (k, v)
+                errmsg = "datacollector %r has unknown value (%r)" % (k, v)
                 log.error(errmsg)
                 raise ValueError(errmsg)
 

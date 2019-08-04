@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-27 20:26:49 liux>
+# Last Update: Time-stamp: <2019-07-30 03:57:00 liux>
 ###############################################################
 
 from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
@@ -64,22 +64,22 @@ class Resource(Trappable):
             for k, v in dc._attrs.items():
                 if k in ('in_systems', 'in_services', 'in_queues'):
                     if not isinstance(v, TimeSeries):
-                        errmsg = "'%s' not timeseries in resource" % k
+                        errmsg = "'%s' not timeseries in resource datacollector" % k
                         log.error(errmsg)
                         raise TypeError(errmsg)
                 elif k in ('arrivals', 'services', 'reneges', 'departs'):
                     if not isinstance(v, TimeMarks):
-                        errmsg = "'%s' not timemarks in resource" % k
+                        errmsg = "'%s' not timemarks in resource datacollector" % k
                         log.error(errmsg)
                         raise TypeError(errmsg)
                 elif k in ('inter_arrivals', 'queue_times', 'renege_times',
                            'service_times', 'system_times'):
                     if not isinstance(v, DataSeries):
-                        errmsg = "'%s' not dataseries in resource" % k
+                        errmsg = "'%s' not dataseries in resource datacollector" % k
                         log.error(errmsg)
                         raise TypeError(errmsg)
                 else:
-                    errmsg = "'%s' unrecognized attribute in resource" % k
+                    errmsg = "unrecognized attribute '%s' in resource datacollector" % k
                     log.error(errmsg)
                     raise TypeError(errmsg)
             self._last_arrival = sim.init_time
@@ -96,7 +96,7 @@ class Resource(Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            errmsg = "acquire() outside process context"
+            errmsg = "resource.acquire() outside process context"
             log.error(errmsg)
             raise RuntimeError(errmsg)
 
@@ -117,7 +117,7 @@ class Resource(Trappable):
         # we must be in the process context
         p = self._sim.cur_process()
         if p is None:
-            errmsg = "release() outside process context"
+            errmsg = "resource.release() outside process context"
             log.error(errmsg)
             raise RuntimeError(errmsg)
 
