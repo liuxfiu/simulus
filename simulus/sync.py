@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 28, 2019
-# Last Update: Time-stamp: <2019-08-04 09:33:26 liux>
+# Last Update: Time-stamp: <2019-08-06 07:21:43 liux>
 ###############################################################
 
 from collections import defaultdict
@@ -21,6 +21,8 @@ class sync(object):
     """A synchronized group of simulators whose simulation clocks will
     advance synchronously."""
 
+    _simulus = None
+    
     def __init__(self, sims, enable_smp=False, enable_spmd=False):
         """Create a synchronized group of multiple simulators. 
 
@@ -54,7 +56,6 @@ class sync(object):
                 enable_smp is True)
 
         Returns: 
-
             This function creates, initializes, and returns a
             synchronized group. The simulators will first advance
             their simulation clock (asynchronously) to the maximum
@@ -71,17 +72,21 @@ class sync(object):
         
         """
 
-        self._simulus = _Simulus()  # the simulus instance
+        # the simulus instance is a class variable
+        if not sync._simulus:
+            sync._simulus = _Simulus()
+
         self._activated = False  # keep it false until we are done with creating the sync group
         self._smp = enable_smp
         self._spmd = enable_spmd
-        if self._spmd and not self._simulus.args.mpi:
+        if self._spmd and not sync._simulus.args.mpi:
             errmsg = "sync(enable_spmd=True) requires MPI support (use --mpi or -x command-line option)"
             log.error(errmsg)
             raise ValueError(errmsg)
 
         # the local simulators are provided either by names or as
         # direct references
+        self._run_sims = None # if not None, it's the list of simulators running on this process
         self._local_sims = {} # a map from names to simulator instances
         self._all_sims = {} # a map from names to mpi ranks (identifying simulator's location)
         now_max = minus_infinite_time # to find out the max simulation time of all simulators
@@ -92,7 +97,7 @@ class sync(object):
         for s in sims:
             if isinstance(s, str):
                 # if simulator name is provided, turn it into instance
-                ss = self._simulus.get_simulator(s)
+                ss = sync._simulus.get_simulator(s)
                 if ss is None:
                     errmsg = "sync() expects a list of simulators, but '%s' is not" % s
                     log.error(errmsg)
@@ -112,7 +117,7 @@ class sync(object):
                 else:
                     s._insync = self
                     self._local_sims[s.name] = s
-                    self._all_sims[s.name] = self._simulus.comm_rank
+                    self._all_sims[s.name] = sync._simulus.comm_rank
                     if s.now > now_max: now_max = s.now
             else:
                 errmsg = "sync() expects a list of simulators, but %r is not" % s
@@ -130,8 +135,8 @@ class sync(object):
         # simulators (e.g., the ranks at which they reside), and get
         # the maximum simulation time of all simulators in the group
         if self._spmd:
-            self._all_sims = self._simulus.allgather(self._all_sims)
-            now_max = self._simulus.allreduce(now_max, max)
+            self._all_sims = sync._simulus.allgather(self._all_sims)
+            now_max = sync._simulus.allreduce(now_max, max)
 
         # find all mailboxes attached to local simulators
         self._lookahead = infinite_time
@@ -158,8 +163,8 @@ class sync(object):
         # enable_spmd is true) , we need to learn about the remote
         # mailboxes and the min delays of all mailboxes
         if self._spmd:
-            self._all_mboxes = self._simulus.allgather(self._all_mboxes)
-            self._lookahead = self._simulus.allreduce(self._lookahead, min)
+            self._all_mboxes = sync._simulus.allgather(self._all_mboxes)
+            self._lookahead = sync._simulus.allreduce(self._lookahead, min)
 
         # lookahead must be strictly positive
         if self._lookahead <= 0:
@@ -175,13 +180,13 @@ class sync(object):
         self.now = now_max
 
         log.info("[r%d] creating sync (enable_smp=%r, enable_spmd=%r): now=%g, lookahead=%g" %
-                 (self._simulus.comm_rank, self._smp, self._spmd, self.now, self._lookahead))
+                 (sync._simulus.comm_rank, self._smp, self._spmd, self.now, self._lookahead))
         for sname, simrank in self._all_sims.items():
             log.info("[r%d] >> simulator '%s' => r%d" %
-                     (self._simulus.comm_rank, sname, simrank))
+                     (sync._simulus.comm_rank, sname, simrank))
         for mbname, (sname, mbdly, mbparts) in self._all_mboxes.items():
             log.info("[r%d] >> mailbox '%s' => sim='%s', min_delay=%g, nparts=%d" %
-                     (self._simulus.comm_rank, mbname, sname, mbdly, mbparts))
+                     (sync._simulus.comm_rank, mbname, sname, mbdly, mbparts))
 
         # ready for next window
         self._activated = True
@@ -247,40 +252,52 @@ class sync(object):
 
         if self._spmd:
             # only rank 0 can specify the upper for global synchronization
-            if upper_specified > 0 and self._simulation.comm_rank > 0:
+            if upper_specified > 0 and sync._simulus.comm_rank > 0:
                 errmsg = "sync.run(enable_spmd=True) cannot specify 'offset' or 'until' except on rank 0"
                 log.error(errmsg)
                 raise ValueError(errmsg)
 
             # we conduct a global synchronization to get the upper
             # time for all
-            upper = self._simulus.allreduce(upper, min)
-            upper_specified = self._simulus.allreduce(upper_specified, max)
+            upper = sync._simulus.allreduce(upper, min)
+            upper_specified = sync._simulus.allreduce(upper_specified, max)
 
         if self._smp:
             # each simulator is a separate process
             self._local_queues = {} # a map from simulator name to queue
-            for sname in self._local_sims:
-                self._local_queues[sname] = mp.Queue()
-            first_sname, *rest_snames = self._local_sims.keys()
-            rest_procs = [mp.Process(target=sync._run, args=(self, sname, upper, upper_specified)) \
-                          for sname in rest_snames]
+
+            # divide the local simulators among the CPU/cores
+            sims = list(self._local_sims.keys())
+            cpus = mp.cpu_count()
+            k, m = divmod(len(sims), cpus)
+            partitions = list(filter(lambda x: len(x)>0, \
+                (sims[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(cpus))))
+            for pid in range(len(partitions)):
+                self._local_queues[pid] = mp.Queue()
+
+            rest_procs = [mp.Process(target=sync._run, args=(self, i, partitions, upper, upper_specified)) \
+                          for i in range(1, len(partitions))]
             for p in rest_procs: p.start()
-            self._run(first_sname, upper, upper_specified)
+            self._run(0, partitions, upper, upper_specified)
             for p in rest_procs: p.join()
         else:
-            self._run(None, upper, upper_specified)
+            self._run(0, [self._local_sims.keys()], upper, upper_specified)
 
-    def _run(self, sname, upper, upper_specified):
+    def _run(self, pid, partitions, upper, upper_specified):
         """Run the simulator named as sname, each in its separate process, if
         SMP is enabled; or run all simulators (sname=None) if SMP is disabled."""
  
-        #log.debug("[r%d] sync._run(sname='%s', upper=%g, upper_specified=%d)" %
-        #          (self._simulus.comm_rank, sname[-4:] if sname else 'None', upper, upper_specified))
-        sims = list(self._local_sims.keys())
-        if sname: mysims = [sname]
-        else: mysims = sims
+        log.info("[r%d] sync._run(pid=%d, partitions=%r, upper=%g, upper_specified=%d)" %
+                 (sync._simulus.comm_rank, pid, list(partitions), upper, upper_specified))
+        self._run_sims = partitions[pid]
 
+        if self._smp and pid>0:
+            # if smp is enabled and for all child processes, we need
+            # to clear up remote message buffer so that events don't
+            # get duplicated on different processes
+            self._remote_msgbuf.clear()
+            self._remote_future = infinite_time
+        
         while True:
             # figure out the start time of the next window (a.k.a.,
             # lower bound on timestamp): it's the minimum of three
@@ -288,7 +305,7 @@ class sync(object):
             # lookahead, (2) the smallest timestamp of messages to be
             # sent to a remote simulator, and (3) the upper time
             horizon = infinite_time
-            for s in mysims:
+            for s in self._run_sims:
                 t = self._local_sims[s].peek()
                 if horizon > t: horizon = t
             if horizon < infinite_time:
@@ -299,23 +316,23 @@ class sync(object):
                 horizon = upper
 
             # find the next window for all processes on all ranks
-            if self._smp and len(sims) > 1:
-                if sname != sims[0]:
-                    self._local_queues[sims[0]].put(horizon)
+            if self._smp and len(partitions) > 1:
+                if pid > 0:
+                    self._local_queues[0].put(horizon)
                 else:
-                    for s in sims[1:]:
-                        x = self._local_queues[sname].get()
+                    for s in range(1, len(partitions)):
+                        x = self._local_queues[0].get()
                         if x < horizon: horizon = x
-            if self._spmd and (sname is None or sname == sims[0]):
-                horizon = self._simulus.allreduce(horizon, min)
-            if self._smp and len(sims) > 1:
-                if sname != sims[0]:
-                    horizon = self._local_queues[sname].get()
+            if self._spmd and pid == 0:
+                horizon = sync._simulus.allreduce(horizon, min)
+            if self._smp and len(partitions) > 1:
+                if pid > 0:
+                    horizon = self._local_queues[pid].get()
                 else:
-                    for s in sims[1:]:
+                    for s in range(1, len(partitions)):
                         self._local_queues[s].put(horizon)
-            #log.debug("[r%d] sync._run(sname='%s'): sync window [%g:%g]" %
-            #          (self._simulus.comm_rank, sname[-4:] if sname else 'None', self.now, horizon))
+            #log.debug("[r%d] sync._run(pid='%d'): sync window [%g:%g]" %
+            #          (sync._simulus.comm_rank, pid, self.now, horizon))
 
             # if there's no more event anywhere, and the upper was not
             # specified, it means we can simply stop by now, the
@@ -324,68 +341,76 @@ class sync(object):
                 break
 
             # bring all local simulators' time to horizon
-            for s in mysims:
-                #log.debug("[r%d] sync._run(): simulator '%s' run [%g:%g]" %
-                #          (self._simulus.comm_rank, s[-4:], self._local_sims[s].now, horizon))
+            for s in self._run_sims:
+                #log.debug("[r%d] sync._run(): simulator '%s' execute [%g:%g]" %
+                #          (sync._simulus.comm_rank, s[-4:], self._local_sims[s].now, horizon))
                 self._local_sims[s]._run(horizon, True)
             self.now = horizon
 
             # distribute remote messages:
             
             # first, gather remote messages from processes
-            if self._smp and len(sims) > 1:
-                if sname != sims[0]:
-                    #log.debug("[r%d] sync._run(sname='%s'): put %r to sim '%s'" %
-                    #          (self._simulus.comm_rank, sname[-4:], self._remote_msgbuf, sims[0][-4:]))
-                    self._local_queues[sims[0]].put(self._remote_msgbuf)
+            if self._smp and len(partitions) > 1:
+                if pid > 0:
+                    #log.debug("[r%d] sync._run(pid=%d): put %r to pid 0" %
+                    #          (sync._simulus.comm_rank, pid, self._remote_msgbuf))
+                    self._local_queues[0].put(self._remote_msgbuf)
                 else:
-                    for s in sims[1:]:
-                        x = self._local_queues[sname].get()
-                        #log.debug("[r%d] sync._run(sname='%s'): get %r" %
-                        #          (self._simulus.comm_rank, sname[-4:], x))
+                    for s in range(1, len(partitions)):
+                        x = self._local_queues[0].get()
+                        #log.debug("[r%d] sync._run(pid=0): get %r" %
+                        #          (sync._simulus.comm_rank, x))
                         for r in x.keys():
                             self._remote_msgbuf[r].extend(x[r])
                         
             # second, distribute via all to all
-            if sname is None or sname == sims[0]:
+            if pid == 0:
                 if self._spmd:
-                    incoming = self._simulus.alltoall(self._remote_msgbuf)
+                    incoming = sync._simulus.alltoall(self._remote_msgbuf)
                 else:
                     incoming = self._remote_msgbuf[0]
-                #log.debug("[r%d] sync._run(sname='%s'): all-to-all incoming=%r" %
-                #          (self._simulus.comm_rank, sname[-4:] if sname else 'None', incoming))
+                #log.debug("[r%d] sync._run(pid=0): all-to-all incoming=%r" %
+                #          (sync._simulus.comm_rank, incoming))
             
             # third, scatter messages to target processes
-            if self._smp and len(sims) > 1:
-                if sname != sims[0]:
-                    incoming = self._local_queues[sname].get()
-                    #log.debug("[r%d] sync._run(sname='%s'): get %r" %
-                    #              (self._simulus.comm_rank, sname[-4:], incoming))
+            if self._smp and len(partitions) > 1:
+                if pid > 0:
+                    incoming = self._local_queues[pid].get()
+                    #log.debug("[r%d] sync._run(pid=%d): get %r" %
+                    #              (sync._simulus.comm_rank, pid, incoming))
                 else:
                     pmsgs = defaultdict(list)
-                    for m in incoming:
-                        _, mbname, *_ = m
-                        s, *_ = self._all_mboxes[mbname]
-                        pmsgs[s].append(m)
-                    for s in sims[1:]:
+                    if incoming is not None:
+                        for m in incoming:
+                            _, mbname, *_ = m # find destination mailbox name
+                            s, *_ = self._all_mboxes[mbname] # find destination simulator name
+                            # find destination pid
+                            for y in range(len(partitions)):
+                                if s in partitions[y]:
+                                    pmsgs[y].append(m)
+                                    break
+                            else: assert False
+                    for s in range(1, len(partitions)):
                         self._local_queues[s].put(pmsgs[s])
-                        #log.debug("[r%d] sync._run(sname='%s'): put %r to sim '%s'" %
-                        #          (self._simulus.comm_rank, sname[-4:], pmsgs[s], s[-4:]))
-                    incoming = pmsgs[sname]
-                    #log.debug("[r%d] sync._run(sname='%s'): keep %r" %
-                    #          (self._simulus.comm_rank, sname[-4:], incoming))
-            ##log.debug("[r%d] simulator '%s' collect messages: %r" %
-            ##          (self._simulus.comm_rank, sname[-4:] if sname else 'None', incoming))
+                        #log.debug("[r%d] sync._run(pid=%d): put %r to pid %d" %
+                        #          (sync._simulus.comm_rank, pid, pmsgs[s], s))
+                    incoming = pmsgs[0]
+                    #log.debug("[r%d] sync._run(pid=%d): keep %r" %
+                    #          (sync._simulus.comm_rank, pid, incoming))
             
-            for until, mbname, part, msg in incoming:
-                mbox = self._local_mboxes[mbname]
-                mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
+            if incoming is not None:
+                for until, mbname, part, msg in incoming:
+                    mbox = self._local_mboxes[mbname]
+                    mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
 
             # now we can remove the old messages and get ready for next window
             self._remote_msgbuf.clear()
             self._remote_future = infinite_time
 
             if horizon >= upper: break
+
+        # reset this to indicate that we are not in business (it's not running)
+        self._run_sims = None
 
     def send(self, sim, mbox_name, msg, delay=None, part=0):
         """Send a messsage from a simulator to a named mailbox.
@@ -424,11 +449,19 @@ class sync(object):
             errmsg = "sync.send() called before the synchronized is created"
             log.error(errmsg)
             raise RuntimeError(errmsg)
+        if sim is None or not isinstance(sim, simulator):
+            errmsg = "sync.send(sim=%r) requires a simulator" % sim
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        if sim.name not in self._local_sims:
+            errmsg = "sync.send(sim='%s') requires simulator be part of synchronized group" % sim.name
+            log.error(errmsg)
+            raise ValueError(errmsg)
         if msg is None:
             errmsg = "sync.send() message cannot be None"
             log.error(errmsg)
             raise ValueError(errmsg)
-        
+
         # it's local delivery, send to the target mailbox directly; a
         # local delivery can be one of the two cases: 1) if SMP is
         # disabled (that is, all local simulators are executed on the
@@ -442,7 +475,7 @@ class sync(object):
             until = sim.now+delay
             mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
             #log.debug("[r%d] sync.send(sim='%s') to local mailbox '%s': msg=%r, delay=%g, part=%d" %
-            #          (self._simulus.comm_rank, sim.name[-4:], mbox_name, msg, delay, part))
+            #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, msg, delay, part))
         elif mbox_name in self._all_mboxes:
             sname, min_delay, nparts = self._all_mboxes[mbox_name]
             if delay is None:
@@ -463,8 +496,26 @@ class sync(object):
             if self._remote_future > until:
                 self._remote_future = until
             #log.debug("[r%d] sync.send(sim='%s') to remote mailbox '%s' on simulator '%s': msg=%r, delay=%g, part=%d" %
-            #          (self._simulus.comm_rank, sim.name[-4:], mbox_name, sname[-4:], msg, delay, part))
+            #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, sname[-4:], msg, delay, part))
         else:
             errmsg = "sync.send() to mailbox named '%s' not found" % mbox_name
             log.error(errmsg)
             raise ValueError(errmsg)
+
+    @classmethod
+    def comm_rank(cls):
+        """Return the process rank of this simulus instance."""
+        
+        # the simulus instance is a class variable
+        if not sync._simulus:
+            sync._simulus = _Simulus()
+        return sync._simulus.comm_rank
+
+    @classmethod
+    def comm_size(cls):
+        """Return the total number processes."""
+        
+        # the simulus instance is a class variable
+        if not sync._simulus:
+            sync._simulus = _Simulus()
+        return sync._simulus.comm_size

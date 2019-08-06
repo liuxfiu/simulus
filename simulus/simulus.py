@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 3, 2019
-# Last Update: Time-stamp: <2019-08-04 03:48:18 liux>
+# Last Update: Time-stamp: <2019-08-05 20:27:45 liux>
 ###############################################################
 
 import array, copy
@@ -45,8 +45,8 @@ class _Simulus(object):
                                 help="enable debug information")
             parser.add_argument("-x", "--mpi", action="store_true",
                                 help="enable mpi for parallel simulation")
-
-            self.args, _ = parser.parse_known_args()
+            # filter out known arguments from sys.argv
+            self.args, sys.argv[1:] = parser.parse_known_args()
 
             # turn logging info on if we are in verbose mode
             if self.args.debug:
@@ -139,7 +139,7 @@ class _Simulus(object):
         def allgather(self, adict):
             """MPI allgather: every rank presents a dictionary 'adict' (it's a
             map from str to int); in the end, every rank gets a union of all 
-            dictionaries. Duplicate keys are handled as an error."""
+            dictionaries. Duplicate keys are treated as an error."""
             
             if self.comm_size > 1:
                 ret = MPI.COMM_WORLD.allgather(adict)
@@ -151,7 +151,7 @@ class _Simulus(object):
                                       (k, adict[k], other_adict(k))
                             log.error(errmsg)
                             raise RuntimeError(errmsg)
-                        adict.update(k, other_adict[k])
+                        adict[k] = other_adict[k]
             return adict
        
         def allreduce(self, val, op=min):
@@ -167,7 +167,7 @@ class _Simulus(object):
             gets a list of all objects destined to the rank."""
             
             if self.comm_size > 1:
-                ret = MPI.COMM_WORLD.alltoall([adict.get(i, None) for i in self.comm_size])
+                ret = MPI.COMM_WORLD.alltoall([adict.get(i, None) for i in range(self.comm_size)])
                 return [itm for s in ret if s is not None for itm in s] # flattens list of lists (or None)
             else:
                 return adict.get(0, None)
