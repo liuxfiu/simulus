@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 3, 2019
-# Last Update: Time-stamp: <2019-08-05 20:27:45 liux>
+# Last Update: Time-stamp: <2019-08-07 07:44:20 liux>
 ###############################################################
 
 import array, copy
@@ -154,6 +154,24 @@ class _Simulus(object):
                         adict[k] = other_adict[k]
             return adict
        
+        def gather(self, obj):
+            """MPI gather: every rank presents an object; in the end, rank 0 gets
+            a list of all the objects."""
+            
+            if self.comm_size > 1:
+                return MPI.COMM_WORLD.gather(obj)
+            else:
+                return [obj]
+
+        def bcast(self, obj):
+            """MPI broadcast: rank 0 presents an object and in the end all ranks
+            receives and returns the object."""
+            
+            if self.comm_size > 1:
+                return MPI.COMM_WORLD.bcast(obj, root=0)
+            else:
+                return obj
+
         def allreduce(self, val, op=min):
             """MPI allreduce: every rank presents a value; in the end, every rank
             gets a reduced value, min by default."""

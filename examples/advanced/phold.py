@@ -72,4 +72,6 @@ for idx in range(job_count):
 if id > 0: grp.run()
 else:
     grp.run(100)
-    #grp.show_runtime_report()
+    grp.show_runtime_report(prefix='>')
+    grp.run(100)
+    grp.show_runtime_report(prefix='>')

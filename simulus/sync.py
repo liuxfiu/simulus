@@ -1,12 +1,13 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 28, 2019
-# Last Update: Time-stamp: <2019-08-06 07:21:43 liux>
+# Last Update: Time-stamp: <2019-08-07 10:03:21 liux>
 ###############################################################
 
 from collections import defaultdict
 import multiprocessing as mp
 #from concurrent import futures
+import time, atexit
 
 from .simulus import *
 from .simulator import *
@@ -86,7 +87,6 @@ class sync(object):
 
         # the local simulators are provided either by names or as
         # direct references
-        self._run_sims = None # if not None, it's the list of simulators running on this process
         self._local_sims = {} # a map from names to simulator instances
         self._all_sims = {} # a map from names to mpi ranks (identifying simulator's location)
         now_max = minus_infinite_time # to find out the max simulation time of all simulators
@@ -192,6 +192,7 @@ class sync(object):
         self._activated = True
         self._remote_msgbuf = defaultdict(list) # a map from rank to list of remote messages
         self._remote_future = infinite_time
+        self._local_partitions = None
 
     def run(self, offset=None, until=None):
         """Process events of all simulators in the synchronized group each in
@@ -240,12 +241,12 @@ class sync(object):
             raise ValueError(errmsg)
         elif offset != None:
             if offset < 0:
-                errmsg = "sync.run(offset=%r) requires non-negative offset" % offset
+                errmsg = "sync.run(offset=%r) negative offset" % offset
                 log.error(errmsg)
                 raise ValueError(errmsg)
             upper = self.now + offset
         elif until < self.now:
-            errmsg = "sync.run(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            errmsg = "sync.run(until=%r) earlier than now (%r)" % (until, self.now)
             log.error(errmsg)
             raise ValueError(errmsg)
         else: upper = until
@@ -253,50 +254,94 @@ class sync(object):
         if self._spmd:
             # only rank 0 can specify the upper for global synchronization
             if upper_specified > 0 and sync._simulus.comm_rank > 0:
-                errmsg = "sync.run(enable_spmd=True) cannot specify 'offset' or 'until' except on rank 0"
+                errmsg = "sync.run() 'offset' or 'until' allowed only on rank 0"
                 log.error(errmsg)
                 raise ValueError(errmsg)
 
             # we conduct a global synchronization to get the upper
             # time for all
+            sync._simulus.bcast(0) # run command
             upper = sync._simulus.allreduce(upper, min)
             upper_specified = sync._simulus.allreduce(upper_specified, max)
 
-        if self._smp:
-            # each simulator is a separate process
-            self._local_queues = {} # a map from simulator name to queue
+        if self._local_partitions is None:
+            if self._smp:
+                # divide the local simulators among the CPU/cores
+                sims = list(self._local_sims.keys())
+                cpus = mp.cpu_count()
+                k, m = divmod(len(sims), cpus)
+                self._local_partitions = list(filter(lambda x: len(x)>0, \
+                        (sims[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(cpus))))
+                
+                self._local_queues = {} # a map from pid to queue
+                self._local_pids = {} # a map from simulator name to pid
+                for pid, snames in enumerate(self._local_partitions):
+                    self._local_queues[pid] = mp.Queue()
+                    for s in snames: self._local_pids[s] = pid
 
-            # divide the local simulators among the CPU/cores
-            sims = list(self._local_sims.keys())
-            cpus = mp.cpu_count()
-            k, m = divmod(len(sims), cpus)
-            partitions = list(filter(lambda x: len(x)>0, \
-                (sims[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(cpus))))
-            for pid in range(len(partitions)):
-                self._local_queues[pid] = mp.Queue()
+                # start the child processes
+                self._child_procs = [mp.Process(target=sync._child_run, args=(self, i)) \
+                                     for i in range(1, len(self._local_partitions))]
+                for p in self._child_procs: p.start()
+            else:
+                self._local_partitions = [self._local_sims.keys()]
+                self._local_pids = {} # a map from simulator name to pid
+                for s in self._local_sims.keys():
+                    self._local_pids[s] = 0
 
-            rest_procs = [mp.Process(target=sync._run, args=(self, i, partitions, upper, upper_specified)) \
-                          for i in range(1, len(partitions))]
-            for p in rest_procs: p.start()
-            self._run(0, partitions, upper, upper_specified)
-            for p in rest_procs: p.join()
-        else:
-            self._run(0, [self._local_sims.keys()], upper, upper_specified)
+        atexit.register(self._run_finish)
+        self._smp_run(0, upper, upper_specified)
 
-    def _run(self, pid, partitions, upper, upper_specified):
-        """Run the simulator named as sname, each in its separate process, if
-        SMP is enabled; or run all simulators (sname=None) if SMP is disabled."""
+        if self._simulus.comm_rank > 0:
+            while True:
+                cmd = self._simulus.bcast(None)
+                if cmd == 0: # run command
+                    upper = sync._simulus.allreduce(infinite_time, min)
+                    upper_specified = sync._simulus.allreduce(0, max)
+                    self._smp_run(0, upper, upper_specified)
+                elif cmd == 1: # report command
+                    self._smp_report(0)
+                else: # stop command
+                    assert cmd == 2
+                    break
+
+    def _child_run(self, pid):
+        """The child processes running in SMP mode."""
  
-        log.info("[r%d] sync._run(pid=%d, partitions=%r, upper=%g, upper_specified=%d)" %
-                 (sync._simulus.comm_rank, pid, list(partitions), upper, upper_specified))
-        self._run_sims = partitions[pid]
+        log.info("[r%d] sync._child_run(pid=%d): partitions=%r" %
+                 (sync._simulus.comm_rank, pid, self._local_partitions))
+        assert self._smp and pid>0
 
-        if self._smp and pid>0:
-            # if smp is enabled and for all child processes, we need
-            # to clear up remote message buffer so that events don't
-            # get duplicated on different processes
-            self._remote_msgbuf.clear()
-            self._remote_future = infinite_time
+        # if smp is enabled and for all child processes, we need
+        # to clear up remote message buffer so that events don't
+        # get duplicated on different processes
+        self._remote_msgbuf.clear()
+        self._remote_future = infinite_time
+
+        while True:
+            cmd = self._local_queues[pid].get()
+            log.info("[r%d] sync._child_run(pid=%d): recv command %d" %
+                     (sync._simulus.comm_rank, pid, cmd))
+            if cmd == 0: # run command
+                upper, upper_specified = self._local_queues[pid].get()
+                self._smp_run(pid, upper, upper_specified)
+            elif cmd == 1: # report command
+                self._smp_report(pid)
+            else: # stop command
+                assert cmd == 2
+                break
+
+    def _smp_run(self, pid, upper, upper_specified):
+        """Run simulators in separate processes."""
+        
+        log.info("[r%d] sync._smp_run(pid=%d): begins with upper=%g, upper_specified=%r" %
+                 (sync._simulus.comm_rank, pid, upper, upper_specified))
+        run_sims = self._local_partitions[pid]
+                
+        if pid == 0:
+            for s in range(1, len(self._local_partitions)):
+                self._local_queues[s].put(0) # run command
+                self._local_queues[s].put((upper, upper_specified))
         
         while True:
             # figure out the start time of the next window (a.k.a.,
@@ -305,7 +350,7 @@ class sync(object):
             # lookahead, (2) the smallest timestamp of messages to be
             # sent to a remote simulator, and (3) the upper time
             horizon = infinite_time
-            for s in self._run_sims:
+            for s in run_sims:
                 t = self._local_sims[s].peek()
                 if horizon > t: horizon = t
             if horizon < infinite_time:
@@ -316,32 +361,33 @@ class sync(object):
                 horizon = upper
 
             # find the next window for all processes on all ranks
-            if self._smp and len(partitions) > 1:
+            if len(self._local_partitions) > 1:
                 if pid > 0:
                     self._local_queues[0].put(horizon)
                 else:
-                    for s in range(1, len(partitions)):
+                    for s in range(1, len(self._local_partitions)):
                         x = self._local_queues[0].get()
                         if x < horizon: horizon = x
             if self._spmd and pid == 0:
                 horizon = sync._simulus.allreduce(horizon, min)
-            if self._smp and len(partitions) > 1:
+            if len(self._local_partitions) > 1:
                 if pid > 0:
                     horizon = self._local_queues[pid].get()
                 else:
-                    for s in range(1, len(partitions)):
+                    for s in range(1, len(self._local_partitions)):
                         self._local_queues[s].put(horizon)
             #log.debug("[r%d] sync._run(pid='%d'): sync window [%g:%g]" %
             #          (sync._simulus.comm_rank, pid, self.now, horizon))
 
             # if there's no more event anywhere, and the upper was not
             # specified, it means we can simply stop by now, the
-            # previous iteration has already updated the current time
+            # previous iteration should have updated the current time
+            # to the horizon for the last event
             if horizon == infinite_time and upper_specified == 0:
                 break
 
             # bring all local simulators' time to horizon
-            for s in self._run_sims:
+            for s in run_sims:
                 #log.debug("[r%d] sync._run(): simulator '%s' execute [%g:%g]" %
                 #          (sync._simulus.comm_rank, s[-4:], self._local_sims[s].now, horizon))
                 self._local_sims[s]._run(horizon, True)
@@ -350,13 +396,13 @@ class sync(object):
             # distribute remote messages:
             
             # first, gather remote messages from processes
-            if self._smp and len(partitions) > 1:
+            if len(self._local_partitions) > 1:
                 if pid > 0:
                     #log.debug("[r%d] sync._run(pid=%d): put %r to pid 0" %
                     #          (sync._simulus.comm_rank, pid, self._remote_msgbuf))
                     self._local_queues[0].put(self._remote_msgbuf)
                 else:
-                    for s in range(1, len(partitions)):
+                    for s in range(1, len(self._local_partitions)):
                         x = self._local_queues[0].get()
                         #log.debug("[r%d] sync._run(pid=0): get %r" %
                         #          (sync._simulus.comm_rank, x))
@@ -373,7 +419,7 @@ class sync(object):
                 #          (sync._simulus.comm_rank, incoming))
             
             # third, scatter messages to target processes
-            if self._smp and len(partitions) > 1:
+            if len(self._local_partitions) > 1:
                 if pid > 0:
                     incoming = self._local_queues[pid].get()
                     #log.debug("[r%d] sync._run(pid=%d): get %r" %
@@ -385,12 +431,8 @@ class sync(object):
                             _, mbname, *_ = m # find destination mailbox name
                             s, *_ = self._all_mboxes[mbname] # find destination simulator name
                             # find destination pid
-                            for y in range(len(partitions)):
-                                if s in partitions[y]:
-                                    pmsgs[y].append(m)
-                                    break
-                            else: assert False
-                    for s in range(1, len(partitions)):
+                            pmsgs[self._local_pids[s]].append(m)
+                    for s in range(1, len(self._local_partitions)):
                         self._local_queues[s].put(pmsgs[s])
                         #log.debug("[r%d] sync._run(pid=%d): put %r to pid %d" %
                         #          (sync._simulus.comm_rank, pid, pmsgs[s], s))
@@ -409,8 +451,19 @@ class sync(object):
 
             if horizon >= upper: break
 
-        # reset this to indicate that we are not in business (it's not running)
-        self._run_sims = None
+        log.info("[r%d] sync._smp_run(pid=%d): finishes with upper=%g, upper_specified=%r" %
+                 (sync._simulus.comm_rank, pid, upper, upper_specified))
+
+    def _run_finish(self):
+        log.info("[r%d] sync._run_finish() at exit" % sync._simulus.comm_rank)
+
+        if self._simulus.comm_rank ==0:
+            self._simulus.bcast(2) # stop command
+
+        if len(self._local_partitions) > 1:
+            for s in range(1, len(self._local_partitions)):
+                self._local_queues[s].put(2) # stop command
+            for p in self._child_procs: p.join()
 
     def send(self, sim, mbox_name, msg, delay=None, part=0):
         """Send a messsage from a simulator to a named mailbox.
@@ -454,7 +507,7 @@ class sync(object):
             log.error(errmsg)
             raise ValueError(errmsg)
         if sim.name not in self._local_sims:
-            errmsg = "sync.send(sim='%s') requires simulator be part of synchronized group" % sim.name
+            errmsg = "sync.send(sim='%s') simulator not in synchronized group" % sim.name
             log.error(errmsg)
             raise ValueError(errmsg)
         if msg is None:
@@ -481,7 +534,7 @@ class sync(object):
             if delay is None:
                 delay = min_delay
             elif delay < min_delay:
-                errmsg = "sync.send() requires delay (%g) no less than min_delay (%r)" % \
+                errmsg = "sync.send() delay (%g) less than min_delay (%r)" % \
                          (delay, min_delay)
                 log.error(errmsg)
                 raise ValueError(errmsg)
@@ -519,3 +572,114 @@ class sync(object):
         if not sync._simulus:
             sync._simulus = _Simulus()
         return sync._simulus.comm_size
+
+    def show_runtime_report(self, show_partition=True, prefix=''):
+        """Print a report on the runtime performance of running the
+        synchronized group. 
+
+        Args:
+            show_partition (bool): if it's True (the default), the
+                print-out report also contains the processor
+                assignment of the simulators
+
+            prefix (str): all print-out lines will be prefixed by this
+                string (the default is empty); this would help if one
+                wants to find the report in a large amount of output
+
+        """
+
+        if self._spmd and sync._simulus.comm_rank > 0:
+            errmsg = "sync.show_runtime_report() allowed only on rank 0"
+            log.error(errmsg)
+            raise ValueError(errmsg)
+
+        if self._local_partitions is None:
+            errmsg = "sync.show_runtime_report() before sync.run()"
+            log.error(errmsg)
+            raise ValueError(errmsg)
+
+        if self._spmd:
+            cmd = sync._simulus.bcast(1) # report command
+        self._smp_report(0, show_partition, prefix)
+
+    def _smp_report(self, pid, show_partition=None, prefix=None):
+        """Collect statistics and report them."""
+
+        if pid == 0:
+            for s in range(1, len(self._local_partitions)):
+                self._local_queues[s].put(1) # report command
+        
+        t1 = time.time()
+        run_sims = self._local_partitions[pid]
+        sync_rt = {
+            "start_clock": time.time(),
+            "sims": self._local_pids.copy(),
+            "scheduled_events": 0,
+            "cancelled_events": 0,
+            "executed_events": 0,
+            "initiated_processes": 0,
+            "cancelled_processes": 0,
+            "process_contexts": 0,
+            "terminated_processes": 0,
+        }
+        for s in run_sims:
+            rt = self._local_sims[s]._runtime
+            if rt["start_clock"] < sync_rt["start_clock"]:
+                sync_rt["start_clock"] = rt["start_clock"]
+            sync_rt["scheduled_events"] += rt["scheduled_events"]
+            sync_rt["cancelled_events"] += rt["cancelled_events"]
+            sync_rt["executed_events"] += rt["executed_events"]
+            sync_rt["initiated_processes"] += rt["initiated_processes"]
+            sync_rt["cancelled_processes"] += rt["cancelled_processes"]
+            sync_rt["process_contexts"] += rt["process_contexts"]
+            sync_rt["terminated_processes"] += rt["terminated_processes"]
+            
+        if len(self._local_partitions) > 1:
+            if pid > 0:
+                self._local_queues[0].put(sync_rt)
+            else:
+                for s in range(1, len(self._local_partitions)):
+                    rt = self._local_queues[0].get()
+                    if rt["start_clock"] < sync_rt["start_clock"]:
+                        sync_rt["start_clock"] = rt["start_clock"]
+                    sync_rt["scheduled_events"] += rt["scheduled_events"]
+                    sync_rt["cancelled_events"] += rt["cancelled_events"]
+                    sync_rt["executed_events"] += rt["executed_events"]
+                    sync_rt["initiated_processes"] += rt["initiated_processes"]
+                    sync_rt["cancelled_processes"] += rt["cancelled_processes"]
+                    sync_rt["process_contexts"] += rt["process_contexts"]
+                    sync_rt["terminated_processes"] += rt["terminated_processes"]
+
+        if pid == 0 and self._spmd:
+            all_rts = sync._simulus.gather(sync_rt)
+            if self._simulus.comm_rank == 0:
+                sync_rt = all_rts[0]
+                for rt in all_rts[1:]:
+                    if rt["start_clock"] < sync_rt["start_clock"]:
+                        sync_rt["start_clock"] = rt["start_clock"]
+                    sync_rt["sims"].update(rt["sims"])
+                    sync_rt["scheduled_events"] += rt["scheduled_events"]
+                    sync_rt["cancelled_events"] += rt["cancelled_events"]
+                    sync_rt["executed_events"] += rt["executed_events"]
+                    sync_rt["initiated_processes"] += rt["initiated_processes"]
+                    sync_rt["cancelled_processes"] += rt["cancelled_processes"]
+                    sync_rt["process_contexts"] += rt["process_contexts"]
+                    sync_rt["terminated_processes"] += rt["terminated_processes"]
+
+        if pid == 0 and self._simulus.comm_rank == 0:
+            print('%s*********** sync group performance metrics ***********' % prefix)
+            if show_partition:
+                print('%ssimulators:' % prefix)
+                for sname, simrank in self._all_sims.items():
+                    print("%s  '%s' on rank %d proc %d" % (prefix, sname, simrank, sync_rt["sims"][sname]))
+            t = t1-sync_rt["start_clock"]
+            print('%sexecution time: %g' % (prefix,t))
+            print('%sscheduled events: %d (rate=%g)' %
+                  (prefix, sync_rt["scheduled_events"], sync_rt["scheduled_events"]/t))
+            print('%sexecuted events: %d (rate=%g)' %
+                  (prefix, sync_rt["executed_events"], sync_rt["executed_events"]/t))
+            print('%scancelled events: %d' % (prefix, sync_rt["cancelled_events"]))
+            print('%screated processes: %d' % (prefix, sync_rt["initiated_processes"]))
+            print('%sfinished processes: %d' % (prefix, sync_rt["terminated_processes"]))
+            print('%scancelled processes: %d' % (prefix, sync_rt["cancelled_processes"]))
+            print('%sprocess context switches: %d' % (prefix, sync_rt["process_contexts"]))

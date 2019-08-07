@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-08-04 09:34:36 liux>
+# Last Update: Time-stamp: <2019-08-07 10:07:34 liux>
 ###############################################################
 
 import random, uuid, time
@@ -89,15 +89,16 @@ class simulator:
         #self._fast_rng = None
 
         # performance statistics
-        self._runtime_start_clock = time.time()
-        self._runtime_scheduled_events = 0
-        self._runtime_cancelled_events = 0 
-        self._runtime_executed_events = 0
-        self._runtime_initiated_processes = 0
-        self._runtime_cancelled_processes = 0
-        self._runtime_process_contexts = 0
-        self._runtime_terminated_processes = 0
-
+        self._runtime = {
+            "start_clock": time.time(),
+            "scheduled_events": 0,
+            "cancelled_events": 0,
+            "executed_events": 0,
+            "initiated_processes": 0,
+            "cancelled_processes": 0,
+            "process_contexts": 0,
+            "terminated_processes": 0,
+        }
 
     ###################################
     # direct event scheduling methods #
@@ -156,24 +157,24 @@ class simulator:
             raise ValueError(errmsg)
         elif offset != None:
             if offset < 0:
-                errmsg = "simulator.sched(offset=%r) requires non-negative offset" % offset
+                errmsg = "simulator.sched(offset=%r) negative offset" % offset
                 log.error(errmsg)
                 raise ValueError(errmsg)
             time = self.now + offset
         elif until < self.now:
-            errmsg = "simulator.sched(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            errmsg = "simulator.sched(until=%r) earlier than now (%r)" % (until, self.now)
             log.error(errmsg)
             raise ValueError(errmsg)
         else: time = until
 
         if repeat_intv is not None and repeat_intv <= 0:
-            errmsg = "simulator.sched(repeat_intv=%r) requires positive repeat interval" % repeat_intv
+            errmsg = "simulator.sched(repeat_intv=%r) non-positive repeat interval" % repeat_intv
             log.error(errmsg)
             raise ValueError(errmsg)
             
         #log.debug("[r%d] simulator '%s' schedule event at time=%g from now=%g" %
         #          (self._simulus.comm_rank, self.name[-4:], time, self.now))
-        self._runtime_scheduled_events += 1
+        self._runtime["scheduled_events"] += 1
         e = _DirectEvent(self, time, func, name, repeat_intv, args, kwargs)
         self._eventlist.insert(e)
         return e
@@ -207,7 +208,7 @@ class simulator:
             else:
                 #log.debug("[r%d] simulator '%s' cancel event at time=%g from now=%g" %
                 #          (self._simulus.comm_rank, self.name[-4:], o.time, self.now))
-                self._runtime_cancelled_events += 1
+                self._runtime["cancelled_events"] += 1
         elif isinstance(o, _Process):
             self.kill(o)
         else:
@@ -250,12 +251,12 @@ class simulator:
             raise ValueError(errmsg)
         elif offset != None:
             if offset < 0:
-                errmsg = "simulator.resched(offset=%r) requires non-negative offset" % offset
+                errmsg = "simulator.resched(offset=%r) negative offset" % offset
                 log.error(errmsg)
                 raise ValueError(errmsg)
             e.time = self.now + offset
         elif until < self.now:
-            errmsg = "simulator.resched(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            errmsg = "simulator.resched(until=%r) earlier than now (%r)" % (until, self.now)
             log.error(errmsg)
             raise ValueError(errmsg)
         else: e.time = until
@@ -347,20 +348,20 @@ class simulator:
             raise ValueError(errmsg)
         elif offset != None:
             if offset < 0:
-                errmsg = "simulator.process(offset=%r) requires non-negative offset" % offset
+                errmsg = "simulator.process(offset=%r) negative offset" % offset
                 log.error(errmsg)
                 raise ValueError(errmsg)
             time = self.now + offset
         elif until < self.now:
-            errmsg = "simulator.process(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            errmsg = "simulator.process(until=%r) earlier than now (%r)" % (until, self.now)
             log.error(errmsg)
             raise ValueError(errmsg)
         else: time = until
 
         #log.debug("[r%d] simulator '%s' schedule process event at time=%g from now=%g" %
         #          (self._simulus.comm_rank, self.name[-4:], time, self.now))
-        self._runtime_scheduled_events += 1
-        self._runtime_initiated_processes += 1
+        self._runtime["scheduled_events"] += 1
+        self._runtime["initiated_processes"] += 1
         p = _Process(self, name, proc, args, kwargs, prio, prio_args)
         e = _ProcessEvent(self, time, p, name)
         self._eventlist.insert(e)
@@ -405,7 +406,7 @@ class simulator:
                 # if the process has not been terminated already
                 #log.debug("[r%d] simulator '%s' kill process at time=%g" %
                 #          (self._simulus.comm_rank, self.name[-4:], self.now))
-                self._runtime_cancelled_processes += 1
+                self._runtime["cancelled_processes"] += 1
                 p.deactivate(_Process.STATE_TERMINATED)
                 p.trap.trigger()
             else:
@@ -422,7 +423,7 @@ class simulator:
                 raise RuntimeError(errmsg)
             #log.debug("[r%d] simulator '%s' self-kill process at time=%g" %
             #          (self._simulus.comm_rank, self.name[-4:], self.now))
-            self._runtime_cancelled_processes += 1
+            self._runtime["cancelled_processes"] += 1
             p.terminate()
 
     def get_priority(self, p=None):
@@ -531,12 +532,12 @@ class simulator:
             raise ValueError(errmsg)
         elif offset != None:
             if offset < 0:
-                errmsg = "simulator.sleep(offset=%r) requires non-negative offset" % offset
+                errmsg = "simulator.sleep(offset=%r) negative offset" % offset
                 log.error(errmsg)
                 raise ValueError(errmsg)
             time = self.now + offset
         elif until < self.now:
-            errmsg = "simulator.sleep(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            errmsg = "simulator.sleep(until=%r) earlier than now (%r)" % (until, self.now)
             log.error(errmsg)
             raise ValueError(errmsg)
         else: time = until
@@ -575,7 +576,7 @@ class simulator:
         """
 
         if initval < 0:
-            errmsg = "simulator.semaphore(initval=%r) requires non-negative init value" % initval
+            errmsg = "simulator.semaphore(initval=%r) negative init value" % initval
             log.error(errmsg)
             raise ValueError(errmsg)
         if qdis < QDIS.FIFO or qdis > QDIS.PRIORITY:
@@ -622,11 +623,11 @@ class simulator:
         """
 
         if not isinstance(capacity, int):
-            errmsg = "simulator.resource(capacity=%r) requires integer capacity" % capacity
+            errmsg = "simulator.resource(capacity=%r) non-integer capacity" % capacity
             log.error(errmsg)
             raise TypeError(errmsg)
         if capacity <= 0:
-            errmsg = "simulator.resource(capacity=%r) requires positive capacity" % capacity
+            errmsg = "simulator.resource(capacity=%r) non-positive capacity" % capacity
             log.error(errmsg)
             raise ValueError(errmsg)
         if qdis < QDIS.FIFO or qdis > QDIS.PRIORITY:
@@ -683,7 +684,7 @@ class simulator:
         """
 
         if capacity <= 0:
-            errmsg = "simulator.store(capacity=%r) requires positive capacity" % capacity
+            errmsg = "simulator.store(capacity=%r) non-positive capacity" % capacity
             log.error(errmsg)
             raise ValueError(errmsg)
         if initlevel < 0 or initlevel > capacity:
@@ -736,11 +737,11 @@ class simulator:
             raise RuntimeError(errmsg)
         
         if not isinstance(nparts, int) or nparts <= 0:
-            errmsg = "simulator.mailbox(nparts=%r) requires a positive integer" % nparts
+            errmsg = "simulator.mailbox(nparts=%r) non-positive integer" % nparts
             log.error(errmsg)
             raise TypeError(errmsg)
         if min_delay < 0:
-            errmsg = "simulator.mailbox(min_delay=%r) requires non-negative min_delay" % min_delay
+            errmsg = "simulator.mailbox(min_delay=%r) negative min_delay" % min_delay
             log.error(errmsg)
             raise ValueError(errmsg)
 
@@ -854,12 +855,12 @@ class simulator:
             raise ValueError(errmsg)
         elif offset != None:
             if offset < 0:
-                errmsg = "simulator.wait(offset=%r) requires non-negative offset" % offset
+                errmsg = "simulator.wait(offset=%r) negative offset" % offset
                 log.error(errmsg)
                 raise ValueError(errmsg)
             time = self.now + offset
         elif until < self.now:
-            errmsg = "simulator.wait(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            errmsg = "simulator.wait(until=%r) earlier than now (%r)" % (until, self.now)
             log.error(errmsg)
             raise ValueError(errmsg)
         else: time = until
@@ -895,7 +896,7 @@ class simulator:
             if e is None and time < infinite_time:
                 #log.debug("[r%d] simulator '%s' schedule timeout event at time=%g from now=%g" %
                 #          (self._simulus.comm_rank, self.name[-4:], time, self.now))
-                self._runtime_scheduled_events += 1
+                self._runtime["scheduled_events"] += 1
                 e = _ProcessEvent(self, time, p, p.name)
                 self._eventlist.insert(e)
             
@@ -922,7 +923,7 @@ class simulator:
         if e is not None and not timedout:
             #log.debug("[r%d] simulator '%s' cancel timeout event at time=%g from now=%g" %
             #          (self._simulus.comm_rank, self.name[-4:], e.time, self.now))
-            self._runtime_cancelled_events += 1
+            self._runtime["cancelled_events"] += 1
             self._eventlist.cancel(e)
 
         # cancel the try-wait for those untriggered trappables
@@ -988,12 +989,12 @@ class simulator:
             raise ValueError(errmsg)
         elif offset != None:
             if offset < 0:
-                errmsg = "simulator.run(offset=%r) requires non-negative offset" % offset
+                errmsg = "simulator.run(offset=%r) negative offset" % offset
                 log.error(errmsg)
                 raise ValueError(errmsg)
             upper = self.now + offset
         elif until < self.now:
-            errmsg = "simulator.run(until=%r) must not be earlier than now (%r)" % (until, self.now)
+            errmsg = "simulator.run(until=%r) earlier than now (%r)" % (until, self.now)
             log.error(errmsg)
             raise ValueError(errmsg)
         else: upper = until
@@ -1094,7 +1095,7 @@ class simulator:
         self.now = e.time
         #log.debug("[r%d] simulator '%s' execute event at time %g" %
         #          (self._simulus.comm_rank, self.name[-4:], self.now))
-        self._runtime_executed_events += 1
+        self._runtime["executed_events"] += 1
 
         # trigger the trap if the event already has a trap; this is a
         # memory-saving mechanism: only those events that the user is
@@ -1109,7 +1110,7 @@ class simulator:
                 e = e.renew(e.time+e.repeat_intv)
                 #log.debug("[r%d] simulator '%s' schedule repeated event at time=%g from now=%g" %
                 #          (self._simulus.comm_rank, self.name[-4:], e.time, self.now))
-                self._runtime_scheduled_events += 1
+                self._runtime["scheduled_events"] += 1
                 self._eventlist.insert(e)
             e.func(*e.args, **e.kwargs)
         elif isinstance(e, _ProcessEvent):
@@ -1126,7 +1127,7 @@ class simulator:
                 self._theproc = p
                 #log.debug("[r%d] simulator '%s' context switch at time %g" %
                 #          (self._simulus.comm_rank, self.name[-4:], self.now))
-                self._runtime_process_contexts += 1
+                self._runtime["process_contexts"] += 1
                 p.run()
             else:
                 # process is killed while in the ready queue
@@ -1143,20 +1144,28 @@ class simulator:
         for e in sorted(self._eventlist.pqueue.values()):
             print("  %s" % e)
 
-    def show_runtime_report(self):
-        """Print a report on the simulator's runtime performance."""
-        t = time.time()-self._runtime_start_clock
-        print('*********** simulator performance metrics ***********')
-        print('simulator name:', self.name)
-        print('simulation time:', self.now-self.init_time)
-        print('execution time:', t)
-        print('simulation to real time ratio:', (self.now-self.init_time)/t)
-        print('scheduled events: %d (rate=%g)' %
-              (self._runtime_scheduled_events, self._runtime_scheduled_events/t))
-        print('executed events: %d (rate=%g)' %
-              (self._runtime_executed_events, self._runtime_executed_events/t))
-        print('cancelled events:', self._runtime_cancelled_events)
-        print('created processes:', self._runtime_initiated_processes)
-        print('finished processes:', self._runtime_terminated_processes)
-        print('cancelled processes:', self._runtime_cancelled_processes)
-        print('process context switches:', self._runtime_process_contexts)
+    def show_runtime_report(self, prefix=''):
+        """Print a report on the simulator's runtime performance.
+
+        Args:
+            prefix (str): all print-out lines will be prefixed by this
+                string (the default is empty); this would help if one
+                wants to find the report in a large amount of output
+
+        """
+
+        t = time.time()-self._runtime["start_clock"]
+        print('%s*********** simulator performance metrics ***********' % prefix)
+        print('%ssimulator name: %s' % (prefix, self.name))
+        print('%ssimulation time: %g' % (prefix, self.now-self.init_time))
+        print('%sexecution time: %g' % (prefix, t))
+        print('%ssimulation to real time ratio: %g' % (prefix, (self.now-self.init_time)/t))
+        print('%sscheduled events: %d (rate=%g)' %
+              (prefix, self._runtime["scheduled_events"], self._runtime["scheduled_events"]/t))
+        print('%sexecuted events: %d (rate=%g)' %
+              (prefix, self._runtime["executed_events"], self._runtime["executed_events"]/t))
+        print('%scancelled events: %d' % (prefix, self._runtime["cancelled_events"]))
+        print('%screated processes: %d' % (prefix, self._runtime["initiated_processes"]))
+        print('%sfinished processes: %d' % (prefix, self._runtime["terminated_processes"]))
+        print('%scancelled processes: %d' % (prefix, self._runtime["cancelled_processes"]))
+        print('%sprocess context switches: %d' % (prefix, self._runtime["process_contexts"]))

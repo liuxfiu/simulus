@@ -332,6 +332,8 @@ simulus.py:
     *   get_simulator()
     *   unique_name()
     *   allgather()
+    *   gather()
+    *   bcast()
     *   allreduce()
     *   alltoall()
     
@@ -345,7 +347,6 @@ sync.py:
     * _activated
     * _smp
     * _spmd
-    * _run_sims
     * _local_sims
     * _all_sims
     * _local_mboxes
@@ -355,11 +356,17 @@ sync.py:
     * _remote_msgbuf
     * _remote_future
     * _local_queues
+    * _local_partitions
+    * _local_pids
     * run()
-    * _run()
+    * _child_run()
+    * _smp_run()
+    * _run_finish()
     * send()
     * comm_rank()
     * comm_size()
+    * show_runtime_report()
+    * _smp_report()
 
 *************
 simulator.py:
