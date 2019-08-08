@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-08-07 10:07:34 liux>
+# Last Update: Time-stamp: <2019-08-08 09:17:48 liux>
 ###############################################################
 
 import random, uuid, time
@@ -702,17 +702,17 @@ class simulator:
 
         return Store(self, capacity, initlevel, initobj, name, p_qdis, c_qdis, collect)
 
-    def mailbox(self, nparts=1, min_delay=0, name=None, collect=None):
+    def mailbox(self, name=None, min_delay=0, nparts=1, collect=None):
         """Create and return a mailbox.
 
         Args:
-            nparts (int): the number of compartments/partitions; the
-                value must be a positive integer; the default is one
+            name (string): an optional name of the mailbox
 
             min_delay (float): the minimum delay for messages to be
                 transported through the mailbox
 
-            name (string): an optional name of the mailbox
+            nparts (int): the number of compartments/partitions; the
+                value must be a positive integer; the default is one
 
             collect (DataCollector): the optional collector for
                 statistics; when provided, if the number of partitions
@@ -745,16 +745,20 @@ class simulator:
             log.error(errmsg)
             raise ValueError(errmsg)
 
-        if name is None:
-            name = self._simulus.unique_name()
-        if name in self._mailboxes:
+        #if name is None:
+        #    name = self._simulus.unique_name()
+        if name is not None and name in self._mailboxes:
             errmsg = "simulator.mailbox(name=%s) duplicate name" % name
             log.error(errmsg)
             raise ValueError(errmsg)
         mb = Mailbox(self, nparts, min_delay, name, collect)
-        self._mailboxes[name] = mb
-        log.info("[r%d] simulator '%s' creating mailbox '%s'" %
-                 (self._simulus.comm_rank, self.name, name))
+        if name is None:
+            log.info("[r%d] simulator '%s' creating anonymous mailbox" %
+                     (self._simulus.comm_rank, self.name))
+        else:
+            self._mailboxes[name] = mb
+            log.info("[r%d] simulator '%s' creating mailbox '%s'" %
+                     (self._simulus.comm_rank, self.name, name))
         return mb
 
 
@@ -974,9 +978,8 @@ class simulator:
         """
 
         if self._insync:
-            errmsg = "simulator.run() disabled for synchronized group"
-            log.error(errmsg)
-            raise RuntimeError(errmsg)
+            self._insync.run(offset, until)
+            return
         
         # figure out the horizon, up to which all events will be processed
         upper_specified = True

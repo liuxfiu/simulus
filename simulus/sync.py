@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 28, 2019
-# Last Update: Time-stamp: <2019-08-07 10:03:21 liux>
+# Last Update: Time-stamp: <2019-08-08 10:44:11 liux>
 ###############################################################
 
 from collections import defaultdict
@@ -24,7 +24,7 @@ class sync(object):
 
     _simulus = None
     
-    def __init__(self, sims, enable_smp=False, enable_spmd=False):
+    def __init__(self, sims, enable_smp=False, enable_spmd=False, lookahead=infinite_time, smp_ways=None):
         """Create a synchronized group of multiple simulators. 
 
         Bring all simulators in the group to synchrony; that is, the
@@ -56,6 +56,16 @@ class sync(object):
                 False), or in parallel as separate processes (when
                 enable_smp is True)
 
+            lookahead (float): the maximum difference in simulation
+                time between the simulators in the group; the default
+                is infinity; the final lookahead for parallel
+                simulation will be determined by the min delays of the
+                named mailboxes of the simulators
+
+            smp_ways (int): the maximum number of processes to be
+                created for shared-memory multiprocessing. This
+                parameter is only used when SMP is enabled.
+
         Returns: 
             This function creates, initializes, and returns a
             synchronized group. The simulators will first advance
@@ -69,16 +79,28 @@ class sync(object):
             sent between the simulators) in the proper timestamp
             order. (This is also known as the local causality
             constraint in the parallel discrete-event simulation
-            literature.) 
-        
+            literature.)
+
         """
 
         # the simulus instance is a class variable
         if not sync._simulus:
             sync._simulus = _Simulus()
 
+        if lookahead <= 0:
+            errmsg = "sync(looahead=%r) expects a positive lookahead" % lookahead
+            log.error(errmsg)
+            raise ValueError(errmsg)
+            
+        if smp_ways is not None and \
+           (not isinstance(smp_ways, int) or smp_ways <= 0):
+            errmsg = "sync(smp_ways=%r) expects a positive integer" % smp_ways
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        
         self._activated = False  # keep it false until we are done with creating the sync group
         self._smp = enable_smp
+        self._smp_ways = smp_ways
         self._spmd = enable_spmd
         if self._spmd and not sync._simulus.args.mpi:
             errmsg = "sync(enable_spmd=True) requires MPI support (use --mpi or -x command-line option)"
@@ -139,7 +161,7 @@ class sync(object):
             now_max = sync._simulus.allreduce(now_max, max)
 
         # find all mailboxes attached to local simulators
-        self._lookahead = infinite_time
+        self._lookahead = lookahead
         self._local_mboxes = {} # a map from mailbox names to mailbox instances
         self._all_mboxes = {} # a map from mail name to corresponding simulator name, min_delay and num of partitions
         for sname, sim in self._local_sims.items():
@@ -151,7 +173,7 @@ class sync(object):
                     else:
                         errmsg = "sync() duplicate mailbox name '%s' in simulators '%s' and '%s'" % \
                                  (mbname, sname, mb._sim.name)
-                    log.error(errmag)
+                    log.error(errmsg)
                     raise ValueError(errmsg)
                 else:
                     self._local_mboxes[mbname] = mb
@@ -268,10 +290,11 @@ class sync(object):
             if self._smp:
                 # divide the local simulators among the CPU/cores
                 sims = list(self._local_sims.keys())
-                cpus = mp.cpu_count()
-                k, m = divmod(len(sims), cpus)
+                if self._smp_ways is None:
+                    self._smp_ways = mp.cpu_count()
+                k, m = divmod(len(sims), self._smp_ways)
                 self._local_partitions = list(filter(lambda x: len(x)>0, \
-                        (sims[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(cpus))))
+                        (sims[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(self._smp_ways))))
                 
                 self._local_queues = {} # a map from pid to queue
                 self._local_pids = {} # a map from simulator name to pid
@@ -515,21 +538,7 @@ class sync(object):
             log.error(errmsg)
             raise ValueError(errmsg)
 
-        # it's local delivery, send to the target mailbox directly; a
-        # local delivery can be one of the two cases: 1) if SMP is
-        # disabled (that is, all local simulators are executed on the
-        # same process), the target mailbox belongs to one of the
-        # local simulators; or 2) if SMP is enabled (that is, all
-        # local simulators are executed on separate processes), the
-        # target mailbox belongs to the same sender simulator
-        if not self._smp and mbox_name in self._local_mboxes or \
-           mbox_name in sim._mailboxes:
-            mbox = self._local_mboxes[mbox_name]
-            until = sim.now+delay
-            mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
-            #log.debug("[r%d] sync.send(sim='%s') to local mailbox '%s': msg=%r, delay=%g, part=%d" %
-            #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, msg, delay, part))
-        elif mbox_name in self._all_mboxes:
+        if mbox_name in self._all_mboxes:
             sname, min_delay, nparts = self._all_mboxes[mbox_name]
             if delay is None:
                 delay = min_delay
@@ -544,12 +553,28 @@ class sync(object):
                 log.error(errmsg)
                 raise IndexError(errmsg)
 
-            until = sim.now+delay
-            self._remote_msgbuf[self._all_sims[sname]].append((until, mbox_name, part, msg))
-            if self._remote_future > until:
-                self._remote_future = until
-            #log.debug("[r%d] sync.send(sim='%s') to remote mailbox '%s' on simulator '%s': msg=%r, delay=%g, part=%d" %
-            #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, sname[-4:], msg, delay, part))
+            # if it's local delivery, send to the target mailbox
+            # directly; a local delivery can be one of the two cases:
+            # 1) if SMP is disabled (that is, all local simulators are
+            # executed on the same process), the target mailbox
+            # belongs to one of the local simulators; or 2) if SMP is
+            # enabled (that is, all local simulators are executed on
+            # separate processes), the target mailbox belongs to the
+            # same sender simulator
+            if not self._smp and mbox_name in self._local_mboxes or \
+               mbox_name in sim._mailboxes:
+                mbox = self._local_mboxes[mbox_name]
+                until = sim.now+delay
+                mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
+                #log.debug("[r%d] sync.send(sim='%s') to local mailbox '%s': msg=%r, delay=%g, part=%d" %
+                #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, msg, delay, part))
+            else:
+                until = sim.now+delay
+                self._remote_msgbuf[self._all_sims[sname]].append((until, mbox_name, part, msg))
+                if self._remote_future > until:
+                    self._remote_future = until
+                #log.debug("[r%d] sync.send(sim='%s') to remote mailbox '%s' on simulator '%s': msg=%r, delay=%g, part=%d" %
+                #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, sname[-4:], msg, delay, part))
         else:
             errmsg = "sync.send() to mailbox named '%s' not found" % mbox_name
             log.error(errmsg)

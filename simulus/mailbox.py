@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 9, 2019
-# Last Update: Time-stamp: <2019-07-30 18:34:21 liux>
+# Last Update: Time-stamp: <2019-08-08 09:35:37 liux>
 ###############################################################
 
 from collections import deque
@@ -223,14 +223,12 @@ class Mailbox(object):
                 them; if False, this method will only retrieve the
                 first arrived message
 
-        Returns:
+        Returns: 
             This method returns a list containing all the messages
             currently stored at the mailbox partition, if 'isall' is
-            True (by default). If the partition is empty, however,
-            this method returns an empty list. On the other hand, if
-            'isall' is False, this method returns only the first
-            arrived message (not wrapped in a list). If the partition
-            is empty, this method would return None.
+            True (by default). On the other hand, if 'isall' is False,
+            this method returns only the first arrived message (not
+            wrapped in a list).
 
         """
         
