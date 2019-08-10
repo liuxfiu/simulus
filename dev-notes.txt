@@ -123,6 +123,12 @@ List of Files, Classes and Methods
 __init__.py:
 ************
 
+* parser
+* args
+*   verbose
+*   mpi
+*   seed
+
 *********
 utils.py:
 *********
@@ -308,116 +314,6 @@ process.py:
     * _cancel_wait()
     * _true_trappable()
 
-***********
-simulus.py:
-***********
-
-* _Simulus:  # completely hidden
-    * instance -> __OneInstance
-    * __new__()
-    * __getattr__()
-    * __setattr__()
-    * __OneInstance
-    *   __init__()
-    *   args
-    *     verbose
-    *     mpi
-    *     seed
-    *   comm_rank
-    *   comm_size
-    *   namespace
-    *   rng
-    *   named_simulators
-    *   register_simulator()
-    *   get_simulator()
-    *   unique_name()
-    *   allgather()
-    *   gather()
-    *   bcast()
-    *   allreduce()
-    *   alltoall()
-    
-********
-sync.py:
-********
-
-* sync
-    * __init__()  # public interface
-    * _simulus
-    * _activated
-    * _smp
-    * _smp_ways
-    * _spmd
-    * _local_sims
-    * _all_sims
-    * _local_mboxes
-    * _all_mboxes
-    * _lookahead
-    * now
-    * _remote_msgbuf
-    * _remote_future
-    * _local_queues
-    * _local_partitions
-    * _local_pids
-    * run()
-    * _child_run()
-    * _smp_run()
-    * _run_finish()
-    * send()
-    * comm_rank()
-    * comm_size()
-    * show_runtime_report()
-    * _smp_report()
-
-*************
-simulator.py:
-*************
-
-* simulator
-    * __init__()  # public interface
-    * _simulus
-    * _insync
-    * _mailboxes
-    * name
-    * init_time
-    * now
-    * _eventlist
-    * _theproc
-    * _readq
-    * _rng
-    * _runtime_start_clock
-    * _runtime_scheduled_events
-    * _runtime_cancelled_events
-    * _runtime_executed_events
-    * _runtime_initiated_processes
-    * _runtime_cancelled_processes
-    * _runtime_process_contexts
-    * _runtime_terminated_processes
-    * sched()
-    * cancel()
-    * resched()
-    * process()
-    * cur_process()
-    * terminated()
-    * get_priority()
-    * set_priority()
-    * kill()
-    * sleep()
-    * trap()
-    * semaphore()
-    * resource()
-    * store()
-    * mailbox()
-    * wait()
-    * run()
-    * _run()
-    * step()
-    * peek()
-    * rng()
-    * _process_one_event()
-    * show_calendar()
-    * show_runtime_report()
-
 ************
 resource.py:
 ************
@@ -528,3 +424,113 @@ mailbox.py
     * peek()
     * retrieve()
     * _mailbox_event()
+
+*************
+simulator.py:
+*************
+
+* simulator
+    * __init__()  # public interface
+    * _simulus
+    * _insync
+    * _mailboxes
+    * name
+    * init_time
+    * now
+    * _eventlist
+    * _theproc
+    * _readq
+    * _rng
+    * _runtime_start_clock
+    * _runtime_scheduled_events
+    * _runtime_cancelled_events
+    * _runtime_executed_events
+    * _runtime_initiated_processes
+    * _runtime_cancelled_processes
+    * _runtime_process_contexts
+    * _runtime_terminated_processes
+    * sched()
+    * cancel()
+    * resched()
+    * process()
+    * cur_process()
+    * terminated()
+    * get_priority()
+    * set_priority()
+    * kill()
+    * sleep()
+    * trap()
+    * semaphore()
+    * resource()
+    * store()
+    * mailbox()
+    * wait()
+    * run()
+    * _run()
+    * step()
+    * peek()
+    * _process_one_event()
+    * rng()
+    * sync()
+    * show_calendar()
+    * show_runtime_report()
+
+***********
+simulus.py:
+***********
+
+* _Simulus:  # completely hidden
+    * instance -> __OneInstance
+    * __new__()
+    * __getattr__()
+    * __setattr__()
+    * __OneInstance
+    *   __init__()
+    *   args
+    *   comm_rank
+    *   comm_size
+    *   namespace
+    *   rng
+    *   named_simulators
+    *   register_simulator()
+    *   get_simulator()
+    *   unique_name()
+    *   allgather()
+    *   gather()
+    *   bcast()
+    *   allreduce()
+    *   alltoall()
+    
+********
+sync.py:
+********
+
+* sync
+    * __init__()  # public interface
+    * _simulus
+    * _activated
+    * _smp
+    * _smp_ways
+    * _spmd
+    * _local_sims
+    * _all_sims
+    * _local_mboxes
+    * _all_mboxes
+    * _lookahead
+    * now
+    * _remote_msgbuf
+    * _remote_future
+    * _local_queues
+    * _local_partitions
+    * _local_pids
+    * run()
+    * _child_run()
+    * _smp_run()
+    * _run_finish()
+    * send()
+    * comm_rank()
+    * comm_size()
+    * show_runtime_report()
+    * _smp_report()
+
+

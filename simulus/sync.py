@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 28, 2019
-# Last Update: Time-stamp: <2019-08-08 10:44:11 liux>
+# Last Update: Time-stamp: <2019-08-10 07:02:32 liux>
 ###############################################################
 
 from collections import defaultdict
@@ -211,10 +211,10 @@ class sync(object):
                      (sync._simulus.comm_rank, mbname, sname, mbdly, mbparts))
 
         # ready for next window
-        self._activated = True
         self._remote_msgbuf = defaultdict(list) # a map from rank to list of remote messages
         self._remote_future = infinite_time
         self._local_partitions = None
+        self._activated = True
 
     def run(self, offset=None, until=None):
         """Process events of all simulators in the synchronized group each in
@@ -616,10 +616,10 @@ class sync(object):
         if self._spmd and sync._simulus.comm_rank > 0:
             errmsg = "sync.show_runtime_report() allowed only on rank 0"
             log.error(errmsg)
-            raise ValueError(errmsg)
+            raise RuntimeError(errmsg)
 
         if self._local_partitions is None:
-            errmsg = "sync.show_runtime_report() before sync.run()"
+            errmsg = "sync.show_runtime_report() called before sync.run()"
             log.error(errmsg)
             raise ValueError(errmsg)
 
@@ -694,7 +694,7 @@ class sync(object):
         if pid == 0 and self._simulus.comm_rank == 0:
             print('%s*********** sync group performance metrics ***********' % prefix)
             if show_partition:
-                print('%ssimulators:' % prefix)
+                print('%spartitioning information (simulator assignment):' % prefix)
                 for sname, simrank in self._all_sims.items():
                     print("%s  '%s' on rank %d proc %d" % (prefix, sname, simrank, sync_rt["sims"][sname]))
             t = t1-sync_rt["start_clock"]

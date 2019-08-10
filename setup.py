@@ -8,7 +8,7 @@ with open("CHANGELOG.md", "r") as fh:
 
 setuptools.setup(
     name="simulus",
-    version="1.1.5",
+    version="1.2.0",
     author="Jason Liu",
     author_email="jasonxliu2010@gmail.com",
     description="A Discrete-Event Simulator in Python",

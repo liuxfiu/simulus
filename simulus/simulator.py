@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-08-08 09:17:48 liux>
+# Last Update: Time-stamp: <2019-08-10 05:30:21 liux>
 ###############################################################
 
 import random, uuid, time
@@ -1050,46 +1050,6 @@ class simulator:
         else:
             return infinite_time
 
-    def rng(self):
-        """Return the pseudo-random number generator attached to this
-        simulator. It's a random.Random instance (Mersenne twister)."""
-
-        if self._rng is None:
-            u = uuid.uuid3(self._simulus.namespace, self.name)
-            self._rng = random.Random(int(u.int/2**32))
-        return self._rng
-
-    # def fast_rng(self):
-    #     """Return a fast pseudo-random number generator attached to this
-    #     simulator. It's a Lehmer random number generator, which has a
-    #     very short period. Use with caution!"""
-    #     class _FastRNG(random.Random):
-    #         M = 2147483647
-    #         A = 48271
-    #         A256 = 22925
-    #         Q = int(M/A)
-    #         R = M%A
-    #         def __init__(self, initial_seed):
-    #             self._seed = initial_seed
-    #         def random(self):
-    #             t = _FastRNG.A*(self._seed%_FastRNG.Q)-_FastRNG.R*int(self._seed/_FastRNG.Q)
-    #             if t > 0: self._seed = t
-    #             else: self._seed = t+_FastRNG.M
-    #             return float(self._seed)/_FastRNG.M
-    #         def seed(self, a):
-    #             t = a%_FastRNG.M
-    #             if t > 0: self._seed = t
-    #             else: self._seed = t+_FastRNG.M
-    #         def getstate(self):
-    #             return self._seed
-    #         def setstate(self, state):
-    #             self._seed(state)
-    #         #def getrandbits(self, k): pass
-    #     if self._fast_rng is None:
-    #         u = uuid.uuid3(self._simulus.namespace, self.name)
-    #         self._fast_rng = _FastRNG(int(u.int/2**32))
-    #     return self._fast_rng
-
     def _process_one_event(self):
         """Process one event on the event list, assuming there is a least one
         event on the event list."""
@@ -1136,6 +1096,51 @@ class simulator:
                 # process is killed while in the ready queue
                 assert p.state == _Process.STATE_TERMINATED
         self._theproc = None
+
+    def rng(self):
+        """Return the pseudo-random number generator attached to this
+        simulator. It's a random.Random instance (Mersenne twister)."""
+
+        if self._rng is None:
+            u = uuid.uuid3(self._simulus.namespace, self.name)
+            self._rng = random.Random(int(u.int/2**32))
+        return self._rng
+
+    def sync(self):
+        """Return the synchronized group to which this simulator belongs to,
+        or None if the simulator does not belong to any group."""
+        return self._insync
+    
+    # def fast_rng(self):
+    #     """Return a fast pseudo-random number generator attached to this
+    #     simulator. It's a Lehmer random number generator, which has a
+    #     very short period. Use with caution!"""
+    #     class _FastRNG(random.Random):
+    #         M = 2147483647
+    #         A = 48271
+    #         A256 = 22925
+    #         Q = int(M/A)
+    #         R = M%A
+    #         def __init__(self, initial_seed):
+    #             self._seed = initial_seed
+    #         def random(self):
+    #             t = _FastRNG.A*(self._seed%_FastRNG.Q)-_FastRNG.R*int(self._seed/_FastRNG.Q)
+    #             if t > 0: self._seed = t
+    #             else: self._seed = t+_FastRNG.M
+    #             return float(self._seed)/_FastRNG.M
+    #         def seed(self, a):
+    #             t = a%_FastRNG.M
+    #             if t > 0: self._seed = t
+    #             else: self._seed = t+_FastRNG.M
+    #         def getstate(self):
+    #             return self._seed
+    #         def setstate(self, state):
+    #             self._seed(state)
+    #         #def getrandbits(self, k): pass
+    #     if self._fast_rng is None:
+    #         u = uuid.uuid3(self._simulus.namespace, self.name)
+    #         self._fast_rng = _FastRNG(int(u.int/2**32))
+    #     return self._fast_rng
 
     def show_calendar(self):
         """Print the list of all future events currently on the event

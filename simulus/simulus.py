@@ -1,11 +1,10 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 3, 2019
-# Last Update: Time-stamp: <2019-08-07 07:44:20 liux>
+# Last Update: Time-stamp: <2019-08-10 07:03:19 liux>
 ###############################################################
 
-import array, copy
-import random, uuid, argparse, sys
+import array, copy, random, uuid
 
 __all__ = ["_Simulus"]
 
@@ -35,27 +34,16 @@ class _Simulus(object):
             singleton is created. We use this opportunity to
             initialize everything."""
 
-            # parse command line
-            parser = argparse.ArgumentParser()
-            parser.add_argument("-s", "--seed", type=int, metavar='SEED', default=None,
-                                help="set global random seed")
-            parser.add_argument("-v", "--verbose", action="store_true",
-                                help="enable verbose information")
-            parser.add_argument("-vv", "--debug", action="store_true",
-                                help="enable debug information")
-            parser.add_argument("-x", "--mpi", action="store_true",
-                                help="enable mpi for parallel simulation")
-            # filter out known arguments from sys.argv
-            self.args, sys.argv[1:] = parser.parse_known_args()
-
             # turn logging info on if we are in verbose mode
-            if self.args.debug:
+            from simulus import args
+            self.args = args
+            if args.debug:
                 logging.basicConfig(level=logging.DEBUG)
-            elif self.args.verbose:
+            elif args.verbose:
                 logging.basicConfig(level=logging.INFO)
 
             # initialize mpi if needed
-            if self.args.mpi:
+            if args.mpi:
                 global MPI
                 from mpi4py import MPI
                 self.comm_rank = MPI.COMM_WORLD.Get_rank()
@@ -68,12 +56,12 @@ class _Simulus(object):
                 log.info("running in non-SPMD mode")
 
             # set the namespace and the random sequence
-            if self.args.seed is not None and \
-               (self.args.seed < 0 or self.args.seed >= 2**32):
+            if args.seed is not None and \
+               (args.seed < 0 or args.seed >= 2**32):
                 errmsg = "command-line argument --seed or -s must be a 32-bit integer"
                 log.error(errmsg)
                 raise ValueError(errmsg)
-            if self.args.seed is None:
+            if args.seed is None:
                 old_state = random.getstate()
 
                 # if the global seed is not provided, we use the
@@ -110,11 +98,11 @@ class _Simulus(object):
                 # namespace to be the same across diffferent ranks and
                 # across different ranks; and then we generate a
                 # random sequence for the ranks greater than zero
-                self.rng = random.Random(self.args.seed)
+                self.rng = random.Random(args.seed)
                 self.rng.getrandbits(160) # we do the same to mirror the above case
                 self.namespace = uuid.UUID(int=self.rng.getrandbits(128))
                 if self.comm_rank > 0:
-                    seed = self.args.seed+self.comm_rank
+                    seed = args.seed+self.comm_rank
                     if seed >= 2**32: seed -= 2**32
                     self.rng = random.Random(seed)
 
