@@ -16,5 +16,5 @@ sim2.process(p, sim2, mb2, 'mb1')
 
 mb1.send('ping') # send initial message to start ping-ponging
 
-g = simulus.sync([sim1, sim2])
-g.run(10)
+g = simulus.sync([sim1, sim2], enable_smp=True)
+g.run(10, show_runtime_report=True)

@@ -8,6 +8,7 @@ Simulus - A Discrete-Event Simulator in Python
 
    readme
    tutorial
+   parsim-sync
    api-ref
 
 Indices and tables

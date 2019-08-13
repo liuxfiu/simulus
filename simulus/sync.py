@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 28, 2019
-# Last Update: Time-stamp: <2019-08-10 07:02:32 liux>
+# Last Update: Time-stamp: <2019-08-12 07:32:17 liux>
 ###############################################################
 
 from collections import defaultdict
@@ -216,7 +216,7 @@ class sync(object):
         self._local_partitions = None
         self._activated = True
 
-    def run(self, offset=None, until=None):
+    def run(self, offset=None, until=None, show_runtime_report=False):
         """Process events of all simulators in the synchronized group each in
         timestamp order and advances the simulation time of all simulators 
         synchronously.
@@ -241,10 +241,10 @@ class sync(object):
         simulators may not produce causality errors. When this method
         returns, the simulation time of the simulators will advance to
         the designated time, if either 'offset' or 'until' has been
-        specified.  All events with timestamps smaller than and equal
-        to the designated time will be processed. If neither 'offset'
-        nor 'until' is provided, the simulators will advance to the
-        time of the last processed event among all simulators.
+        specified.  All events with timestamps smaller than the
+        designated time will be processed. If neither 'offset' nor
+        'until' is provided, the simulators will advance to the time
+        of the last processed event among all simulators.
 
         If SPMD is enabled, at most one simulus instance (at rank 0)
         is allowed to specify the time (using 'offset' or 'until').
@@ -327,7 +327,10 @@ class sync(object):
                 else: # stop command
                     assert cmd == 2
                     break
-
+        else:
+            if show_runtime_report:
+                self.show_runtime_report()
+                
     def _child_run(self, pid):
         """The child processes running in SMP mode."""
  
@@ -342,7 +345,13 @@ class sync(object):
         self._remote_future = infinite_time
 
         while True:
-            cmd = self._local_queues[pid].get()
+            try:
+                cmd = self._local_queues[pid].get()
+            except KeyboardInterrupt:
+                # we handle the keyboard interrupt here, since Jupyter
+                # notebook seems to raise this exception when the
+                # kernel is interrupted
+                continue
             log.info("[r%d] sync._child_run(pid=%d): recv command %d" %
                      (sync._simulus.comm_rank, pid, cmd))
             if cmd == 0: # run command

@@ -1,7 +1,7 @@
 
 # Quick Start
 
-Simulus is an open-source discrete-event simulator in Python. Simulus implements a process-oriented simulation world-view with several advanced features to ease modeling and simulation tasks with both events and processes.  Simulus will soon add support for parallel and distributed simulation (planned for version 1.2), and real-time simulation (planned for version 1.3).
+Simulus is an open-source discrete-event simulator in Python. Simulus implements a process-oriented simulation world-view with several advanced features to ease modeling and simulation tasks with both events and processes.  Simulus also supports parallel and distributed simulation (since version 1.2). We will soon add support for real-time simulation (planned for version 1.3).
 
 * Online documentation:
 http://simulus.readthedocs.io/
@@ -76,7 +76,6 @@ sim.run(100)
     Hello world at time 70
     Hello world at time 80
     Hello world at time 90
-    Hello world at time 100
 
 
 The following is the same hello-world example, but instead we use a process. A process is a continuous thread of execution. In the example, once started, the process loops forever. Inside each iteration, the process prints out a message and then sleeps for some time.
@@ -104,7 +103,6 @@ sim.run(100)
     Hello world at time 70
     Hello world at time 80
     Hello world at time 90
-    Hello world at time 100
 
 
 Simulus allows events and processes to coexist. For example, simulus supports conditional-wait on both events and processes. The following shows an example that models Tom and Jerry entering a race. 
@@ -266,6 +264,12 @@ sim.run(5)
     2.754613: consumer 2 consumes item [6]
     3.223988: consumer 0 consumes item [7]
 
+
+## Credits
+
+Simulus is developed and maintained by Jason Liu (jasonxliu2010@gmail.com). The project started as a summer pet project in 2019. Simulus is open source and free. The author hopes that you'll find simulus useful in your projects, for teaching, for research development, or for any endeavors.
+
+If you are using simulus in any extended way, the author would appreciate you drop a brief email to let him know about your projects using simulus. If you have any questions or comments about simulus, send emails to him too. The author would certainly try his best to respond to them in a timely fashion.
 
 
 ```python

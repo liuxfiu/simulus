@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-08-10 05:30:21 liux>
+# Last Update: Time-stamp: <2019-08-12 04:52:42 liux>
 ###############################################################
 
 import random, uuid, time
@@ -969,11 +969,11 @@ class simulator:
 
         The simulator will process all events in timestamp order. When
         the method returns, the simulation time will advance to the
-        designated time, if either 'offset' or 'until' is
-        specified. All events with timestamps smaller than and equal
-        to the designated time will be processed. If neither 'offset'
-        nor 'until' is provided, the simulator will advance to the
-        time of the last processed event.
+        designated time, if either 'offset' or 'until' is specified.
+        All events with timestamps smaller than the designated time
+        will be processed. If neither 'offset' nor 'until' is
+        provided, the simulator will advance to the time of the last
+        processed event.
 
         """
 
@@ -1006,14 +1006,14 @@ class simulator:
 
     def _run(self, upper, updating_until):
         """Run simulation up to the given time 'until' (by processing all
-        events with timestamps less than or equal to 'until'), and if
+        events with timestamps less than 'until'), and if
         'updating_until' is true, update the simulation clock to
         'until' after processing all the events."""
         
         # this is the main event loop of the simulator!
         while len(self._eventlist) > 0:
             t = self._eventlist.get_min()
-            if t > upper: break
+            if t >= upper: break
             self._process_one_event()
 
         # after all the events, make sure we don't wind back the clock

@@ -36,7 +36,7 @@ class node(object):
             target = self.sim.rng().randrange(self.total_nodes)
             delay = self.sim.rng().expovariate(1)+self.lookahead
             sim.sync().send(self.sim, 'mb%d'%target, job, delay)
-            print("%g: n%d recv j%d, and sent it to n%d with d=%g (%g)" %
+            print("%g: n%d recv j%d, sent to n%d with d=%g (%g)" %
                   (self.sim.now, self.node_idx, job, target, delay, self.sim.now+delay))
 
 # get the total number of processes used to run the simulation (psize)
@@ -66,7 +66,7 @@ parser.add_argument('init_jobs', metavar='NJOBS', type=int,
 parser.add_argument('endtime', metavar='ENDTIME', type=int,
                     help='simulation end time')
 parser.add_argument("-m", "--nsims", type=int, metavar='NSIMS', default=None,
-                    help="number of simulators at each rank")
+                    help="total number of simulators")
 parser.add_argument("-c", "--choice", type=int, metavar='CHOICE', default=1,
                     help="choose simulation method (see below)")
 parser.add_argument("-l", "--lookahead", type=float, metavar='LOOKAHEAD', default=1.0,
