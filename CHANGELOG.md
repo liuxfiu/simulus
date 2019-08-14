@@ -1,3 +1,23 @@
+## 1.2.0 (2019-08-14)
+
+### New
+
+* Finished parallel simulation tutorial. [Jason Liu]
+
+* Changed simulator's run() to run up to but not including the given time; updated parallel simulation tutorial. [Jason Liu]
+
+* Changed argparse to happen at import time; added simulator.sync() function; fixed phold.py in advanced example. [Jason Liu]
+
+* Added ability for sync to have multiple runs and enabled runtime performance reporting. [Jason Liu]
+
+* Added parallel simulation support, including SPMD (using MPI), SMP (using processes), and both. [Jason Liu]
+
+* Preliminary performance tuning; disabled expensive debug logging; added context manager for resource. [Jason Liu]
+
+### Changes
+
+* Some UI updates and added parallel simulation tutorial. [Jason Liu]
+
 ## 1.1.5 (2019-07-26)
 
 ### New
