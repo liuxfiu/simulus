@@ -60,8 +60,12 @@ simulus.simulator
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: Simulator
+simulus.sync
+------------
+		
+.. automodule:: simulus.sync
    :members:
+   :undoc-members:
    :show-inheritance:
 
 simulus.utils
