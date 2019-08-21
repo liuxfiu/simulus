@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 28, 2019
-# Last Update: Time-stamp: <2019-08-12 07:32:17 liux>
+# Last Update: Time-stamp: <2019-08-19 19:25:26 liux>
 ###############################################################
 
 from collections import defaultdict
@@ -575,8 +575,8 @@ class sync(object):
                 mbox = self._local_mboxes[mbox_name]
                 until = sim.now+delay
                 mbox._sim.sched(mbox._mailbox_event, msg, part, until=until)
-                #log.debug("[r%d] sync.send(sim='%s') to local mailbox '%s': msg=%r, delay=%g, part=%d" %
-                #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, msg, delay, part))
+                #log.debug("[r%d] sync.send(sim='%s') to local mailbox '%s': msg=%r, delay=%g (until=%g), part=%d" %
+                #          (sync._simulus.comm_rank, sim.name[-4:], mbox_name, msg, delay, until, part))
             else:
                 until = sim.now+delay
                 self._remote_msgbuf[self._all_sims[sname]].append((until, mbox_name, part, msg))

@@ -35,7 +35,7 @@ class node(object):
             job = self.mbox.recv(isall=False) # one at a time
             target = self.sim.rng().randrange(self.total_nodes)
             delay = self.sim.rng().expovariate(1)+self.lookahead
-            sim.sync().send(self.sim, 'mb%d'%target, job, delay)
+            self.sim.sync().send(self.sim, 'mb%d'%target, job, delay)
             print("%g: n%d recv j%d, sent to n%d with d=%g (%g)" %
                   (self.sim.now, self.node_idx, job, target, delay, self.sim.now+delay))
 
@@ -63,7 +63,7 @@ parser.add_argument('total_nodes', metavar='NNODES', type=int,
                     help='total number of nodes')
 parser.add_argument('init_jobs', metavar='NJOBS', type=int,
                     help='total number of initial jobs')
-parser.add_argument('endtime', metavar='ENDTIME', type=int,
+parser.add_argument('endtime', metavar='ENDTIME', type=float,
                     help='simulation end time')
 parser.add_argument("-m", "--nsims", type=int, metavar='NSIMS', default=None,
                     help="total number of simulators")
