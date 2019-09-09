@@ -37,4 +37,4 @@ parser.add_argument("-x", "--mpi", action="store_true",
                     help="enable mpi for parallel simulation")
 args, sys.argv[1:] = parser.parse_known_args()
 
-__version__ = '1.2.0'
+__version__ = '1.2.1'

@@ -1,3 +1,14 @@
+## 1.2.1 (2019-09-09)
+
+### New
+
+* Added LANL benchmark model. [Jason Liu]
+
+### Changes
+
+* Added bucket for uncountable quantities (as opposed of using store), and added muxtree example. [Jason Liu]
+
+
 ## 1.2.0 (2019-08-14)
 
 ### New
