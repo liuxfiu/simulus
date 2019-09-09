@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-30 04:05:39 liux>
+# Last Update: Time-stamp: <2019-09-07 09:18:15 liux>
 ###############################################################
 
 import math, re
@@ -225,7 +225,7 @@ class TimeSeries(object):
             return 0
 
 class DataCollector(object):
-    """Statistics collection for resources, stores, and mailboxes."""
+    """Statistics collection for resources, stores, buckets, and mailboxes."""
 
     def __init__(self, **kwargs):
         """Initialize the data collector. kwargs is the keyworded arguments;

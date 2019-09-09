@@ -44,7 +44,7 @@ pip install -e git+https://github.com/liuxfiu/simulus.git#egg=simulus
 
 ## Basic Usage
 
-We show the basic use of simulus in the following. For more detailed information, you can check out the simulus tutorial mentioned above.
+We show the basic use of simulus in the following. The purpose here is show some of the basic capabilities of simulus. For more detailed explanation and to learn to use simulus, you should check out the simulus tutorial mentioned above.
 
 Simulus can work in two ways. One way is through events. The user schedules events. Simulus makes sure all events are sorted in timestamp order. When an event happens, simulus advances the simulation time to the event and calls the event handler, which is just a user-defined function. While processing the event, the user can schedule new events into the simulated future. We call this approach *direct event scheduling*. 
 
@@ -52,7 +52,7 @@ The other way is through processes. The user can create processes and have them 
 
 In simulus, both direct event scheduling and process scheduling can be used together seamlessly to achieve the modeling tasks.
 
-The following a hello-world example, which simply schedules a function (a.k.a. an event handler) to be invoked in the simulated future. Inside the function, the user schedules the same function again.
+The following is a hello-world example, which simply schedules a function (a.k.a. an event handler) to be invoked in the simulated future. Inside the function, the user schedules the same function again.
 
 
 ```python
@@ -269,7 +269,7 @@ sim.run(5)
 
 Simulus is developed and maintained by Jason Liu (jasonxliu2010@gmail.com). The project started as a summer pet project in 2019. Simulus is open source and free. The author hopes that you'll find simulus useful in your projects, for teaching, for research development, or for any endeavors.
 
-If you are using simulus in any extended way, the author would appreciate you drop a brief email to let him know about your projects using simulus. If you have any questions or comments about simulus, send emails to him too. The author would certainly try his best to respond to them in a timely fashion.
+If you are using simulus in any extended way, the author would appreciate if you can drop a brief email to let him know about your projects using simulus. If you have any questions or comments about simulus, send emails to him too. The author would certainly try his best to respond to them in a timely fashion.
 
 
 ```python

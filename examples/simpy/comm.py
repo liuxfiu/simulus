@@ -16,7 +16,7 @@ class BroadcastPipe(object):
 
     """
     
-    def __init__(self, sim, capacity=float('inf')):
+    def __init__(self, sim, capacity=2**32):
         self.sim = sim
         self.capacity = capacity
         self.pipes = []

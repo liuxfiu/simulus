@@ -79,7 +79,7 @@ random.seed(RANDOM_SEED)
 # Create simulator and start processes
 sim = simulus.simulator()
 gas_station = sim.resource(2)
-fuel_pump = sim.store(GAS_STATION_SIZE, GAS_STATION_SIZE)
+fuel_pump = sim.bucket(GAS_STATION_SIZE, GAS_STATION_SIZE)
 sim.process(gas_station_control, sim, fuel_pump)
 sim.process(car_generator, sim, gas_station, fuel_pump)
 

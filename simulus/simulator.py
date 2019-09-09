@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on June 14, 2019
-# Last Update: Time-stamp: <2019-08-12 04:52:42 liux>
+# Last Update: Time-stamp: <2019-09-07 09:16:54 liux>
 ###############################################################
 
 import random, uuid, time
@@ -17,6 +17,7 @@ from .process import *
 from .simulus import *
 from .resource import *
 from .store import *
+from .bucket import *
 from .mailbox import *
 
 __all__ = ["simulator", "infinite_time", "minus_infinite_time"]
@@ -683,10 +684,18 @@ class simulator:
 
         """
 
+        if not isinstance(capacity, int):
+            errmsg = "simulator.store() capacity must be an integer"
+            log.error(errmsg)
+            raise TypeError(errmsg)
         if capacity <= 0:
             errmsg = "simulator.store(capacity=%r) non-positive capacity" % capacity
             log.error(errmsg)
             raise ValueError(errmsg)
+        if not isinstance(initlevel, int):
+            errmsg = "simulator.store() initlevel must be an integer"
+            log.error(errmsg)
+            raise TypeError(errmsg)
         if initlevel < 0 or initlevel > capacity:
             errmsg = "simulator.store(capacity=%r, initlevel=%r) out of bound" % (capacity, initlevel)
             log.error(errmsg)
@@ -701,6 +710,67 @@ class simulator:
             raise ValueError(errmsg)
 
         return Store(self, capacity, initlevel, initobj, name, p_qdis, c_qdis, collect)
+
+    def bucket(self, capacity=1, initlevel=0, p_qdis=QDIS.FIFO,
+               c_qdis=QDIS.FIFO, name=None, collect=None):
+        """Create and return a bucket.
+
+        Args:
+            capacity (float): the capacity of the bucket; the value
+                must be positive; the default is one
+
+            initlevel (float): the initial storage level; the value
+                must be non-negative and it cannot be larger than the
+                capacity; the default is zero
+
+            p_qdis (int): the queuing discipline for the waiting
+                producer processes (putters), which can be selected
+                from QDIS.FIFO (first in first out), QDIS.LIFO (last
+                in first out), QDIS.SIRO (service in random order), or
+                QDIS.PRIORITY (based on process priority); if ignored,
+                the default is QDIS.FIFO
+
+            c_qdis (int): the queuing discipline for the waiting
+                consumer processes (getter); if ignored, the default
+                is QDIS.FIFO
+
+            name (string): the optional name of the bucket
+
+            collect (DataCollector): the optional data collector for
+                statistics
+
+        Returns:
+            This method returns the newly created bucket.
+
+        The DataCollector, if provided, accepts the following values:
+            * **puts**: timeseries (time and amount of put requests)
+            * **put_times**: dataseries (waiting time to put items)
+            * **put_queues**: timeseries (number of processes waiting to put items)
+            * **gets**: timeseries (time and amount of get requests)
+            * **get_times**: dataseries (waiting time to get items)
+            * **get_queues**: timeseries (number of processes waiting to get items)
+            * **levels**: timeseries (storage levels)
+
+        """
+
+        if capacity <= 0:
+            errmsg = "simulator.bucket(capacity=%r) non-positive capacity" % capacity
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        if initlevel < 0 or initlevel > capacity:
+            errmsg = "simulator.bucket(capacity=%r, initlevel=%r) out of bound" % (capacity, initlevel)
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        if p_qdis < QDIS.FIFO or p_qdis > QDIS.PRIORITY:
+            errmsg = "simulator.bucket(p_qdis=%r) unknown queuing discipline" % p_qdis
+            log.error(errmsg)
+            raise ValueError(errmsg)
+        if c_qdis < QDIS.FIFO or c_qdis > QDIS.PRIORITY:
+            errmsg = "simulator.bucket(c_qdis=%r) unknown queuing discipline" % c_qdis
+            log.error(errmsg)
+            raise ValueError(errmsg)
+
+        return Bucket(self, capacity, initlevel, name, p_qdis, c_qdis, collect)
 
     def mailbox(self, name=None, min_delay=0, nparts=1, collect=None):
         """Create and return a mailbox.

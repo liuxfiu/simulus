@@ -1,7 +1,7 @@
 # FILE INFO ###################################################
 # Author: Jason Liu <jasonxliu2010@gmail.com>
 # Created on July 2, 2019
-# Last Update: Time-stamp: <2019-07-30 04:01:08 liux>
+# Last Update: Time-stamp: <2019-09-07 09:15:39 liux>
 ###############################################################
 
 from collections import deque
@@ -21,50 +21,43 @@ class Store(object):
 
     A store is a facility either for storing countable objects (such
     as jobs in a queue, packets in a network router, and io requests
-    at a storage device), or for storing uncountable quantities or
-    volumes (such as gas in a tank, water in a reservoir, and battery
-    power in a mobile computer). The user can determine which kind of
-    store (for countable objects or for uncountable quantities) should
-    apply upon use.
+    at a storage device). It's similar to a bucket, except that it's
+    for countable objects.
 
     A store has a maximum capacity, which is a positive quantity
-    specified either as an integer or as a float-point number. A store
-    can also tell its current storage level, which goes between zero
-    and the maximum capacity.
+    specified as an integer. A store can also tell its current storage
+    level, which goes between zero and the maximum capacity.
 
-    One or several processes can put objects or quantities into the
-    store. They are called producer processes. One or several
-    processes can get objects or quantities from the store. They are
-    called consumer processes. The producer process and the consumer
-    process is determined by its performed action on the store. They
-    can be the same process.
+    One or several processes can put objects into the store. They are
+    called producer processes. One or several processes can get
+    objects from the store. They are called consumer processes. The
+    producer process and the consumer process is determined by its
+    performed action on the store. They can be the same process.
 
     A producer process calls the put() method to deposit one or more
-    objects, or some quantities into the store. The put amount shall
-    be specified as an argument (default is one). The current storage
-    level will increase accordingly as a result. However, if a
-    producer process tries to put more objects or quantities than the
-    store's capacity, the producer process will be blocked. The
-    process will remain blocked until the current storage level
-    decreases (by some other processes getting objects or quantities
+    objects into the store. The put amount shall be specified as an
+    argument (default is one). The current storage level will increase
+    accordingly as a result. However, if a producer process tries to
+    put more objects than the store's capacity, the producer process
+    will be blocked. The process will remain blocked until the current
+    storage level decreases (by some other processes getting objects
     from the store) so that there is room for putting all the objects
-    or quantities.
+    as a result.
 
     Similarly, a consumer process calls the get() method to retrieve
-    one or more objects, or some quantities from the store. The get
-    amount shall be specified as an argument (default is one).  The
-    current storage level will decrease accordingly as a result. If a
-    consumer process tries to get more objects or quantities than what
-    is avaialble at the store, the consumer process will be blocked.
-    The process will remain blocked until the current storage level
-    goes above the requested amount (by some other processes putting
-    objects or quantities into the store).
+    one or more objects from the store. The get amount shall be
+    specified as an argument (default is one).  The current storage
+    level will decrease accordingly as a result. If a consumer process
+    tries to get more objects than what is avaialble at the store, the
+    consumer process will be blocked.  The process will remain blocked
+    until the current storage level goes above the requested amount
+    (by some other processes putting objects into the store).
 
     The store facility can actually be used for storing real
     (countable) Python objects, if the user calls the put() method and
     passes in a Python object or a list/tuple of Python objects using
     the keyworded 'obj' argument. In this case, the put amount must
-    match with the number of objects. These Python objects can be
+    match with the number of objects. The stored objects can be
     retrieved in a first-in-first-out fashion by consumer processes
     calling the get() method, which specifies the get amount. The same
     number of Python objects will be returned, either as a list if the
@@ -144,17 +137,15 @@ class Store(object):
         """Retrieve objects or quantities from the store.
 
         Args:
-            amt (int, float): the number of countable objects or the
-                amount of uncountable quantities to be retrieved all
-                at once (default is one)
+            amt (int): the number of objects to be retrieved all at
+                once (default is one)
 
         Returns:
-            This method returns none if no Python objects are
-            stored. Otherwise, if 'amt' is one, this method returns
-            the object that was first put into the store; if the 'amt'
-            is more than one, this method returns the 'amt' number of
-            objects in a list. The objects are stored first in and
-            first out.
+            This method returns none if no Python objects are stored.
+            Otherwise, if 'amt' is one, this method returns the object
+            that was first put into the store; if the 'amt' is more
+            than one, this method returns the 'amt' number of objects
+            in a list. The objects are stored first in and first out.
 
         """
         
@@ -165,6 +156,10 @@ class Store(object):
             log.error(errmsg)
             raise RuntimeError(errmsg)
 
+        if not isinstance(amt, int):
+            errmsg = "store.get() amt must be an integer"
+            log.error(errmsg)
+            raise TypeError(errmsg)
         if self.capacity < amt:
             errmsg = "store.get(amt=%r) more than capacity (%r)" % (amt, self.capacity)
             log.error(errmsg)
@@ -212,13 +207,12 @@ class Store(object):
         """Deposit objects or quantities to the store.
 
         Args:
-            amt (int, float): the number of countable objects or the
-                amount of uncountable quantities to be deposited all
-                at once (default is one)
+            amt (int): the number of objects to be deposited all at
+                once (default is one)
 
             obj (object): the python object or a list/tuple of python
                 objects to be deposited to the store; this is
-                optional; however, if provided, this is a mandatory
+                optional; however, if provided, this has to be a
                 keyworded argument, i.e., user must use the 'obj'
                 keyword if providing the object(s) after all
 
@@ -233,6 +227,10 @@ class Store(object):
             log.error(errmsg)
             raise RuntimeError(errmsg)
 
+        if not isinstance(amt, int):
+            errmsg = "store.putt() amt must be an integer"
+            log.error(errmsg)
+            raise TypeError(errmsg)
         if self.capacity < amt:
             errmsg = "store.put(amt=%r) more than capacity (%r)" % (amt, self.capacity)
             log.error(errmsg)
@@ -306,6 +304,10 @@ class Store(object):
                 self._store = store
                 self._amt = amt
 
+                if not isinstance(amt, int):
+                    errmsg = "store.getter() amt must be an integer"
+                    log.error(errmsg)
+                    raise TypeError(errmsg)
                 if store.capacity < amt:
                     errmsg = "store.getter(amt=%r) more than capacity (%r)" % (amt, store.capacity)
                     log.error(errmsg)
@@ -386,6 +388,10 @@ class Store(object):
                 self._amt = amt
                 self._obj = obj
 
+                if not isinstance(amt, int):
+                    errmsg = "store.putter() amt must be an integer"
+                    log.error(errmsg)
+                    raise TypeError(errmsg)
                 if store.capacity < amt:
                     errmsg = "store.putter(amt=%r) more than capacity (%r)" % (amt, store.capacity)
                     log.error(errmsg)
