@@ -19,17 +19,17 @@ def p1():
 
 def p2():
     tp = (t1, s1)
-    r = sim.wait(tp)
+    r, _ = sim.wait(tp)
     print("p2 resumes at %g (ret=%r)" % (sim.now, r))
 
     tp = [t2, s2]
-    r = sim.wait(tp, method=any)
+    r, _ = sim.wait(tp, method=any)
     print("p2 resumes at %g (ret=%r)" % (sim.now, r))
 
     # find the remaining untriggered trappables (using the 
     # returned mask) and wait for them all
     tp = [t for i, t in enumerate(tp) if not r[i]]
-    r = sim.wait(tp)
+    r, _ = sim.wait(tp)
     print("p2 resumes at %g (ret=%r)" % (sim.now, r))
 
 sim = simulus.simulator()

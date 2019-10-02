@@ -1,7 +1,7 @@
 p1 triggers t1 at 10
 p1 triggers s1 at 20
-p2 resumes at 20 (ret=([True, True], False))
+p2 resumes at 20 (ret=[True, True])
 p1 triggers t2 at 30
-p2 resumes at 30 (ret=([True, False], False))
+p2 resumes at 30 (ret=[True, False])
 p1 triggers s2 at 40
-p2 resumes at 40 (ret=([True], False))
+p2 resumes at 40 (ret=[True])
