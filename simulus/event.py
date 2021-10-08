@@ -349,6 +349,11 @@ class _EventList_(object):
             raise ValueError("EventList.cancel(%s): event not found" % evt)
         del self.pqueue[id(evt)]
 
+    def cancel_by_id(self, evt_id):
+        if evt_id not in self.pqueue:
+            raise ValueError("EventList.cancel(%s): event not found" % evt)
+        del self.pqueue[evt_id]
+
     def update(self, evt):
         if id(evt) not in self.pqueue:
             raise ValueError("EventList.update(%s): event not found" % evt)
