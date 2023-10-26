@@ -1075,10 +1075,10 @@ class simulator:
         self._run(upper, upper_specified)
 
     def _run(self, upper, updating_until):
-        """Run simulation up to the given time 'until' (by processing all
-        events with timestamps less than 'until'), and if
+        """Run simulation up to the given time 'upper' (by processing all
+        events with timestamps less than 'upper'), and if
         'updating_until' is true, update the simulation clock to
-        'until' after processing all the events."""
+        'upper' after processing all the events."""
         
         # this is the main event loop of the simulator!
         while len(self._eventlist) > 0:
