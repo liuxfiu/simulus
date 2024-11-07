@@ -4,6 +4,7 @@
 # Last Update: Time-stamp: <2019-09-07 09:16:54 liux>
 ###############################################################
 
+from typing import Literal
 import random, uuid, time
 from collections import deque
 
@@ -19,6 +20,7 @@ from .resource import *
 from .store import *
 from .bucket import *
 from .mailbox import *
+from .spacetime import _Channel_, _ConnReader, _ConnWriter
 
 __all__ = ["simulator", "infinite_time", "minus_infinite_time"]
 
@@ -74,6 +76,7 @@ class simulator:
 
         self._insync = None
         self._mailboxes = {}
+        self._stm_channels: dict[str, _Channel_]  = {}
         
         if name is None:
             self.name = self._simulus.unique_name()
@@ -831,6 +834,28 @@ class simulator:
                      (self._simulus.comm_rank, self.name, name))
         return mb
 
+    #####################
+    # space-time memory #
+    #####################
+    
+    def create_channel(self, channel_name: str):
+        "Creates a STM channel"
+        chan = _Channel_(self, channel_name)
+        self._stm_channels[channel_name] = chan
+    
+    def attach_reader(self, channel_name: str):
+        "Attaches a reader to a STM channel"
+        return _ConnReader(self, channel_name)
+    
+    def detach_reader(self, conn: _ConnReader):
+        raise NotImplementedError("detaching connections not yet implemented")
+
+    def attach_writer(self, channel_name: str):
+        "Attaches a writer to a STM channel"
+        return _ConnWriter(self, channel_name)
+
+    def detach_writer(self, conn: _ConnWriter):
+        raise NotImplementedError("detaching connections not yet implemented")
 
     ####################
     # conditional wait #
