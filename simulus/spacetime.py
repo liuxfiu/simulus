@@ -60,9 +60,15 @@ class _Channel_:
         _, data = self.channel_dict.peekitem(0)
         return data
     
+    def get_oldest_unseen(self) -> _ChannelData_:
+        raise NotImplementedError()
+    
     def get_newest(self) -> _ChannelData_:
         _, data = self.channel_dict.peekitem(-1)
         return data
+
+    def get_newest_unseen(self) -> _ChannelData_:
+        raise NotImplementedError()
 
     def insert(self, value, time: int):
         data = _ChannelData_(value, time)
