@@ -17,6 +17,7 @@ jupyter = "*"
 sphinx = "*"
 nbsphinx = "*"
 pandoc = "*"
+sortedcontainers = "*"
 
 [requires]
 python_version = "3.7"

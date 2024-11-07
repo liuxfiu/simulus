@@ -31,6 +31,7 @@ pipenv install greenlet runstats
 pipenv install pytest tox
 pipenv install gitchangelog pystache
 pipenv install jupyter sphinx nbsphinx pandoc
+pipenv install sortedcontainers
 pipenv install [more packages when needed]
 pipenv run pip freeze > ./dev-requirements.txt
 pipenv shell

@@ -1,28 +1,28 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 from .mailbox import Mailbox
-from .pqdict import _PQDict_
+from sortedcontainers import SortedDict
 import uuid
 
 if TYPE_CHECKING:
     from simulus import simulator
 
+@dataclass
 class _ChannelData_:
     """
     The data structure that a channel will store
     """
-    def __init__(self, value, time: int):
-        self.value = value
-        self.time = time
-    
-    def __lt__(self, other):
-        return self.time < other.time
+    value: Any
+    time: int
+    # todo: use this for comsume operations
+    ref = 0
 
 @dataclass
 class _Channel_Read_Request_:
     origin_mb_name: str
     time: int | None = None
     timeout: int | None = None
+    # todo: implement different timestamp queries
 
 @dataclass
 class _Channel_Write_Request_:
@@ -43,19 +43,35 @@ class _Channel_:
     """
     def __init__(self, sim: "simulator", channel_name: str):
         self.sim = sim
-        self.pqueue = _PQDict_()
+        self.channel_dict = SortedDict()
         # requests that are waiting for data
-        self.pending_requests: dict[int, list[_Channel_Read_Request_]] = {}
-        # requests_mb is a sort of request queue
+        self.blocked_requests: dict[int, list[_Channel_Read_Request_]] = {}
         self.requests_mb = self.sim.mailbox(channel_name_to_mb_name(channel_name))
-        # start listening for requests
+        # listen for requests
         self.requests_mb.add_callback(self.handle_request)
     
     def __contains__(self, time: int):
-        return time in self.pqueue
+        return time in self.channel_dict
     
     def __getitem__(self, time: int) -> _ChannelData_:
-        return self.pqueue[time]
+        return self.channel_dict[time]
+
+    def get_oldest(self) -> _ChannelData_:
+        _, data = self.channel_dict.peekitem(0)
+        return data
+    
+    def get_newest(self) -> _ChannelData_:
+        _, data = self.channel_dict.peekitem(-1)
+        return data
+
+    def insert(self, value, time: int):
+        data = _ChannelData_(value, time)
+        self.channel_dict[time] = data
+        # respond to waiting requests
+        if time in self.blocked_requests:
+            reqs = self.blocked_requests.pop(time)
+            for req in reqs:
+                self.respond_to_read_request(req, _Channel_Read_Response_(data))
     
     def handle_request(self):
         req: Any | None = self.requests_mb.retrieve(isall=False)
@@ -71,13 +87,13 @@ class _Channel_:
     
     def handle_read_request(self, req: _Channel_Read_Request_):
         if not req.time:
-            self.respond_to_read_request(req, _Channel_Read_Response_(self.peek_min()))
+            self.respond_to_read_request(req, _Channel_Read_Response_(self.get_oldest()))
             return
-        # todo: do not allow gets for a time below a certain horizon (use sync group?)
+        # block requests
         if req.time not in self:
-            if req.time not in self.pending_requests:
-                self.pending_requests[req.time] = []
-            self.pending_requests[req.time].append(req)
+            if req.time not in self.blocked_requests:
+                self.blocked_requests[req.time] = []
+            self.blocked_requests[req.time].append(req)
             if req.timeout:
                 self.sim.sched(self.create_timeout_handler(req), offset=req.timeout)
             return
@@ -89,33 +105,17 @@ class _Channel_:
             mb.send(res)
         else:
             raise NotImplementedError("STM across simulators not implemented yet")
-
-    def handle_write_request(self, req: _Channel_Write_Request_):
-        if req.time < 0:
-            print("recieved invalid request")
-            return
-        # todo: do not allow writes in the synchronized past
-        self.insert(req.value, req.time)
     
     def create_timeout_handler(self, req: _Channel_Read_Request_):
         def handle_timeout():
-            if req.time in self.pending_requests and req in self.pending_requests[req.time]:
-                self.pending_requests[req.time].remove(req)
+            if req.time in self.blocked_requests and req in self.blocked_requests[req.time]:
+                self.blocked_requests[req.time].remove(req)
                 self.respond_to_read_request(req, _Channel_Read_Response_(None, timedout=True))
         return handle_timeout
+
+    def handle_write_request(self, req: _Channel_Write_Request_):
+        self.insert(req.value, req.time)
     
-    def insert(self, value, time: int):
-        data = _ChannelData_(value, time)
-        self.pqueue[time] = data
-        if time in self.pending_requests:
-            reqs = self.pending_requests.pop(time)
-            for req in reqs:
-                self.respond_to_read_request(req, _Channel_Read_Response_(data))
-
-    def peek_min(self) -> _ChannelData_:
-        _, data = self.pqueue.peek()
-        return data
-
 class _Connection_:
     """
     Encapsulates shared connection logic for a STM channel
@@ -124,25 +124,17 @@ class _Connection_:
     def __init__(self, sim: "simulator", chan: str):
         self._sim = sim
         self._chan = chan
-        self.channel_mb_name = channel_name_to_mb_name(chan)
+        channel_mb_name = channel_name_to_mb_name(chan)
+        self.channel_mb = self._sim._mailboxes[channel_mb_name]
+        self.mb_name = uuid.uuid4()
+        self.mb: Mailbox = self._sim.mailbox(self.mb_name)
 
 class _ConnReader(_Connection_):
     def get(self, time: int | None = None, timeout: int | None = None) -> tuple[Any, bool]:
         "Reads the channel for data at a given time"
-        if self.channel_mb_name not in self._sim._mailboxes:
-            raise NotImplementedError("STM across simulators not implemented yet")
-        dst_mb = self._sim._mailboxes[self.channel_mb_name]
-
-        # todo: determine whether a one-off mailbox is good
-        mb_name = uuid.uuid4()
-        mb: Mailbox = self._sim.mailbox(mb_name)
-
-        req = _Channel_Read_Request_(mb_name, time, timeout)
-        dst_mb.send(req)
-        
-        res = mb.recv(isall=False)
-
-        # todo: delete/cleanup mailbox
+        req = _Channel_Read_Request_(self.mb_name, time, timeout)
+        self.channel_mb.send(req)
+        res = self.mb.recv(isall=False)
         return res.data, res.timedout
     
     def consume(self, time: int):
@@ -158,9 +150,4 @@ class _ConnWriter(_Connection_):
             assert isinstance(now, (int, float))
             time = int(now)
         assert time >= now
-
-        if self.channel_mb_name not in self._sim._mailboxes:
-            raise NotImplementedError("STM across simulators not implemented yet")
-
-        dst_mb = self._sim._mailboxes[self.channel_mb_name]
-        dst_mb.send(_Channel_Write_Request_(value, time))
+        self.channel_mb.send(_Channel_Write_Request_(value, time))
