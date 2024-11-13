@@ -57,6 +57,15 @@ class _Channel_:
     def __getitem__(self, time: int) -> _ChannelData_:
         return self.channel_dict[time]
 
+    def __setitem__(self, time: int, value: Any):
+        data = _ChannelData_(value, time)
+        self.channel_dict[time] = data
+        # respond to waiting requests
+        if time in self.blocked_requests:
+            reqs = self.blocked_requests.pop(time)
+            for req in reqs:
+                self.respond_to_read_request(req, _Channel_Read_Response_(data))
+
     def get_oldest(self) -> _ChannelData_:
         _, data = self.channel_dict.peekitem(0)
         return data
@@ -70,15 +79,6 @@ class _Channel_:
 
     def get_newest_unseen(self) -> _ChannelData_:
         raise NotImplementedError()
-
-    def insert(self, value, time: int):
-        data = _ChannelData_(value, time)
-        self.channel_dict[time] = data
-        # respond to waiting requests
-        if time in self.blocked_requests:
-            reqs = self.blocked_requests.pop(time)
-            for req in reqs:
-                self.respond_to_read_request(req, _Channel_Read_Response_(data))
     
     def handle_request(self):
         req: Any | None = self.requests_mb.retrieve(isall=False)
@@ -87,7 +87,7 @@ class _Channel_:
         if isinstance(req, _Channel_Read_Request_):
             self.handle_read_request(req)
         elif isinstance(req, _Channel_Write_Request_):
-            self.handle_write_request(req)
+            self[req.time] = req.value
         else:
             print("recieved invalid request")
             return
@@ -118,9 +118,6 @@ class _Channel_:
             if req.time in self.blocked_requests and req in self.blocked_requests[req.time]:
                 self.blocked_requests[req.time].remove(req)
         return handle_timeout
-
-    def handle_write_request(self, req: _Channel_Write_Request_):
-        self.insert(req.value, req.time)
     
 class _Connection_:
     """
