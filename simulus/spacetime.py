@@ -21,7 +21,8 @@ class _ChannelData_:
 class _Channel_Read_Request_:
     origin_mb_name: str
     time: int | None = None
-    timeout: int | None = None
+    # absolute time for timeout
+    until: int | None = None
     # todo: implement different timestamp queries
 
 @dataclass
@@ -100,8 +101,8 @@ class _Channel_:
             if req.time not in self.blocked_requests:
                 self.blocked_requests[req.time] = []
             self.blocked_requests[req.time].append(req)
-            if req.timeout:
-                self.sim.sched(self.create_timeout_handler(req), offset=req.timeout)
+            if req.until:
+                self.sim.sched(self.create_timeout_handler(req), until=req.until)
             return
         self.respond_to_read_request(req, _Channel_Read_Response_(self[req.time]))
 
@@ -116,7 +117,6 @@ class _Channel_:
         def handle_timeout():
             if req.time in self.blocked_requests and req in self.blocked_requests[req.time]:
                 self.blocked_requests[req.time].remove(req)
-                self.respond_to_read_request(req, _Channel_Read_Response_(None, timedout=True))
         return handle_timeout
 
     def handle_write_request(self, req: _Channel_Write_Request_):
@@ -137,11 +137,21 @@ class _Connection_:
 
 class _ConnReader(_Connection_):
     def get(self, time: int | None = None, timeout: int | None = None) -> tuple[Any, bool]:
-        "Reads the channel for data at a given time"
-        req = _Channel_Read_Request_(self.mb_name, time, timeout)
+        """
+        Reads the channel for data at 'time'
+        If 'timeout' is provided, the get will cancel at sim.now + timeout.
+        Ex. get(1, 3) will timeout at time=4
+        """
+        req = _Channel_Read_Request_(self.mb_name, time)
+        if timeout:
+            req.until = self._sim.now + timeout
         self.channel_mb.send(req)
-        res = self.mb.recv(isall=False)
-        return res.data, res.timedout
+        rcv = self.mb.receiver(isall=False)
+        _, timedout = self._sim.wait(rcv, offset=timeout)
+        if timedout:
+            return None, timedout
+        res = rcv.retval
+        return res.data, timedout
     
     def consume(self, time: int):
         "Mark a value in the channel as consumed by this connection"
