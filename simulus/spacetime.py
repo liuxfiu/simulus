@@ -44,7 +44,8 @@ class _Channel_:
     """
     def __init__(self, sim: "simulator", channel_name: str):
         self.sim = sim
-        self.channel_dict = SortedDict()
+        self.items = SortedDict()
+        self.unseen_items = SortedDict()
         # requests that are waiting for data
         self.blocked_requests: dict[int, list[_Channel_Read_Request_]] = {}
         self.requests_mb = self.sim.mailbox(channel_name_to_mb_name(channel_name))
@@ -52,14 +53,16 @@ class _Channel_:
         self.requests_mb.add_callback(self.handle_request)
     
     def __contains__(self, time: int):
-        return time in self.channel_dict
+        return time in self.items
     
     def __getitem__(self, time: int) -> _ChannelData_:
-        return self.channel_dict[time]
+        self.unseen_items.pop(time, None)
+        return self.items[time]
 
     def __setitem__(self, time: int, value: Any):
         data = _ChannelData_(value, time)
-        self.channel_dict[time] = data
+        self.items[time] = data
+        self.unseen_items[time] = data
         # respond to waiting requests
         if time in self.blocked_requests:
             reqs = self.blocked_requests.pop(time)
@@ -67,18 +70,22 @@ class _Channel_:
                 self.respond_to_read_request(req, _Channel_Read_Response_(data))
 
     def get_oldest(self) -> _ChannelData_:
-        _, data = self.channel_dict.peekitem(0)
+        time, data = self.items.peekitem(0)
+        self.unseen_items.pop(time, None)
         return data
     
     def get_oldest_unseen(self) -> _ChannelData_:
-        raise NotImplementedError()
+        _, data = self.unseen_items.popitem(0)
+        return data
     
     def get_newest(self) -> _ChannelData_:
-        _, data = self.channel_dict.peekitem(-1)
+        time, data = self.items.peekitem(-1)
+        self.unseen_items.pop(time, None)
         return data
 
     def get_newest_unseen(self) -> _ChannelData_:
-        raise NotImplementedError()
+        _, data = self.unseen_items.popitem(-1)
+        return data
     
     def handle_request(self):
         req: Any | None = self.requests_mb.retrieve(isall=False)
