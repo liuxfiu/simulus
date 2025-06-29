@@ -7,6 +7,7 @@
 from collections import defaultdict
 import multiprocessing as mp
 #from concurrent import futures
+import os
 import time, atexit
 
 from .simulus import *
@@ -333,6 +334,12 @@ class sync(object):
                 
     def _child_run(self, pid):
         """The child processes running in SMP mode."""
+
+        # This is very important! 
+        # When this class is pickled, the sims in _local_sims and those in sync._simulus 
+        # are not the same; they are duplicates of each other
+        for name, sim in self._local_sims.items():
+            sync._simulus.register_simulator(name, sim)
  
         log.info("[r%d] sync._child_run(pid=%d): partitions=%r" %
                  (sync._simulus.comm_rank, pid, self._local_partitions))
