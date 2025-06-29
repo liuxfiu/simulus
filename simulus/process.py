@@ -40,7 +40,6 @@ class _Process(Trappable):
         self.kwargs = usr_kwargs
         self.state = _Process.STATE_STARTED
         self.main = None
-        self.vert = greenlet(self.invoke)
         self.prio = prio
         self.prio_args = prio_args
         self.trap = Trap(self._sim)
@@ -52,6 +51,7 @@ class _Process(Trappable):
         if self.state != _Process.STATE_TERMINATED:
             if self.state != _Process.STATE_RUNNING:
                 self.state = _Process.STATE_RUNNING
+                self.vert = greenlet(self.invoke)
                 self._sim._readyq.append(self)
             # otherwise, it already entered the running queue
 
