@@ -13,6 +13,11 @@ import time, atexit
 from .simulus import *
 from .simulator import *
 
+# needed because pickling multiple multiprocessing.Process is not supported:
+# https://github.com/python/cpython/issues/91090
+# TODO: prevent sync from being pickled
+mp.set_start_method("fork")
+
 __all__ = ["sync"]
 
 import logging
