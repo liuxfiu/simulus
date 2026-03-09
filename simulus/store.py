@@ -481,7 +481,7 @@ class Store(object):
         return len(self._p_arrivals)
 
     def _make_p_arrival(self, p, amt, obj):
-        self._p_arrivals[p] = (self._sim.now, amt)
+        self._p_arrivals[p] = (self._sim.now, amt, obj)
         if obj is not None:
             if self._obj_decided and self._obj_store is None:
                 errmsg = "store.put() or store.putter() inconsistent use of objects"
@@ -490,9 +490,7 @@ class Store(object):
             elif not self._obj_decided:
                 assert self._obj_store is None
                 self._obj_decided = True
-                self._obj_store = deque(obj) # shallow copy from the list
-            else:
-                self._obj_store.extend(obj)
+                self._obj_store = deque() # objects are added at departure, not arrival
         else:
             if self._obj_decided and self._obj_store is not None:
                 errmsg = "store.put() or store.putter() inconsistent use of objects"
@@ -513,7 +511,9 @@ class Store(object):
             self.stats._sample("get_queues", (self._sim.now, len(self._c_arrivals)))
 
     def _make_p_renege(self, p):
-        t,a = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
+        t,a,obj = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
+        # obj is simply discarded: objects were never inserted into _obj_store
+        # at arrival time, so there is nothing to undo here
         if self.stats is not None:
             self.stats._sample("put_times", self._sim.now-t)
             self.stats._sample("put_queues", (self._sim.now, len(self._p_arrivals)))
@@ -525,8 +525,10 @@ class Store(object):
             self.stats._sample("get_queues", (self._sim.now, len(self._c_arrivals)))
 
     def _make_p_departure(self, p, amt):
-        t,a = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
+        t,a,obj = self._p_arrivals.pop(p) # throw a KeyError if not in dictionary
         assert a == amt
+        if obj is not None:
+            self._obj_store.extend(obj) # add objects now that the put is committed
         if self.stats is not None:
             self.stats._sample("put_times", self._sim.now-t)
             self.stats._sample("put_queues", (self._sim.now, len(self._p_arrivals)))

@@ -99,6 +99,13 @@ class Semaphore(Trappable):
             assert len(self.blocked) == -self.val
             #log.debug('process blocked on semaphore wait (val=%d)' % self.val)
             p.suspend()
+            # clean up: signal() added self to acting_trappables before
+            # activating us; since we handle the wait directly here (not
+            # via simulator.wait()), we remove it to prevent leaking
+            try:
+                p.acting_trappables.remove(self)
+            except ValueError:
+                pass
         else:
             # nothing to be done; there are no waiting processes
             assert len(self.blocked) == 0

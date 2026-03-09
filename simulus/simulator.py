@@ -961,11 +961,10 @@ class simulator:
         timedout = False
         e = None # this will be the timeout event
 
-        p.acting_trappables.clear()
         while not method(trigged):
             # the wait condition hasn't been satisfied; the process
             # will be suspended
-            
+
             # make sure we schedule the timeout event, only once
             if e is None and time < infinite_time:
                 #log.debug("[r%d] simulator '%s' schedule timeout event at time=%g from now=%g" %
@@ -973,20 +972,24 @@ class simulator:
                 self._runtime["scheduled_events"] += 1
                 e = _ProcessEvent(self, time, p, p.name)
                 self._eventlist.insert(e)
-            
+
             p.suspend()
 
             # update the mask (this is a circuitous way to find out
             # which trap in the list of traps is responsible for
-            # unblocking the process at this time)
+            # unblocking the process at this time); only process
+            # trappables that belong to this wait call and leave any
+            # others untouched (they belong to direct component waits
+            # or a different wait context)
+            acted = []
             for t in p.acting_trappables:
-                # if the acting trappables are not in expected list of
-                # traps, something is wrong (in which case an
-                # exception will be raised)
-                i = true_traps.index(t)
-                traps[i]._commit_wait()
-                trigged[i] = True
-            p.acting_trappables.clear()
+                if t in true_traps:
+                    i = true_traps.index(t)
+                    traps[i]._commit_wait()
+                    trigged[i] = True
+                    acted.append(t)
+            for t in acted:
+                p.acting_trappables.remove(t)
 
             # check if we are timed out
             if e is not None and not self._eventlist.current_event(e):

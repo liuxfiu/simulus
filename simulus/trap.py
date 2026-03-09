@@ -72,6 +72,13 @@ class Trap(Trappable):
             self.blocked.append(p)
             #log.debug('process blocked on trap wait')
             p.suspend()
+            # clean up: trigger() added self to acting_trappables before
+            # activating us; since we handle the wait directly here (not
+            # via simulator.wait()), we remove it to prevent leaking
+            try:
+                p.acting_trappables.remove(self)
+            except ValueError:
+                pass
         else:
             # nothing to be done when the trap is sprung; there are no
             # blocked processes
