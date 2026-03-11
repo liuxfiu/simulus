@@ -10,7 +10,7 @@ from __future__ import absolute_import
 import sys, argparse
 
 if sys.version_info[:2] < (2, 8):
-    raise ImportError("Simulus requires Python 2.8 and above (%d.%d detected)." %
+    raise ImportError("Simulus requires Python 3.12 and above (%d.%d detected)." %
                       sys.version_info[:2])
 
 from .utils import *
