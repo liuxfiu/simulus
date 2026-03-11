@@ -28,7 +28,7 @@ def test_basic_examples():
     pyfs = glob.glob(basics_files)+glob.glob(simpy_files)
     outfs = ['.out'.join(f.rsplit('.py', 1)) for f in pyfs]
     for pyf, outf in zip(pyfs, outfs):
-        cmd = 'python '+pyf
+        cmd = sys.executable+' '+pyf
         try: 
             s1 = os.popen(cmd).read()
         except:

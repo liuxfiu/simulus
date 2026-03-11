@@ -42,9 +42,32 @@ class _Process(Trappable):
         self.main = None
         self.vert = greenlet(self.invoke)
         self.prio = prio
+
         self.prio_args = prio_args
         self.trap = Trap(self._sim)
         self.acting_trappables = []
+
+    def __getstate__(self):
+        """Exclude the greenlet from pickling (used in SMP mode).
+
+        Greenlets cannot be serialized. Processes are only ever pickled
+        before they have started (STATE_STARTED), so no execution state
+        is lost — the greenlet is recreated in __setstate__.
+        """
+        state = self.__dict__.copy()
+        state.pop('vert', None)
+        return state
+
+    def __setstate__(self, state):
+        """Restore a pickled process, recreating its greenlet."""
+        self.__dict__.update(state)
+        if self.state == _Process.STATE_STARTED:
+            self.vert = greenlet(self.invoke)
+        else:
+            raise RuntimeError(
+                "Cannot deserialize _Process '%s' that has already started "
+                "(state=%d); SMP processes must be pickled before first activation."
+                % (self.name, self.state))
 
     def activate(self):
         """Move the process into the ready queue."""

@@ -10,6 +10,50 @@ from .utils import QDIS, DataCollector, TimeSeries, DataSeries, TimeMarks
 from .trappable import Trappable
 from .trap import Trap
 
+
+class _MailboxCompartment(object):
+    """One compartment or partition of a Mailbox.
+
+    Moved to module level (from nested inside Mailbox.__init__) so that
+    pickle can locate the class by name, which is required for SMP mode
+    where the mailbox is serialized and sent to child processes.
+    """
+    def __init__(self, mbox, dc):
+        self.callbacks = []
+        self.trap = Trap(mbox._sim)
+        self.msgbuf = deque()
+        self.stats = dc
+        if self.stats is not None:
+            for k, v in dc._attrs.items():
+                if k in ('messages',):
+                    if not isinstance(v, TimeSeries):
+                        errmsg = "'%s' not timeseries in mailbox datacollector" % k
+                        log.error(errmsg)
+                        raise TypeError(errmsg)
+                elif k in ('arrivals', 'retrievals'):
+                    if not isinstance(v, TimeMarks):
+                        errmsg = "'%s' not timemarks in mailbox datacollector" % k
+                        log.error(errmsg)
+                        raise TypeError(errmsg)
+                else:
+                    errmsg = "unrecognized attribute '%s' in mailbox datacollector" % k
+                    log.error(errmsg)
+                    raise ValueError(errmsg)
+
+    def peek(self):
+        return list(self.msgbuf)  # a shallow copy
+
+    def retrieve(self, isall):
+        if isall:
+            ret = list(self.msgbuf)
+            self.msgbuf.clear()
+            return ret
+        else:
+            try:
+                return self.msgbuf.popleft()
+            except IndexError:
+                return None
+
 __all__ = ["Mailbox"]
 
 import logging
@@ -100,44 +144,6 @@ class Mailbox(object):
         delay, a name, and DataCollector instance for statistics
         collection."""
 
-        class _Compartment(object):
-            """One compartment or partition of the mailbox."""
-            def __init__(self, mbox, dc):
-                self.callbacks = []
-                self.trap = Trap(mbox._sim)
-                self.msgbuf = deque()
-                self.stats = dc
-                if self.stats is not None:
-                    for k, v in dc._attrs.items():
-                        if k in ('messages',):
-                            if not isinstance(v, TimeSeries):
-                                errmsg = "'%s' not timeseries in mailbox datacollector" % k
-                                log.error(errmsg)
-                                raise TypeError(errmsg)
-                        elif k in ('arrivals', 'retrievals'):
-                            if not isinstance(v, TimeMarks):
-                                errmsg = "'%s' not timemarks in mailbox datacollector" % k
-                                log.error(errmsg)
-                                raise TypeError(errmsg)
-                        else:
-                            errmsg = "unrecognized attribute '%s' in mailbox datacollector" % k
-                            log.error(errmsg)
-                            raise ValueError(errmsg)
-
-            def peek(self):
-                return list(self.msgbuf) # a shallow copy
-        
-            def retrieve(self, isall):
-                if isall:
-                    ret = list(self.msgbuf)
-                    self.msgbuf.clear()
-                    return ret
-                else:
-                    try:
-                        return self.msgbuf.popleft()
-                    except IndexError:
-                        return None
-
         self._sim = sim
         self.nparts = nparts
         self.min_delay = min_delay
@@ -159,7 +165,7 @@ class Mailbox(object):
                 log.error(errmsg)
                 raise TypeError(errmsg)
             dc = [dc]
-        self._parts = [_Compartment(self, x) for x in dc]
+        self._parts = [_MailboxCompartment(self, x) for x in dc]
 
     def send(self, msg, delay=None, part=0):
         """Send a message to a mailbox partition.

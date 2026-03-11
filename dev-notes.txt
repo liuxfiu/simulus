@@ -6,18 +6,18 @@ Install Python3
 
 (update Xcode and ports first)
 
-sudo port install python37
-sudo port select --set python python37
-sudo port select --set python3 python37
+sudo port install python312
+sudo port select --set python python312
+sudo port select --set python3 python312
 
-add [../3.7/bin] to PATH
-(/opt/local/Library/Frameworks/Python.framework/Versions/3.7/bin:~/Library/Python/3.7/bin)
+add [../3.12/bin] to PATH
+(/opt/local/Library/Frameworks/Python.framework/Versions/3.12/bin:~/Library/Python/3.12/bin)
 
-sudo port install py37-pip
-sudo port select --set pip pip37
-sudo port select --set pip3 pip37
+sudo port install py312-pip
+sudo port select --set pip pip312
+sudo port select --set pip3 pip312
 
-python -m pip install —user --upgrade setuptools wheel twine pipenv virtualenv
+python3 -m pip install --user --upgrade setuptools wheel twine pipenv virtualenv
 
 Set Up Simulus Dev Environment
 ------------------------------
@@ -45,12 +45,12 @@ Packaging Instructions
 git tag -a [version] -m [message]
 gitchangelog ^[last version] HEAD | cat - CHANGELOG.md > 1
 mv 1 CHANGELOG.md
-python setup.py sdist bdist_wheel
+python3 setup.py sdist bdist_wheel
 git add (all changed files)
 git commit -m [message]
 git push --tags
 git push
-python -m twine upload dist/simulus-[version]*
+python3 -m twine upload dist/simulus-[version]*
 
 
 Fix Git Commit Messages (if necessary)
@@ -301,6 +301,8 @@ process.py:
     * prio_args
     * trap
     * acting_trappables
+    * __getstate__()  # excludes greenlet for SMP pickle support
+    * __setstate__()  # recreates greenlet after unpickling
     * activate()
     * deactivate()
     * invoke()
@@ -394,15 +396,16 @@ store.py:
 mailbox.py
 **********
 
+* _MailboxCompartment  # partially hidden, opaque reference (module-level for pickle support)
+    * __init__()
+    * callbacks
+    * trap
+    * msgbuf
+    * peek()
+    * retrieve()
+
 * Mailbox  # public interface
     * __init__()  # supposedly hidden
-    *   _Compartment  # partially hidden, opaque reference
-    * 	  __init__()
-    * 	  callbacks
-    * 	  trap
-    * 	  msgbuf
-    *	  peek()
-    *	  retrieve()
     * _sim
     * nparts
     * min_delay
@@ -479,12 +482,7 @@ simulator.py:
 simulus.py:
 ***********
 
-* _Simulus:  # completely hidden
-    * instance -> __OneInstance
-    * __new__()
-    * __getattr__()
-    * __setattr__()
-    * __OneInstance
+* _SimulusOneInstance  # completely hidden (module-level for pickle support)
     *   __init__()
     *   args
     *   comm_rank
@@ -500,6 +498,12 @@ simulus.py:
     *   bcast()
     *   allreduce()
     *   alltoall()
+
+* _Simulus:  # completely hidden
+    * instance -> _SimulusOneInstance
+    * __new__()
+    * __getattr__()
+    * __setattr__()
     
 ********
 sync.py:

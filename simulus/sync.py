@@ -7,7 +7,7 @@
 from collections import defaultdict
 import multiprocessing as mp
 #from concurrent import futures
-import time, atexit
+import time, atexit, sys
 
 from .simulus import *
 from .simulator import *
@@ -302,6 +302,16 @@ class sync(object):
                     self._local_queues[pid] = mp.Queue()
                     for s in snames: self._local_pids[s] = pid
 
+                # On Python 3.8+ macOS uses "spawn" by default; mp.Process
+                # instances can't be pickled under "spawn" (CPython issue #91090).
+                # TODO: refactor _child_run so sync is not passed as an argument,
+                # which would make this workaround unnecessary.
+                if sys.platform != 'win32':
+                    try:
+                        mp.set_start_method("fork")
+                    except RuntimeError:
+                        pass  # start method already set; assume fork or acceptable alternative
+
                 # start the child processes
                 self._child_procs = [mp.Process(target=sync._child_run, args=(self, i)) \
                                      for i in range(1, len(self._local_partitions))]
@@ -333,7 +343,16 @@ class sync(object):
                 
     def _child_run(self, pid):
         """The child processes running in SMP mode."""
- 
+
+        # When sync is pickled and sent to the child process, pickle's
+        # object graph traversal creates independent copies of each
+        # simulator — so self._local_sims and sync._simulus.named_simulators
+        # end up pointing to different objects with the same content.
+        # Re-register from _local_sims so the rest of the child code uses
+        # a single consistent set of simulator references.
+        for name, sim in self._local_sims.items():
+            sync._simulus.register_simulator(name, sim)
+
         log.info("[r%d] sync._child_run(pid=%d): partitions=%r" %
                  (sync._simulus.comm_rank, pid, self._local_partitions))
         assert self._smp and pid>0
