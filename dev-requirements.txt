@@ -43,7 +43,7 @@ more-itertools==7.1.0
 nbconvert==5.5.0
 nbformat==4.4.0
 nbsphinx==0.4.2
-notebook==5.7.8
+notebook==6.4.12
 numpy==1.16.4
 packaging==19.0
 pandoc==1.0.2
