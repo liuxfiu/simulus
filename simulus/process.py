@@ -177,8 +177,22 @@ class _Process(Trappable):
         #log.debug('process terminated at time=%g' % self._sim.now)
         self._sim._runtime["terminated_processes"] += 1
 
-        #raise greenlet.GreenletExit
-        self.main.switch()
+        # let invoke() return so the greenlet dies on its own; greenlet
+        # jumps to vert.parent automatically when the start function
+        # returns. without this the greenlet would stay suspended,
+        # pinning self via the bound _Process.invoke method (issue #22).
+        self.vert.parent = self.main
+
+    def _kill_greenlet(self):
+        """Force a suspended greenlet to die after external kill.
+
+        Called by simulator.kill() when terminating another process.
+        Without this the greenlet stays suspended holding a reference
+        to self via _Process.invoke (issue #22).
+        """
+        if self.vert is not None and not self.vert.dead:
+            self.vert.parent = greenlet.getcurrent()
+            self.vert.throw()  # raises GreenletExit at suspension point
 
     def set_priority(self, prio, prio_args):
         """Set the priority of this process (either a value or a function that

@@ -410,6 +410,7 @@ class simulator:
                 self._runtime["cancelled_processes"] += 1
                 p.deactivate(_Process.STATE_TERMINATED)
                 p.trap.trigger()
+                p._kill_greenlet()
             else:
                 # otherwise, it's already killed; we do nothing
                 #log.debug("[r%d] simulator '%s' kill non-active process at time=%g" %
